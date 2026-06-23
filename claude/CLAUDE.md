@@ -1,5 +1,10 @@
 @$HOME/dotfiles/ai/shared/AGENTS.md
 
+## Правила (Claude-specific)
+
+@$HOME/dotfiles/ai/shared/rules/orchestration.md
+@$HOME/dotfiles/ai/shared/rules/ast-index.md
+
 ## Синхронизация ~/dotfiles/ai
 
 `~/dotfiles/ai` — git-репозиторий, синхронизируемый между машинами через `csync`.

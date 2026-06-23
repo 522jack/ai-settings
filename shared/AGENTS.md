@@ -10,6 +10,20 @@
 - **Force push — только через `--force-with-lease` или `--force-if-includes`.** Обычный `--force` запрещён.
 - **Главная сессия никогда не редактирует продуктовый код проекта, не выполняет тяжёлый/многофайловый поиск по коду и не запускает долгоиграющие сборки/тесты/CI в своём контексте.** Граница такова: главная сессия синтезирует и оркестрирует; специалисты реализуют. Редактирование рабочих файлов процесса (`swarm-report/**`, файлы состояния/отчётов/отладки/e2e/планов, конфиги/правила/хуки/заметки в `~/dotfiles/ai/**`) — **разрешено**. Редактирование файлов проекта (продуктовый исходный код, конфиги проекта, тесты проекта) — **только через субагент**. Ориентировочное исследование/чтение разрешено; тяжёлый Grep/Glob по всей продуктовой кодовой базе → Explore. Явное указание пользователя («сделай сам», «не делегируй», «напиши руками») снимает это правило для текущей задачи.
 
+## Правила
+
+@$HOME/dotfiles/ai/shared/rules/communication.md
+@$HOME/dotfiles/ai/shared/rules/code-policies.md
+@$HOME/dotfiles/ai/shared/rules/dependencies.md
+@$HOME/dotfiles/ai/shared/rules/external-sources.md
+@$HOME/dotfiles/ai/shared/rules/kotlin-style.md
+@$HOME/dotfiles/ai/shared/rules/gradle-style.md
+@$HOME/dotfiles/ai/shared/rules/android-cli.md
+@$HOME/dotfiles/ai/shared/rules/qa-and-testing.md
+@$HOME/dotfiles/ai/shared/rules/task-types.md
+@$HOME/dotfiles/ai/shared/rules/task-execution.md
+@$HOME/dotfiles/ai/shared/rules/workflow.md
+
 ## Синхронизация конфигурации (для Codex)
 
 Скрипты синхронизации находятся в `~/dotfiles/ai/shared/scripts/`. Codex не имеет автохуков,
