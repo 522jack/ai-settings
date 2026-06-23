@@ -33,6 +33,30 @@ echo "  Claude Code: ~/.claude/CLAUDE.md → $REPO/claude/CLAUDE.md"
 echo "  Claude Code: ~/.claude/settings.json → $REPO/claude/settings.json"
 echo "  Claude Code: ~/.claude/hooks → $REPO/claude/hooks"
 
+# Agents (symlink each agent file individually)
+mkdir -p "$HOME/.claude/agents"
+
+for agent_file in "$REPO/shared/agents"/*.md; do
+    agent_name="$(basename "$agent_file")"
+    target="$HOME/.claude/agents/$agent_name"
+    [ -f "$target" ] && [ ! -L "$target" ] && { mkdir -p "$BACKUP"; cp "$target" "$BACKUP/"; rm "$target"; }
+    ln -sf "$agent_file" "$target"
+done
+
+# Agent references (symlink whole dir if possible, else individual files)
+if [ ! -e "$HOME/.claude/agent-references" ]; then
+    ln -sf "$REPO/shared/agent-references" "$HOME/.claude/agent-references"
+else
+    mkdir -p "$HOME/.claude/agent-references"
+    for ref_file in "$REPO/shared/agent-references"/*.md; do
+        ref_name="$(basename "$ref_file")"
+        ln -sf "$ref_file" "$HOME/.claude/agent-references/$ref_name"
+    done
+fi
+
+echo "  Agents: ~/.claude/agents/* → $REPO/shared/agents/*"
+echo "  Agent references: ~/.claude/agent-references → $REPO/shared/agent-references"
+
 # Skills (symlink each skill dir individually — don't replace existing dirs)
 mkdir -p "$HOME/.claude/skills" "$HOME/.codex/skills"
 
