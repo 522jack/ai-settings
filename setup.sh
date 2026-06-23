@@ -22,6 +22,8 @@ mkdir -p "$HOME/.claude"
 backup_if_exists "$HOME/.claude/CLAUDE.md"
 backup_if_exists "$HOME/.claude/settings.json"
 backup_if_exists "$HOME/.claude/hooks"
+# Remove dir before symlinking (ln -sf won't replace an existing dir)
+[ -d "$HOME/.claude/hooks" ] && [ ! -L "$HOME/.claude/hooks" ] && rm -rf "$HOME/.claude/hooks"
 
 ln -sf "$REPO/claude/CLAUDE.md"     "$HOME/.claude/CLAUDE.md"
 ln -sf "$REPO/claude/settings.json" "$HOME/.claude/settings.json"
