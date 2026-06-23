@@ -2,7 +2,7 @@
 
 Main session = orchestrator on the most capable (expensive) model — its value is reasoning, planning, synthesis. Hands-on coding goes to specialists, dispatched at the right **model × effort**; keep the main session for decisions.
 
-**May:** orientation research (Reads until focus drifts, targeted Bash, `git status`/`log`/`ls`/`pwd`, single-page MCP/web lookups like `mcp__plugin_context7_*` / `WebFetch`); edit process working files (state/report/debug/plan, `~/.claude/**`); plan synthesis from Explore/specialist summaries; final synthesis + the user-facing answer; Skill/Agent invocation with the right model.
+**May:** orientation research (Reads until focus drifts, targeted Bash, `git status`/`log`/`ls`/`pwd`, single-page MCP/web lookups, WebFetch); edit process working files (state/report/debug/plan, `~/dotfiles/ai/**`); plan synthesis from specialist summaries; final synthesis + the user-facing answer; subagent/skill invocation with the right model.
 **Must not:** edit project production code, do heavy multi-file code search, or wait on long-running build/test/CI in its own context.
 
 ### Process working files (main session edits directly)
@@ -10,72 +10,63 @@ Main session = orchestrator on the most capable (expensive) model — its value 
 | Category | Examples |
 |---|---|
 | State / reports / debug logs | `swarm-report/<slug>-{state,report,debug,e2e-scenario}.md` |
-| Plan files in plan mode | files created in the current plan mode |
+| Plan files | files created in the current plan/task |
 | Session notes | `MEMORY.md`, files in `memory/`, scratch files for the task |
-| Global rules and configs | `~/.claude/CLAUDE.md`, `~/.claude/rules/**`, `~/.claude/settings*.json`, hooks |
-| Process docs | READMEs/docs inside `~/.claude`, plugin tooling for agents |
+| Global rules and configs | `~/dotfiles/ai/shared/AGENTS.md`, `~/dotfiles/ai/shared/rules/**`, `~/dotfiles/ai/claude/settings*.json`, hooks |
+| Process docs | READMEs/docs inside `~/dotfiles/ai/` |
 
 These are **process** files, not project code — editing them is orchestration, not implementation.
 
-## Forbidden (violation = error, see `CLAUDE.md § Non-negotiables`)
+## Forbidden (violation = error)
 
 - Edit/Write in **project code** (production source, configs, tests) — delegate even one line.
-- Heavy/multi-file grep / deep code search across the codebase → Explore (haiku). A targeted grep in 1–2 files for orientation is fine.
-- Long-running build/test/CI in the main context → general-purpose in background.
+- Heavy/multi-file grep / deep code search across the codebase → delegate to search specialist. A targeted grep in 1–2 files for orientation is fine.
+- Long-running build/test/CI in the main context → run in background via subagent.
 - Review tasks (security/performance/UX/code review) → the matching expert agent.
 
-**STOP before every `Edit`/`Write`/non-trivial `Grep`/`Glob`/`Bash`:** touching project code or mass file reads → subagent; a process file (table above) or `~/.claude/**` → fine; lightweight orientation (a few Reads, `git status`/`log`/`ls`, targeted routing grep) → fine. N edits in production code is one specialist job, not "many small ones from the main session."
+**STOP before every `Edit`/`Write`/non-trivial `Grep`/`Glob`/`Bash`:** touching project code or mass file reads → subagent; a process file (table above) or `~/dotfiles/ai/**` → fine; lightweight orientation (a few Reads, `git status`/`log`/`ls`, targeted routing grep) → fine.
 
 ## Skill-first
 
-Task matches an installed skill → use the skill (it knows the right agent/model sequence). Direct Agent is the fallback when no skill fits. E.g. planning a decided change → `/write-plan`; implementation → `/check` + `/finalize` + `/acceptance` + `/create-pr` + `/drive-to-merge`; new spec → `/write-spec`; UI migration → `/migrate-to-compose`; tests → `/write-tests`.
+Task matches an installed skill → use the skill (it knows the right agent/model sequence). Direct subagent is the fallback when no skill fits.
 
 ## What subagents inherit (context delivery)
 
-Verified empirically on current CC (general-purpose subagent): custom and built-in subagents **do** inherit the main session's `CLAUDE.md`, `MEMORY.md`, and every **unconditional** `~/.claude/rules/*.md` (those with no `paths:` frontmatter — including `ast-index.md`, `orchestration.md`, `external-sources.md`, `qa-and-testing.md`). They already carry the always-on rules — do **not** re-paste them into the delegation prompt.
+**[Claude Code]** Custom and built-in subagents inherit the main session's `CLAUDE.md`, `MEMORY.md`, and every unconditional `~/dotfiles/ai/shared/rules/*.md` (those with no `paths:` frontmatter). They already carry the always-on rules — do **not** re-paste them into the delegation prompt.
 
-Two gaps the subagent does **not** get automatically — restate these in the prompt only when they matter:
-- **`paths:`-scoped rules** (`kotlin-style.md`, `gradle-style.md`, `android-cli.md`, `logging.md`, …) load lazily when a matching file is read — absent at subagent startup. If the subagent must honor such a rule before it touches a matching file, restate the key point or point it at the file path.
-- **Explore and Plan** skip `CLAUDE.md` + rules entirely for speed (per CC docs — not separately verified here). For an Explore/Plan agent that must use ast-index, include the directive below.
+Two gaps the subagent does **not** get automatically (Claude Code):
+- **`paths:`-scoped rules** (`kotlin-style.md`, `gradle-style.md`, `android-cli.md`) load lazily when a matching file is read. If the subagent must honor such a rule before it touches a matching file, restate the key point.
+- **Explore and Plan** skip rules entirely for speed. For such agents that need ast-index, include the directive below.
 
-**What to put in a delegation prompt** (the rest is inherited): the task; the relevant paths/modules; constraints (what not to touch, forbidden tools); the expected output shape; and any `paths:`-scoped rule or Explore/Plan-missing rule that applies.
+**For all agents** — what to put in a delegation prompt: the task; the relevant paths/modules; constraints (what not to touch, forbidden tools); the expected output shape; any scoped rule that applies.
 
-**ast-index directive** (needed only for Explore/Plan, or an agent doing code search before its rule loads):
+**ast-index directive** (for any agent doing code search before the rule loads):
 
 > Use `ast-index` via Bash before Grep: `search "q"`, `file "Name"`, `class "Name"`, `usages "Name"`, `implementations "Name"`, `callers "fn"`. Grep only when ast-index is empty or for regex/string-literal search. Before `Read` on a file >~500 lines, run `ast-index outline <file>` and Read only the targeted slice via `offset`/`limit`. On "Index not found" → `ast-index rebuild`, never fall back to Grep.
 
-(Index kept fresh by hooks — see `rules/ast-index.md`.)
+## Model & effort
 
-## Model & effort — two independent levers
-
-Dispatch is a **(model × effort)** choice, not a model downgrade. Tune both to reach the result efficiently — running Opus everywhere at *lower* effort is a valid strategy when intelligence matters but cost/latency don't.
-
-**Mechanics (what's actually settable):**
-- **Model** — per call via the Agent tool's `model:` (`sonnet` / `opus` / `haiku` / `fable` / full id / `inherit`; default `inherit` = the main model). Set it explicitly — `inherit` silently keeps the expensive main model.
-- **Effort** — `low | medium | high | xhigh | max`, but **only on Opus 4.x / Sonnet 4.6 / Fable; Haiku has no effort knob** (assigning effort to a Haiku agent errors). Effort is **not** a per-call Agent param — it comes from the agent definition's `effort:` frontmatter or the inherited session `/effort` (subagents inherit the session level as baseline; frontmatter overrides). For per-task effort control, pin `effort:` in the agent's frontmatter or use a Workflow (`agent({effort})`). `max` is session-only and never persists.
+Dispatch is a **(model × effort)** choice. Tune both to reach the result efficiently.
 
 **Heuristic:**
-- Mechanical / search / lookup / admin CRUD → **haiku** (no thinking; effort N/A).
-- Substantive but bounded (implementation, refactor, code review, manual QA, build engineering) → **sonnet**, or **opus at low–medium**.
-- Hard reasoning (planning, architecture, security/perf/UX review, debugging root cause, ambiguous trade-offs) → **opus at high–xhigh/max**.
+- Mechanical / search / lookup / admin CRUD → cheapest/fastest model (no extended thinking).
+- Substantive but bounded (implementation, refactor, code review, manual QA) → mid-tier model.
+- Hard reasoning (planning, architecture, security/perf/UX review, debugging root cause, ambiguous trade-offs) → top-tier model at high effort.
 - Unclear model between two adjacent tiers → pick the **smaller**, bump on first failure. Unclear effort → start **lower**, bump if the result comes back thin.
+
+**[Claude Code]** Model param: `sonnet` / `opus` / `haiku` / `fable` / full id / `inherit` on the Agent tool. Effort: `low | medium | high | xhigh | max` on Opus 4.x / Sonnet 4.6 / Fable (Haiku has no effort knob). Set model explicitly — `inherit` silently keeps the expensive main model.
 
 ## Routing — choose from what's available
 
-No fixed task→agent table. The harness already lists the agents available **in this project** with descriptions — match the task to the best-fit available agent by reading those, then apply the model/effort heuristic above. This stays correct as the available set changes per project (plugins enabled/disabled) instead of pointing at agents that aren't loaded.
+No fixed task→agent table. Match the task to the best-fit available agent/tool, then apply the model/effort heuristic above.
 
-**Non-obvious routing & guardrails** (won't be inferred from agent descriptions):
-- **Planning / architecture / synthesis → keep in the main session** (or the `Plan` agent). Never delegate the *reasoning*. To turn a decided change into a committed, reviewable plan document, use the **`/write-plan`** skill — it structures the plan and runs multiexpert-review without handing off the thinking. (For deciding *what* to build / comparing options use `research`; for the feature contract use `/write-spec`.)
+**Non-obvious routing & guardrails:**
+- **Planning / architecture / synthesis → keep in the main session.** Never delegate the *reasoning*.
 - Security / performance / UX / code review → the matching **expert agent**, never the main session.
-- Code research / "find X / where is Y used" → **Explore** (haiku).
-- Long-running build / test / CI → **general-purpose in the background**, never blocking the main session.
-- Implementation in a stack → the stack specialist (Kotlin/Compose/Swift engineer) **when its plugin is available**; else general-purpose.
-- Skill-first: if an installed skill covers the task, use it over a direct Agent.
-- PR/MR, issue, or Projects-board work (incl. delegated `gh`/`glab`): the idempotent, timeout-safe toolkit in `$HOME/.claude/scripts/gh/` + `rules/github-ops.md` / `rules/github-merge-policy.md`. Never block on `gh run watch` / `gh pr checks --watch`.
-
-## Plan mode
-
-Plan mode restricts agents to Explore (Phase 1, default haiku) and Plan (Phase 2, default opus) — compatible with the routing above. These rules apply after `ExitPlanMode`.
+- Code research / "find X / where is Y used" → search specialist (cheapest model).
+- Long-running build / test / CI → background subagent, never blocking the main session.
+- Implementation in a stack → the stack specialist when available; else general-purpose.
+- PR/issue/board work: use the idempotent, timeout-safe toolkit in `$HOME/dotfiles/ai/shared/scripts/gh/`. Never block on `gh run watch` / `gh pr checks --watch`.
 
 ## Override
 
@@ -83,8 +74,6 @@ The user can cancel delegation ("do it yourself", "don't delegate", "write it by
 
 ## Anti-patterns (beyond the Forbidden list)
 
-- Leaving `model:` at default `inherit` without an explicit choice — the Haiku/Sonnet savings are lost.
+- Leaving model at default without an explicit choice — the savings are lost.
 - Delegating planning — the main session's synthesis power is wasted.
-- Подмена гейта `/finalize` разовым вызовом `code-reviewer`. `/finalize` — это полный review→fix→simplify loop; одиночное ревью оставляет его наполовину незавершённым (fix и simplify не выполнены). «Код уже отревьюен» гейт не закрывает.
-- Сокращение profile-triggered reviewer panel. Если skill / профиль определяет panel правилами (`primary` + regex-matched `optional_if`) — использовать **весь** triggered set. «Эта область уже разобрана в прошлом ревью другого артефакта» — не основание для пропуска: research / spec / test-plan — разные тексты, разные failure modes, разные перспективы. Cost extra agent: 2-5 минут; cost пропуска: gap который вылезет после approval (свежий кейс — `desktop-v2-spec`: сократил panel 5→3, пропустил drag-positioning gap, который UX/perf ревьюер увидел бы сразу). Полный triggered set применять всегда, даже если кажется дублированием.
-
+- Сокращение reviewer panel. Если skill / профиль определяет panel правилами — использовать **весь** triggered set. «Эта область уже разобрана» — не основание для пропуска. Полный triggered set применять всегда.
