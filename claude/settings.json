@@ -1,0 +1,57 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-activate.sh\"",
+            "timeout": 5,
+            "statusMessage": "Loading caveman mode..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-tracker.sh\"",
+            "timeout": 5,
+            "statusMessage": "Tracking caveman mode..."
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/dotfiles/ai/claude/hooks/caveman-statusline.sh\""
+  },
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true,
+    "gitlab@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "caveman@caveman": true,
+    "superpowers@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "ast-index@ast-index-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    },
+    "ast-index-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "defendend/Claude-ast-index-search"
+      }
+    }
+  },
+  "agentPushNotifEnabled": true,
+  "inputNeededNotifEnabled": true
+}

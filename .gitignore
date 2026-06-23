@@ -1,0 +1,9 @@
+# Backups created by setup.sh
+.backup/
+
+# OS
+.DS_Store
+
+# Конфликт-файлы от auto-pull
+*.remote
+.sync-status
