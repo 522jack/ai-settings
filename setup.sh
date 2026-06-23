@@ -33,6 +33,23 @@ echo "  Claude Code: ~/.claude/CLAUDE.md → $REPO/claude/CLAUDE.md"
 echo "  Claude Code: ~/.claude/settings.json → $REPO/claude/settings.json"
 echo "  Claude Code: ~/.claude/hooks → $REPO/claude/hooks"
 
+# Skills (symlink each skill dir individually — don't replace existing dirs)
+mkdir -p "$HOME/.claude/skills" "$HOME/.codex/skills"
+
+for skill_dir in "$REPO/shared/skills"/*/; do
+    skill_name="$(basename "$skill_dir")"
+    # Claude Code
+    target_claude="$HOME/.claude/skills/$skill_name"
+    [ -d "$target_claude" ] && [ ! -L "$target_claude" ] && { mkdir -p "$BACKUP"; cp -r "$target_claude" "$BACKUP/"; rm -rf "$target_claude"; }
+    ln -sf "$skill_dir" "$target_claude"
+    # Codex
+    target_codex="$HOME/.codex/skills/$skill_name"
+    [ -d "$target_codex" ] && [ ! -L "$target_codex" ] && { mkdir -p "$BACKUP"; cp -r "$target_codex" "$BACKUP/"; rm -rf "$target_codex"; }
+    ln -sf "$skill_dir" "$target_codex"
+done
+
+echo "  Skills: ~/.claude/skills/* and ~/.codex/skills/* → $REPO/shared/skills/*"
+
 # Codex
 mkdir -p "$HOME/.codex"
 
