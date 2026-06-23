@@ -5,9 +5,29 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/auto-pull.sh\"",
+            "timeout": 30,
+            "statusMessage": "Syncing ai config..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-activate.sh\"",
             "timeout": 5,
             "statusMessage": "Loading caveman mode..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-context-mode-heal.sh\"",
+            "timeout": 10,
+            "statusMessage": "Healing context-mode cache..."
           }
         ]
       }
@@ -20,6 +40,45 @@
             "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-tracker.sh\"",
             "timeout": 5,
             "statusMessage": "Tracking caveman mode..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/cross-repo-guard.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/branch-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/stash-reminder.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/ast-index-bootstrap-worktree.sh\"",
+            "timeout": 120
           }
         ]
       }
