@@ -23,6 +23,7 @@
 @$HOME/dotfiles/ai/shared/rules/task-types.md
 @$HOME/dotfiles/ai/shared/rules/task-execution.md
 @$HOME/dotfiles/ai/shared/rules/workflow.md
+@$HOME/dotfiles/ai/shared/rules/ast-index.md
 
 ## Синхронизация конфигурации (для Codex)
 
