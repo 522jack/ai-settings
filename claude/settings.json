@@ -330,6 +330,14 @@
             "statusMessage": "Healing context-mode cache..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/evgeniy/.claude/hooks/context-mode-cache-heal.mjs\""
+          }
+        ]
       }
     ],
     "SessionEnd": [
