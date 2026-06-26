@@ -520,5 +520,6 @@
       ]
     }
   },
-  "mcpServers": {}
+  "mcpServers": {},
+  "enableWorkflows": true
 }
