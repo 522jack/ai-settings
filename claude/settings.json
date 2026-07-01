@@ -409,7 +409,7 @@
   },
   "enabledPlugins": {
     "caveman@caveman": true,
-    "superpowers@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false,
     "figma@claude-plugins-official": true,
     "gitlab@claude-plugins-official": true,
     "github@claude-plugins-official": true,
