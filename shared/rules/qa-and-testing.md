@@ -17,11 +17,11 @@ Levels are strictly sequential — each requires the previous to pass. Start at 
 | L2 | Unit tests | fast, no device, pure logic |
 | L3 | UI tests | automated, need emulator/device |
 | L4 | E2E tests | full automated flow |
-| L5 | Manual verification | mobile MCP / `manual-tester` on the running app |
+| L5 | Manual verification | runtime QA tools / `manual-tester` equivalent on the running app |
 
 **L5 mandatory for:** library version bumps (even patch), tech/framework migrations, infra-layer changes (network, storage, auth, DI), any "shouldn't affect behavior" task — verify at runtime, don't assume.
 
-**L5 — close it yourself, autonomously.** Not "for the user to run." Drive the app via mobile MCP (`mcp__mobile__*`) / `manual-tester` on an emulator/simulator **by default**; physical device only when the change needs real hardware an emulator can't reproduce (biometric HAL, camera, NFC, GPS, sensor fusion). Check availability empirically (`adb devices -l`, `emulator -list-avds`, `xcrun simctl list`) — never declare L5 infeasible from theory; if a needed AVD/image isn't installed but is easy to get, install and run. Build/install the APK yourself, drive the flow, emulate inputs. User involvement is **last resort** — only genuine walls: credentials you can't obtain, a backend on a closed/VPN network you're not on, or behavior that exists only on physical hardware.
+**L5 — close it yourself, autonomously.** Not "for the user to run." Drive the app through the current runtime adapter: mobile MCP (`mcp__mobile__*`), Codex/browser/mobile tools, Playwright, `manual-tester`, or the closest real device/browser equivalent. Use an emulator/simulator **by default**; physical device only when the change needs real hardware an emulator can't reproduce (biometric HAL, camera, NFC, GPS, sensor fusion). Check availability empirically (`adb devices -l`, `emulator -list-avds`, `xcrun simctl list`) — never declare L5 infeasible from theory; if a needed AVD/image isn't installed but is easy to get, install and run. Build/install the APK yourself, drive the flow, emulate inputs. User involvement is **last resort** — only genuine walls: credentials you can't obtain, a backend on a closed/VPN network you're not on, or behavior that exists only on physical hardware.
 
 ### L5 log capture — filter, scope, redact
 
@@ -59,7 +59,7 @@ Whoever breaks existing tests fixes them in the same PR. `@Ignore` / `xit` / `t.
 
 ## 5. Test infrastructure — project-defined
 
-The concrete runner, task names, and commands are the **project's** responsibility — read them from the project's own instructions (`<repo>/CLAUDE.md`) or build config, not from a universal table here. If the project doesn't specify, infer from root marker files (`build.gradle*` / `Package.swift` / `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` / `Makefile`) plus the build config — and **block and ask** wherever a guess would be wrong: Xcode scheme/destination, Python runner flags, which module owns the changed files in a monorepo.
+The concrete runner, task names, and commands are the **project's** responsibility — read them from the project's runtime instruction files (`<repo>/AGENTS.md`, `<repo>/CLAUDE.md`, or equivalent) or build config, not from a universal table here. If the project doesn't specify, infer from root marker files (`build.gradle*` / `Package.swift` / `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` / `Makefile`) plus the build config — and **block and ask** wherever a guess would be wrong: Xcode scheme/destination, Python runner flags, which module owns the changed files in a monorepo.
 
 ## 6. Verification source of truth
 
@@ -77,4 +77,3 @@ A mandatory planning output — defines "done", the contract `/acceptance` verif
 **Behavioral baseline:** for "shouldn't affect behavior" / "migrate without breaking" the before-state IS the truth. Full definition — what qualifies, what does not, the test-coverage shortcut — lives in [[task-types]] § Before-state baseline (single source). In short: capture before any change (screenshots / `manual-tester` session / `e2e-scenario.md`), save to `swarm-report/<slug>-baseline.md`, then `/acceptance` verifies after-state matches 1:1. "should be fine" is not a source of truth.
 
 **Absent source:** if none exists and creating one isn't feasible, document in the plan: intended behavior (one paragraph), why no formal source, what proxy is used (e.g. manual walkthrough vs task description). `/acceptance` Step 1.5 blocks when no source is found and proposes the upstream skill; the justification supplies the proxy — it does not bypass the gate.
-

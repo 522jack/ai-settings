@@ -91,7 +91,7 @@ Read the task description and the plan (if a path is provided). Extract:
 - Acceptance criteria (from plan)
 - Scope boundaries (what should and should NOT be in this change)
 
-Read any `## Non-negotiables` sections from the applicable `CLAUDE.md` files (project root, global, plugin-specific). Any diff change that violates a non-negotiable is automatically **critical, confidence 100** — do not apply the reporting filter to these, and do not downgrade them.
+Read any `## Non-negotiables` sections from the applicable runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent: project root, global, plugin-specific). Any diff change that violates a non-negotiable is automatically **critical, confidence 100** — do not apply the reporting filter to these, and do not downgrade them.
 
 ### Step 2: Read the diff
 Read the git diff carefully. For each changed file:
@@ -196,9 +196,9 @@ Not required
 Use exactly one of these values. Do not interpolate.
 
 - **0** — Low confidence. This looks like a false positive under even light scrutiny, or it is a pre-existing issue outside the diff.
-- **25** — Somewhat confident. This might be a real issue, but it might also be a false positive — you could not verify. Stylistic concerns not explicitly called out in CLAUDE.md land here.
+- **25** — Somewhat confident. This might be a real issue, but it might also be a false positive — you could not verify. Stylistic concerns not explicitly called out in project instructions land here.
 - **50** — Moderately confident. Verified this is a real issue, but it may be a nitpick or rarely hit in practice. Relative to the rest of the PR, not very important.
-- **75** — Highly confident. Double-checked the issue and verified it is very likely real and will be hit in practice. The current approach is insufficient. Important finding — directly affects functionality, or directly mentioned in the relevant CLAUDE.md.
+- **75** — Highly confident. Double-checked the issue and verified it is very likely real and will be hit in practice. The current approach is insufficient. Important finding — directly affects functionality, or directly mentioned in the relevant project instructions.
 - **100** — Absolutely certain. Double-checked and confirmed. Evidence directly confirms the issue, and it will occur frequently in practice.
 
 ### Reporting filter

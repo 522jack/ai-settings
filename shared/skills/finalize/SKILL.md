@@ -4,7 +4,7 @@ description: >
   Run a code-quality pass over the current branch — multi-round review-and-fix loop that
   polishes how the code is written, not what it does. Runs a one-shot built-in /code-review
   deep scan, then code-reviewer, /simplify, optional pr-review-toolkit quartet, and conditional
-  expert reviews with /check between rounds; exits PASS when no BLOCK findings remain or ESCALATE after max rounds.
+  expert reviews with check between rounds; exits PASS when no BLOCK findings remain or ESCALATE after max rounds.
   Triggers: "finalize", "run code quality pass", "clean up the code", "prepare for review",
   "polish the code", "tidy up", "harden the implementation".
 ---
@@ -13,9 +13,9 @@ description: >
 
 Code-quality pass over the current branch. Multi-round review-and-fix loop focused on **how** the code is written (quality, clarity, robustness), not **what** it does (functional acceptance, owned by `acceptance`) or **whether it works** (build/lint/tests, owned by `/check`).
 
-`finalize` orchestrates a one-shot built-in `/code-review` deep scan + `code-reviewer` + `/simplify` + the optional `pr-review-toolkit` quartet + conditional expert reviews — none of those alone catches the full set of recurring patterns (removed-behavior regressions, cross-file breakage, wrong-altitude bandaids, over-engineered abstractions, silent failures, fragile types, weak coverage).
+`finalize` orchestrates a one-shot deep code review + `code-reviewer` + simplification pass + the optional `pr-review-toolkit` quartet + conditional expert reviews. In Claude Code those map to `/code-review` and `/simplify`; other runtimes must use the closest available equivalent and record any adapter limitation. None of those alone catches the full set of recurring patterns (removed-behavior regressions, cross-file breakage, wrong-altitude bandaids, over-engineered abstractions, silent failures, fragile types, weak coverage).
 
-**Author fixes broken tests** is enforced per `~/.claude/rules/qa-and-testing.md` § 4. A `/check` between phases that surfaces test failures triggers an inline fix in the same round — owned by the engineer agent that produced the change. Round-end exit is impossible while tests remain red.
+**Author fixes broken tests** is enforced per `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 4. A `check` run between phases that surfaces test failures triggers an inline fix in the same round — owned by the engineer specialist that produced the change. Round-end exit is impossible while tests remain red.
 
 ---
 
@@ -29,7 +29,7 @@ Code-quality pass over the current branch. Multi-round review-and-fix loop focus
 **Tolerance flags (optional):**
 
 - `--allow-warn` — stop after 1 round on WARN-only (default: PASS on WARN-only, keep iterating BLOCKs).
-- `--deep-scan-effort <auto|low|medium|high|xhigh|max>` — effort for the Phase 0 `/code-review` deep scan (default `auto`: scaled from the diff's risk signals — see Phase 0 § Effort selection). Pin an explicit level to override the auto choice in either direction.
+- `--deep-scan-effort <auto|low|medium|high|xhigh|max>` — effort for the Phase 0 deep scan (default `auto`: scaled from the diff's risk signals — see Phase 0 § Effort selection). Pin an explicit level to override the auto choice in either direction.
 - `--skip-deep-scan` — omit Phase 0 entirely (recorded verbatim in `acknowledged risks`). Phase 0 also auto-skips on trivial diffs.
 - `--skip-experts` — omit Phase D (rarely useful; experts auto-skip when no triggers match).
 - `--max-rounds N` (≥ 1) — override the default 3. Use after an ESCALATE for one more round without restarting.
@@ -40,15 +40,15 @@ Code-quality pass over the current branch. Multi-round review-and-fix loop focus
 
 ## Round structure
 
-Phase 0 runs **once**, before the loop. Then each round runs phases A → B → C → D sequentially. Between phases and after any auto-fix, invoke `/check`. Accumulate findings; at round end, exit or continue.
+Phase 0 runs **once**, before the loop. Then each round runs phases A → B → C → D sequentially. Between phases and after any auto-fix, invoke `check`. Accumulate findings; at round end, exit or continue.
 
 ```
-Phase 0 (once, pre-loop) → built-in /code-review deep scan → dedup vs Phase A → feed Round 1
+Phase 0 (once, pre-loop) → deep scan → dedup vs Phase A → feed Round 1
 Round N:
-  A  → code-reviewer          → fix BLOCK → /check
-  B  → /simplify (auto-fixes) → /check
-  C  → pr-review-toolkit quartet (parallel, if installed) → fix BLOCK → /check
-  D  → expert reviews (conditional, parallel)          → fix BLOCK → /check
+  A  → code-reviewer          → fix BLOCK → check
+  B  → simplification pass    → check
+  C  → pr-review-toolkit quartet (parallel, if installed) → fix BLOCK → check
+  D  → expert reviews (conditional, parallel)          → fix BLOCK → check
   Any unfixed BLOCK → round N+1 (up to max_rounds, default 3); else PASS
 ```
 
@@ -58,13 +58,13 @@ Round N:
 
 ---
 
-## Phase 0 — Deep scan (built-in `/code-review`, one-shot)
+## Phase 0 — Deep scan (one-shot)
 
-Runs **once per finalize run, before Round 1** — not per round. Captures the **correctness recall** the built-in `/code-review` harness provides and the other phases do not: line-by-line bug scan, removed-behavior auditing, and cross-file tracing, backed by an independent verify step. That recall comes from the harness's multi-angle fan-out + verify — paraphrasing its angle names into another agent's brief does **not** substitute for running it, so the real command is wired in rather than imitated. Its cleanup/altitude/conventions angles overlap Phases B and A and are discarded at ingestion (see Feed into the loop) — Phase 0 is a correctness layer, not a cleanup one.
+Runs **once per finalize run, before Round 1** — not per round. Captures the **correctness recall** the runtime's strongest available code-review harness provides: line-by-line bug scan, removed-behavior auditing, and cross-file tracing, ideally backed by an independent verify step. In Claude Code this is the built-in `/code-review`; in other runtimes use the closest equivalent and record `adapter limitation: no deep-scan equivalent` if unavailable. Its cleanup/altitude/conventions findings overlap Phases B and A and are discarded at ingestion (see Feed into the loop) — Phase 0 is a correctness layer, not a cleanup one.
 
 **Skip when the diff is trivial** (same bar as `test-coverage-expert`): single file, < 50 LOC, refactor-only, no new public API. Log `phase: 0, status: skipped, reason: trivial diff`. Also skipped by `--skip-deep-scan` (logged in `acknowledged risks`).
 
-**Invocation.** Invoke the **built-in** `/code-review` — the core skill, unqualified name `code-review`, NOT the `code-review:code-review` marketplace plugin (which needs a PR number and cannot review a working tree) — in **report mode** against the branch diff:
+**Invocation.** Invoke the runtime's deep-scan tool in **report mode** against the branch diff. Claude Code mapping: use the **built-in** `/code-review` — the core skill, unqualified name `code-review`, NOT the `code-review:code-review` marketplace plugin (which needs a PR number and cannot review a working tree):
 
 - effort from `--deep-scan-effort` (default `auto`, resolved below); **no `--fix`** (severity triage is owned by finalize's fix loop, not the harness), **no `--comment`** (this gate runs pre-PR on a working tree).
 - The harness reviews the current-branch diff + uncommitted changes and returns a JSON array of findings (`file`, `line`, `summary`, `failure_scenario`), most-severe first.
@@ -76,24 +76,24 @@ Scale recall to blast radius using signals finalize already materializes pre-loo
 | Tier | Fires when (any) |
 |---|---|
 | **max** | ≥ 1 *narrow* security pattern in the diff, OR declared `risk_areas` ∈ {auth, payment, pii, data-migration}, OR a DB-migration path — same bar that triggers a full Phase D security review; a missed bug here is the most expensive. |
-| **xhigh** | tech / infra-layer change (network, storage, auth, DI per `~/.claude/rules/task-types.md`), OR new public API spanning ≥ 2 modules, OR diff > 500 LOC or > 15 files. High blast radius. |
+| **xhigh** | tech / infra-layer change (network, storage, auth, DI per `$HOME/dotfiles/ai/shared/rules/task-types.md`), OR new public API spanning ≥ 2 modules, OR diff > 500 LOC or > 15 files. High blast radius. |
 | **high** | new public API symbol, OR cross-module dependency change, OR diff > 150 LOC or > 6 files. Default for substantive features. |
 | **medium** | everything else above the trivial-skip bar — localized change, no risk signal. |
 
 Record the resolved tier and the signal that picked it in the report (`Phase 0 (deep scan): effort=xhigh — reason: infra-layer (network)`), so a surprising cost is traceable to a concrete trigger and the thresholds can be tuned against real runs.
 
-**Binding check.** On the maintainer's machine the unqualified `/code-review` binds the built-in recall harness (empirically confirmed: its first step is a working-tree `git diff`, not a PR-number lookup). In a foreign / public install where the marketplace shadow could bind instead, detect it: if the invoked command demands a PR number rather than diffing the working tree, it bound the wrong instance → skip Phase 0, log `reason: /code-review bound marketplace shadow`, continue to Phase A. **Never pass a PR number to satisfy it.**
+**Binding check.** On Claude Code, the unqualified `/code-review` should bind the built-in recall harness (empirically confirmed on the maintainer's machine: its first step is a working-tree `git diff`, not a PR-number lookup). In a foreign / public install where the marketplace shadow could bind instead, detect it: if the invoked command demands a PR number rather than diffing the working tree, it bound the wrong instance → skip Phase 0, log `reason: /code-review bound marketplace shadow`, continue to Phase A. **Never pass a PR number to satisfy it.**
 
 **Feed into the loop — correctness only (avoid double work).** Phase 0 exists for the recall the other phases lack: real bugs, **removed-behavior regressions**, and **broken call sites**, backed by the harness's independent verify step. Ingest ONLY those — findings whose `failure_scenario` is a concrete crash / wrong-output / data-loss / dropped-guard / broken-caller.
 
 **Discard the rest at ingestion**, because other phases own those lanes and *act* on them:
-- reuse / simplification / efficiency / altitude findings → **Phase B `/simplify`** (the same four angles, same lineage — `/simplify` and `/code-review` split from one command — and Phase B applies the fix, not just reports it). Re-acting here doubles the work.
-- conventions / `CLAUDE.md` findings → **Phase A `code-reviewer`** (owns conformance + the Non-negotiables-always-BLOCK rule).
+- reuse / simplification / efficiency / altitude findings → **Phase B simplification** (Claude Code mapping: `/simplify`) because Phase B applies the fix, not just reports it. Re-acting here doubles the work.
+- conventions / project-instruction findings → **Phase A `code-reviewer`** (owns conformance + the Non-negotiables-always-BLOCK rule).
 - correctness findings that overlap Phase A → dedup (same defect + location → keep one; Phase A wins, it adds plan-conformance / Non-negotiables context).
 
-Surviving correctness findings enter **Round 1**'s fix loop, graded by `failure_scenario` (crash / wrong-output / data-loss / dropped-guard → critical or major BLOCK). Fixes go through the normal fix → `/check` cycle. Phase 0 is **not** re-run in later rounds.
+Surviving correctness findings enter **Round 1**'s fix loop, graded by `failure_scenario` (crash / wrong-output / data-loss / dropped-guard → critical or major BLOCK). Fixes go through the normal fix → `check` cycle. Phase 0 is **not** re-run in later rounds.
 
-**Compute note.** `/code-review` is monolithic — it runs all eight angles, including the four cleanup ones whose output we discard. That wasted fan-out is the price of the verify step plus removed-behavior / cross-file recall that nothing else provides; `auto` effort keeps it bounded, and the harness ranks correctness first under its own output cap, so even a lower effort still surfaces the bugs we keep. If profiling later shows the duplicate cleanup fan-out dominates cost, the lever is to drop Phase 0's effort, not to also fix cleanup twice.
+**Compute note.** Some deep-scan tools are monolithic and run cleanup angles whose output we discard. That wasted fan-out is the price of the verify step plus removed-behavior / cross-file recall; `auto` effort keeps it bounded. If profiling later shows duplicate cleanup fan-out dominates cost, the lever is to drop Phase 0's effort, not to also fix cleanup twice.
 
 ---
 
@@ -101,27 +101,27 @@ Surviving correctness findings enter **Round 1**'s fix loop, graded by `failure_
 
 Launch `code-reviewer` (from `developer-workflow-experts`) with task description verbatim, plan artifact path (`docs/plans/<slug>/plan.md`, else legacy `swarm-report/<slug>-plan.md`) if it exists, and `git diff` of all branch changes. Returns PASS / WARN / FAIL with findings on the 0/25/50/75/100 confidence rubric (only above-threshold findings surface).
 
-Non-negotiables violations from applicable `CLAUDE.md` `## Non-negotiables` are always BLOCK regardless of confidence — never moved to "acknowledged risks".
+Non-negotiables violations from applicable runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent) are always BLOCK regardless of confidence — never moved to "acknowledged risks".
 
 | Severity × confidence | Action |
 |---|---|
-| critical ≥ 75 | Fix immediately, re-run `/check`. PASS + resolved → BLOCK cleared. Doesn't converge → stays BLOCK, round ends without PASS. Never silently downgrade to "acknowledged risk". |
+| critical ≥ 75 | Fix immediately, re-run `check`. PASS + resolved → BLOCK cleared. Doesn't converge → stays BLOCK, round ends without PASS. Never silently downgrade to "acknowledged risk". |
 | major ≥ 75 | Fix if tractable. Refactor beyond diff → escalate; remains BLOCK until caller resolves or moves to "acknowledged risks" at ESCALATE. |
 | minor ≥ 50 | NIT in report. Don't auto-fix; never blocks PASS. |
 
 FAIL verdict → this phase has BLOCKs to address before continuing.
 
-**Why Phase A keeps a dedicated `code-reviewer` alongside Phase 0's `/code-review`.** Phase A's `code-reviewer` (from `developer-workflow-experts`) is **not** replaced by the built-in `/code-review`: it owns plan-conformance anchoring and the rule "a `CLAUDE.md` Non-negotiables violation is always BLOCK regardless of confidence" — neither of which the generic `/code-review` performs. The recall the built-in harness adds (removed-behavior, cross-file, altitude, line-by-line correctness) is captured separately by **Phase 0**, deduped against Phase A, rather than by swapping Phase A's reviewer.
+**Why Phase A keeps a dedicated `code-reviewer` alongside Phase 0.** Phase A's `code-reviewer` is **not** replaced by a generic deep scan: it owns plan-conformance anchoring and the rule "a project-instruction Non-negotiables violation is always BLOCK regardless of confidence" — neither of which generic code-review tools reliably perform. The recall the deep-scan harness adds (removed-behavior, cross-file, altitude, line-by-line correctness) is captured separately by **Phase 0**, deduped against Phase A, rather than by swapping Phase A's reviewer.
 
-An earlier version of this gate omitted `/code-review` entirely, on the theory that "a third generic reviewer stacked on Phase A + Phase C only raises duplication." That was contradicted empirically — `/code-review` surfaces real findings the dedicated reviewer and the Phase C quartet miss (removed guards, broken call sites, bandaid-altitude fixes) — so per `~/.claude/CLAUDE.md` (empirical claims beat armchair theory) the harness is now wired in as a **deduped one-shot (Phase 0)**, not stacked per round. The `code-review:code-review` marketplace plugin remains avoided by name (it needs a PR number and reviews no working tree); Phase 0 binds the **core** built-in and degrades gracefully if a foreign install shadows it (see Phase 0 Binding check). The cloud `/code-review ultra` stays a manual pre-merge escape OUTSIDE this gate.
+An earlier version of this gate omitted deep scan entirely, on the theory that "a third generic reviewer stacked on Phase A + Phase C only raises duplication." That was contradicted empirically in Claude Code — `/code-review` surfaced real findings the dedicated reviewer and Phase C missed — so per `$HOME/dotfiles/ai/shared/AGENTS.md` (empirical claims beat armchair theory) the harness wires deep scan in as a **deduped one-shot (Phase 0)**, not stacked per round. The `code-review:code-review` marketplace plugin remains avoided by name in Claude Code (it needs a PR number and reviews no working tree); Phase 0 degrades gracefully when no correct deep-scan adapter exists.
 
 ---
 
-## Phase B — Built-in simplification (`/simplify`)
+## Phase B — Simplification
 
-Invoke `/simplify`: parallel reuse / quality / efficiency pass that **applies fixes directly**. Treated as a behavioural contract; internal structure may evolve. Coverage: reuse (duplicated logic), quality (redundant state, parameter sprawl, leaky abstractions, stringly-typed, unnecessary comments), efficiency (redundant work, missed concurrency, hot-path bloat, TOCTOU, leaks). Don't pre-review output — trust it, then `/check`.
+Invoke the runtime's simplification pass. Claude Code mapping: `/simplify`. It is a parallel reuse / quality / efficiency pass that **applies fixes directly**. Treated as a behavioural contract; internal structure may evolve. Coverage: reuse (duplicated logic), quality (redundant state, parameter sprawl, leaky abstractions, stringly-typed, unnecessary comments), efficiency (redundant work, missed concurrency, hot-path bloat, TOCTOU, leaks). Don't pre-review output — trust it, then run `check`.
 
-**On `/check` FAIL after `/simplify`:** revert the simplify commits (or the last commit if unambiguously from `/simplify`), log `phase: B, reason: revert`, continue to Phase C. Do not re-invoke `/simplify` in the same round.
+**On `check` FAIL after simplification:** revert the simplify commits (or the last commit if unambiguously from the simplification pass), log `phase: B, reason: revert`, continue to Phase C. Do not re-invoke simplification in the same round.
 
 **Round-budget semantic.** Phase B is transformative, not a finding-generator. A revert does NOT introduce an unresolved BLOCK and does NOT consume budget — the round continues through C and D. Distinct from `/check` failure after Phase A/C/D fix (§Mechanical verification), where the originating finding stays BLOCK.
 
@@ -197,7 +197,7 @@ Same severity × confidence gate as Phase A. Specifics:
 
 ### `test-coverage-expert` (conditional)
 
-Late-stage coverage audit complementing the early `/check` Phase 3.5 gate (#154). Catches declared TCs not implemented, data-layer changes without integration tests, and gaps the engineer agent missed. Public-API rule is defined in `~/.claude/rules/qa-and-testing.md` § 1; priority framework (P0–P3) in § 2.
+Late-stage coverage audit complementing the early `check` Phase 3.5 gate (#154). Catches declared TCs not implemented, data-layer changes without integration tests, and gaps the engineer specialist missed. Public-API rule is defined in `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 1; priority framework (P0–P3) in § 2.
 
 **Trigger when ANY:** (1) diff adds a public API symbol with no matching test file (per § 1); (2) `docs/testplans/<slug>-test-plan.md` declares TCs without matching implementation in test sources for this slug — cross-reference by TC `Type` (#153) plus name / file mention, interpreted by the agent, not regex; (3) diff touches data-layer / repository / service / use-case files without introducing or updating tests; (4) `--coverage-audit`.
 

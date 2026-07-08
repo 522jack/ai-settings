@@ -1,6 +1,6 @@
 # Orchestration Rules
 
-Main session = orchestrator on the most capable (expensive) model — its value is reasoning, planning, synthesis. Hands-on coding goes to specialists, dispatched at the right **model × effort**; keep the main session for decisions.
+Main session = orchestrator on the most capable available model — its value is reasoning, planning, synthesis. Hands-on coding goes to specialists, dispatched through the current runtime adapter at the right **model × effort**; keep the main session for decisions.
 
 **May:** orientation research (Reads until focus drifts, targeted Bash, `git status`/`log`/`ls`/`pwd`, single-page MCP/web lookups, WebFetch); edit process working files (state/report/debug/plan, `~/dotfiles/ai/**`); plan synthesis from specialist summaries; final synthesis + the user-facing answer; subagent/skill invocation with the right model.
 **Must not:** edit project production code, do heavy multi-file code search, or wait on long-running build/test/CI in its own context.
@@ -12,7 +12,7 @@ Main session = orchestrator on the most capable (expensive) model — its value 
 | State / reports / debug logs | `swarm-report/<slug>-{state,report,debug,e2e-scenario}.md` |
 | Plan files | files created in the current plan/task |
 | Session notes | `MEMORY.md`, files in `memory/`, scratch files for the task |
-| Global rules and configs | `~/dotfiles/ai/shared/AGENTS.md`, `~/dotfiles/ai/shared/rules/**`, `~/dotfiles/ai/claude/settings*.json`, hooks |
+| Global rules and configs | `~/dotfiles/ai/shared/AGENTS.md`, `~/dotfiles/ai/shared/rules/**`, runtime adapters (`~/dotfiles/ai/claude/**`, `~/dotfiles/ai/codex/**`), hooks |
 | Process docs | READMEs/docs inside `~/dotfiles/ai/` |
 
 These are **process** files, not project code — editing them is orchestration, not implementation.
@@ -30,7 +30,18 @@ These are **process** files, not project code — editing them is orchestration,
 
 Task matches an installed skill → use the skill (it knows the right agent/model sequence). Direct subagent is the fallback when no skill fits.
 
-## What subagents inherit (context delivery)
+## Runtime adapter first
+
+Shared workflow terms are defined in `runtime-adapter.md`. Before delegating or invoking a named
+workflow, map the contract to the current runtime's actual tools:
+
+- Claude Code: custom agents, `Explore`, hooks, slash commands, and Skill tool are native.
+- Codex: use installed skills and multi-agent tools when available; if a specific delegation tool is not available, state the adapter limitation and use the closest safe equivalent.
+- Other agents: read `SKILL.md` files manually and preserve artifact/verdict contracts even when tool names differ.
+
+Do not encode a new shared rule that only one runtime can execute unless it also names the fallback.
+
+## What specialists inherit (context delivery)
 
 **[Claude Code]** Custom and built-in subagents inherit the main session's `CLAUDE.md`, `MEMORY.md`, and every unconditional `~/dotfiles/ai/shared/rules/*.md` (those with no `paths:` frontmatter). They already carry the always-on rules — do **not** re-paste them into the delegation prompt.
 
@@ -38,7 +49,7 @@ Two gaps the subagent does **not** get automatically (Claude Code):
 - **`paths:`-scoped rules** (`kotlin-style.md`, `gradle-style.md`, `android-cli.md`) load lazily when a matching file is read. If the subagent must honor such a rule before it touches a matching file, restate the key point.
 - **Explore and Plan** skip rules entirely for speed. For such agents that need ast-index, include the directive below.
 
-**For all agents** — what to put in a delegation prompt: the task; the relevant paths/modules; constraints (what not to touch, forbidden tools); the expected output shape; any scoped rule that applies.
+**For all runtimes** — what to put in a delegation prompt: the task; the relevant paths/modules; constraints (what not to touch, forbidden tools); the expected output shape; any scoped rule that applies; adapter limitations if the runtime lacks the ideal tool.
 
 **ast-index directive** (for any agent doing code search before the rule loads):
 
@@ -56,6 +67,8 @@ Dispatch is a **(model × effort)** choice. Tune both to reach the result effici
 
 **[Claude Code]** Model param: `sonnet` / `opus` / `haiku` / `fable` / full id / `inherit` on the Agent tool. Effort: `low | medium | high | xhigh | max` on Opus 4.x / Sonnet 4.6 / Fable (Haiku has no effort knob). Set model explicitly — `inherit` silently keeps the expensive main model.
 
+**[Codex]** Prefer the runtime's default model unless the subtask clearly benefits from a cheaper or stronger override exposed by the multi-agent tool. If no effort knob exists for the chosen tool, record only the role/scope.
+
 ## Routing — choose from what's available
 
 No fixed task→agent table. Match the task to the best-fit available agent/tool, then apply the model/effort heuristic above.
@@ -63,7 +76,7 @@ No fixed task→agent table. Match the task to the best-fit available agent/tool
 **Non-obvious routing & guardrails:**
 - **Planning / architecture / synthesis → keep in the main session.** Never delegate the *reasoning*.
 - Security / performance / UX / code review → the matching **expert agent**, never the main session.
-- Code research / "find X / where is Y used" → search specialist (cheapest model).
+- Code research / "find X / where is Y used" → search specialist (`Explore`, Codex `explorer`, or equivalent) on the cheapest sufficient model.
 - Long-running build / test / CI → background subagent, never blocking the main session.
 - Implementation in a stack → the stack specialist when available; else general-purpose.
 - PR/issue/board work: use the idempotent, timeout-safe toolkit in `$HOME/dotfiles/ai/shared/scripts/gh/`. Never block on `gh run watch` / `gh pr checks --watch`.

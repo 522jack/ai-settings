@@ -3,14 +3,34 @@
 
 INPUT=$(cat)
 
-FILE_PATH=""
-if echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null | read -r path; then
-    FILE_PATH="$path"
-fi
+FILE_PATH=$(echo "$INPUT" | python3 -c '
+import sys, json
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
 
-if [ -z "$FILE_PATH" ]; then
-    FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path', d.get('filePath','')))" 2>/dev/null)
-fi
+def pick(obj):
+    if not isinstance(obj, dict):
+        return ""
+    for key in ("file_path", "filePath", "path"):
+        value = obj.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+for candidate in (
+    d,
+    d.get("tool_input"),
+    d.get("toolInput"),
+    d.get("tool_response"),
+    d.get("toolResponse"),
+):
+    path = pick(candidate)
+    if path:
+        print(path)
+        break
+' 2>/dev/null)
 
 [ -z "$FILE_PATH" ] && exit 0
 

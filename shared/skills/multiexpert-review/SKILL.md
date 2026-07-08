@@ -15,7 +15,7 @@ Engine for multi-agent independent review of a documentation artifact (plan, spe
 
 Protocol is PoLL (Panel of LLM Evaluators): independent parallel review per agent, structured severity/confidence output, confidence-weighted synthesis, disagreements surfaced as "requires decision" rather than silently resolved.
 
-Each reviewing agent must check the artifact against the `## Non-negotiables` sections in applicable `CLAUDE.md` files (project root, global, plugin-specific) before forming their opinion. Any proposed approach that violates a non-negotiable is automatically a blocker — critical severity, confidence 100, not subject to the reporting filter or trade-off discussion.
+Each reviewing agent must check the artifact against the `## Non-negotiables` sections in applicable runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent: project root, global, plugin-specific) before forming their opinion. Any proposed approach that violates a non-negotiable is automatically a blocker — critical severity, confidence 100, not subject to the reporting filter or trade-off discussion.
 
 ## Engine invariants (not overridable by profiles)
 
@@ -39,7 +39,7 @@ Read artifact + detect profile → discover agents, pre-select per `profile.revi
 
 ## Persistence (compaction resilience)
 
-Save state to `./swarm-report/multiexpert-review-<slug>-state.md` (or `multiexpert-review-<YYYYMMDD-HHMM>-state.md` if no slug known). Follow the persistent-state template conventions from `~/.claude/CLAUDE.md` § Context compaction resilience.
+Save state to `./swarm-report/multiexpert-review-<slug>-state.md` (or `multiexpert-review-<YYYYMMDD-HHMM>-state.md` if no slug known). Follow the persistent-state template conventions from the current runtime's project instructions.
 
 **Slug source** (priority order): explicit caller args (`slug:`), artifact frontmatter `slug:`, artifact filename without extension, timestamp fallback.
 

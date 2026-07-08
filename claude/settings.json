@@ -335,7 +335,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/Users/evgeniy/.claude/hooks/context-mode-cache-heal.mjs\""
+            "command": "\"$HOME/dotfiles/ai/claude/hooks/context-mode-cache-heal.mjs\""
           }
         ]
       }

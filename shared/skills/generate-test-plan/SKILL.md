@@ -69,7 +69,7 @@ Sources may be a text spec (PRD / AC / user story), a Figma mockup, or existing 
 
 ### Non-UI detector — when to use the lightweight template
 
-Non-UI test plan trigger — see `~/.claude/rules/qa-and-testing.md` § 3. When the trigger fires, drop mockup-driven sections (Steps / Expected Result columns) and produce TCs whose behaviour is fully captured by Given/When/Then — focus on input validation, state transitions, and error paths. Mixed features (backend + thin UI) default to the standard format.
+Non-UI test plan trigger — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 3. When the trigger fires, drop mockup-driven sections (Steps / Expected Result columns) and produce TCs whose behaviour is fully captured by Given/When/Then — focus on input validation, state transitions, and error paths. Mixed features (backend + thin UI) default to the standard format.
 
 When the detector triggers, note it in the Findings section of the permanent file:
 `**Lightweight template applied** — no UI surface detected; TCs use Given/When/Then only.`
@@ -129,7 +129,7 @@ This heuristic is the canonical reference for picking a TC type within this plug
 
 ### Priority
 
-Priority framework — see `~/.claude/rules/qa-and-testing.md` § 2.
+Priority framework — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 2.
 
 ### Tier
 
@@ -154,7 +154,7 @@ Every plan ends with a `## Non-functional / Instrumentation` section that declar
 
 `N/A: <reason>` (one line) is allowed for internal / developer-only tooling and for pure refactors with no change to observable behavior. Never delete the heading.
 
-The section covers five subsections — Log events / Metrics / Traces / Alerts / Dashboards (full template in [`references/format-templates.md`](references/format-templates.md#non-functional--instrumentation)). The skill reads naming and stack conventions (OpenTelemetry, Prometheus, StatsD, vendor-specific) from the project's `CLAUDE.md` and reuses them; it does not prescribe a stack. If the project has no convention, the skill asks one question and records the answer.
+The section covers five subsections — Log events / Metrics / Traces / Alerts / Dashboards (full template in [`references/format-templates.md`](references/format-templates.md#non-functional--instrumentation)). The skill reads naming and stack conventions (OpenTelemetry, Prometheus, StatsD, vendor-specific) from the project's runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent) and reuses them; it does not prescribe a stack. If the project has no convention, the skill asks one question and records the answer.
 
 Downstream stages consume this section:
 

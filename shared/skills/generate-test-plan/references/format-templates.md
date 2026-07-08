@@ -125,7 +125,7 @@ Test cases that are good candidates for automated testing.
 - New needed: yes / no, owner
 
 > Naming, namespacing, and stack (OTel, Prometheus, StatsD, vendor-specific) are
-> read from the project's `CLAUDE.md`. The skill does not prescribe a stack —
+> read from the project's runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent). The skill does not prescribe a stack —
 > it records what the project already uses, or asks one question if the
 > project has none.
 ```
