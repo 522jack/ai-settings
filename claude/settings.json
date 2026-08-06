@@ -1,26 +1,330 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "respectGitignore": true,
+  "advisorModel": "opus",
+  "agentPushNotifEnabled": true,
+  "alwaysThinkingEnabled": true,
+  "autoMemoryEnabled": true,
+  "channelsEnabled": true,
   "cleanupPeriodDays": 30,
+  "enabledPlugins": {
+    "ast-index@ast-index-marketplace": true,
+    "caveman@caveman": true,
+    "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "context-mode@context-mode": true,
+    "context7@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "gitlab@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "kotlin-lsp@claude-plugins-official": true,
+    "ksrc@respawn-tools": true,
+    "maven-mcp@krozov-ai-tools": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "remember@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false,
+    "warp@claude-code-warp": true
+  },
+  "enableWorkflows": true,
   "env": {
+    "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false"
   },
-  "language": "Russian",
-  "model": "opus",
-  "advisorModel": "opus",
-  "alwaysThinkingEnabled": true,
-  "tui": "fullscreen",
-  "channelsEnabled": true,
-  "autoMemoryEnabled": true,
-  "showClearContextOnPlanAccept": true,
-  "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true,
-  "remoteControlAtStartup": true,
-  "agentPushNotifEnabled": true,
+  "extraKnownMarketplaces": {
+    "ast-index-marketplace": {
+      "autoUpdate": true,
+      "source": {
+        "repo": "defendend/Claude-ast-index-search",
+        "source": "github"
+      }
+    },
+    "caveman": {
+      "source": {
+        "repo": "JuliusBrussee/caveman",
+        "source": "github"
+      }
+    },
+    "claude-code-warp": {
+      "source": {
+        "repo": "warpdotdev/claude-code-warp",
+        "source": "github"
+      }
+    },
+    "claude-in-mobile": {
+      "autoUpdate": true,
+      "source": {
+        "source": "git",
+        "url": "https://github.com/AlexGladkov/claude-in-mobile.git"
+      }
+    },
+    "context-mode": {
+      "autoUpdate": true,
+      "source": {
+        "repo": "mksglu/context-mode",
+        "source": "github"
+      }
+    },
+    "krozov-ai-tools": {
+      "source": {
+        "repo": "kirich1409/krozov-ai-tools",
+        "source": "github"
+      }
+    },
+    "respawn-tools": {
+      "source": {
+        "repo": "respawn-app/claude-plugin-marketplace",
+        "source": "github"
+      }
+    }
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "timeout": 86400,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/ast-index-bootstrap-worktree.sh\"",
+            "timeout": 120,
+            "type": "command"
+          }
+        ],
+        "matcher": "EnterWorktree"
+      },
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/cross-repo-guard.sh\"",
+            "timeout": 10,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/branch-guard.sh\"",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/stash-reminder.sh\"",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/ast-index-stop-watch.sh\"",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/auto-pull.sh\"",
+            "statusMessage": "Syncing ai config...",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-activate.sh\"",
+            "statusMessage": "Loading caveman mode...",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "ast-index update >/dev/null 2>&1 || ast-index rebuild >/dev/null 2>&1; if ast-index stats >/dev/null 2>&1; then [ \"$(git rev-parse --show-toplevel 2>/dev/null)\" = \"$HOME/dotfiles/ai\" ] || ( nohup ast-index watch >/dev/null 2>&1 & ); else echo '⚠ AST INDEX NOT AVAILABLE — run the matching ast-index:initialize-* skill before any code search'; fi",
+            "statusMessage": "Indexing codebase...",
+            "timeout": 120,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "git rev-parse --is-inside-work-tree 2>/dev/null && { echo ''; echo '=== GIT STATE ==='; echo \"Current branch: $(git rev-parse --abbrev-ref HEAD 2>/dev/null)\"; git rev-parse --git-dir 2>/dev/null | grep -qE '/\\.git/worktrees/' && echo 'Is worktree: yes' || echo 'Is worktree: no'; DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'); echo \"Default branch: ${DEFAULT:-(unknown -- run: git remote set-head origin --auto)}\"; echo 'Existing worktrees:'; git worktree list 2>/dev/null; echo 'Local feature branches:'; git branch 2>/dev/null | grep -vE '\\b(main|master|develop)\\b' | head -20; echo 'Remote feature branches:'; git branch -r 2>/dev/null | grep -vE '(\\b(main|master|develop)\\b|HEAD)' | head -10; echo '================='; echo ''; } || true",
+            "statusMessage": "Checking git state...",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-context-mode-heal.sh\"",
+            "statusMessage": "Healing context-mode cache...",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$HOME/dotfiles/ai/claude/hooks/context-mode-cache-heal.mjs\"",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-tracker.sh\"",
+            "statusMessage": "Tracking caveman mode...",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "/bin/sh -c '[ -x \"$HOME/.vibe-island/bin/vibe-island-bridge\" ] && \"$HOME/.vibe-island/bin/vibe-island-bridge\" --source claude; exit 0'",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
   "inputNeededNotifEnabled": true,
-  "voiceEnabled": false,
+  "language": "Russian",
+  "mcpServers": {
+
+  },
+  "model": "opus",
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "Read",
       "Write",
@@ -141,6 +445,40 @@
       "mcp__mobile__get_logs",
       "mcp__mobile__clear_logs"
     ],
+    "ask": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(rm -fr *)",
+      "Bash(curl -X DELETE *)",
+      "Bash(curl -X PUT *)",
+      "Bash(curl -X PATCH *)",
+      "Bash(git reset --hard)",
+      "Bash(git reset --hard HEAD)",
+      "Bash(git reset --hard HEAD~*)",
+      "Bash(git reset --hard HEAD^*)",
+      "Bash(git branch -D *)",
+      "Bash(git push --mirror *)",
+      "Bash(git push --delete *)",
+      "Bash(git push -d *)",
+      "Bash(git push * :*)",
+      "Bash(npm publish *)",
+      "Bash(yarn publish *)",
+      "Bash(docker push *)",
+      "Bash(pod trunk push *)",
+      "Bash(fastlane *)",
+      "Bash(firebase deploy *)",
+      "Bash(gh ssh-key add *)",
+      "Bash(gh gpg-key add *)",
+      "Bash(adb reboot *)",
+      "Bash(adb emu kill)",
+      "Bash(adb shell svc *)",
+      "Bash(adb shell rm *)",
+      "Bash(adb shell sqlite3 *)",
+      "Bash(adb disable-verity *)",
+      "Bash(adb root)",
+      "Bash(adb unroot)"
+    ],
+    "defaultMode": "auto",
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
@@ -244,237 +582,10 @@
       "Bash(gh ssh-key delete *)",
       "Bash(gh gpg-key delete *)",
       "Bash(gh auth logout *)"
-    ],
-    "ask": [
-      "Bash(rm -rf *)",
-      "Bash(rm -r *)",
-      "Bash(rm -fr *)",
-      "Bash(curl -X DELETE *)",
-      "Bash(curl -X PUT *)",
-      "Bash(curl -X PATCH *)",
-      "Bash(git reset --hard)",
-      "Bash(git reset --hard HEAD)",
-      "Bash(git reset --hard HEAD~*)",
-      "Bash(git reset --hard HEAD^*)",
-      "Bash(git branch -D *)",
-      "Bash(git push --mirror *)",
-      "Bash(git push --delete *)",
-      "Bash(git push -d *)",
-      "Bash(git push * :*)",
-      "Bash(npm publish *)",
-      "Bash(yarn publish *)",
-      "Bash(docker push *)",
-      "Bash(pod trunk push *)",
-      "Bash(fastlane *)",
-      "Bash(firebase deploy *)",
-      "Bash(gh ssh-key add *)",
-      "Bash(gh gpg-key add *)",
-      "Bash(adb reboot *)",
-      "Bash(adb emu kill)",
-      "Bash(adb shell svc *)",
-      "Bash(adb shell rm *)",
-      "Bash(adb shell sqlite3 *)",
-      "Bash(adb disable-verity *)",
-      "Bash(adb root)",
-      "Bash(adb unroot)"
     ]
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/auto-pull.sh\"",
-            "timeout": 30,
-            "statusMessage": "Syncing ai config..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-activate.sh\"",
-            "timeout": 5,
-            "statusMessage": "Loading caveman mode..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ast-index update >/dev/null 2>&1 || ast-index rebuild >/dev/null 2>&1; if ast-index stats >/dev/null 2>&1; then [ \"$(git rev-parse --show-toplevel 2>/dev/null)\" = \"$HOME/dotfiles/ai\" ] || ( nohup ast-index watch >/dev/null 2>&1 & ); else echo '⚠ AST INDEX NOT AVAILABLE — run the matching ast-index:initialize-* skill before any code search'; fi",
-            "timeout": 120,
-            "statusMessage": "Indexing codebase..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "git rev-parse --is-inside-work-tree 2>/dev/null && { echo ''; echo '=== GIT STATE ==='; echo \"Current branch: $(git rev-parse --abbrev-ref HEAD 2>/dev/null)\"; git rev-parse --git-dir 2>/dev/null | grep -qE '/\\.git/worktrees/' && echo 'Is worktree: yes' || echo 'Is worktree: no'; DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'); echo \"Default branch: ${DEFAULT:-(unknown -- run: git remote set-head origin --auto)}\"; echo 'Existing worktrees:'; git worktree list 2>/dev/null; echo 'Local feature branches:'; git branch 2>/dev/null | grep -vE '\\b(main|master|develop)\\b' | head -20; echo 'Remote feature branches:'; git branch -r 2>/dev/null | grep -vE '(\\b(main|master|develop)\\b|HEAD)' | head -10; echo '================='; echo ''; } || true",
-            "timeout": 10,
-            "statusMessage": "Checking git state..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-context-mode-heal.sh\"",
-            "timeout": 10,
-            "statusMessage": "Healing context-mode cache..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$HOME/dotfiles/ai/claude/hooks/context-mode-cache-heal.mjs\""
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/ast-index-stop-watch.sh\"",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-caveman-tracker.sh\"",
-            "timeout": 5,
-            "statusMessage": "Tracking caveman mode..."
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/cross-repo-guard.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/branch-guard.sh\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/stash-reminder.sh\"",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "EnterWorktree",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/dotfiles/ai/shared/scripts/ast-index-bootstrap-worktree.sh\"",
-            "timeout": 120
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"$HOME/dotfiles/ai/claude/hooks/caveman-statusline.sh\""
-  },
-  "enabledPlugins": {
-    "caveman@caveman": true,
-    "superpowers@claude-plugins-official": false,
-    "figma@claude-plugins-official": true,
-    "gitlab@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "ast-index@ast-index-marketplace": true,
-    "context7@claude-plugins-official": true,
-    "ksrc@respawn-tools": true,
-    "maven-mcp@krozov-ai-tools": true,
-    "security-guidance@claude-plugins-official": true,
-    "remember@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "kotlin-lsp@claude-plugins-official": true,
-    "context-mode@context-mode": true,
-    "warp@claude-code-warp": true
-  },
-  "extraKnownMarketplaces": {
-    "caveman": {
-      "source": {
-        "source": "github",
-        "repo": "JuliusBrussee/caveman"
-      }
-    },
-    "ast-index-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "defendend/Claude-ast-index-search"
-      },
-      "autoUpdate": true
-    },
-    "krozov-ai-tools": {
-      "source": {
-        "source": "github",
-        "repo": "kirich1409/krozov-ai-tools"
-      }
-    },
-    "respawn-tools": {
-      "source": {
-        "source": "github",
-        "repo": "respawn-app/claude-plugin-marketplace"
-      }
-    },
-    "context-mode": {
-      "source": {
-        "source": "github",
-        "repo": "mksglu/context-mode"
-      },
-      "autoUpdate": true
-    },
-    "claude-in-mobile": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/AlexGladkov/claude-in-mobile.git"
-      },
-      "autoUpdate": true
-    },
-    "claude-code-warp": {
-      "source": {
-        "source": "github",
-        "repo": "warpdotdev/claude-code-warp"
-      }
-    }
-  },
+  "remoteControlAtStartup": true,
+  "respectGitignore": true,
   "sandbox": {
     "network": {
       "allowedDomains": [
@@ -520,6 +631,13 @@
       ]
     }
   },
-  "mcpServers": {},
-  "enableWorkflows": true
+  "showClearContextOnPlanAccept": true,
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "command": "bash \"$HOME/dotfiles/ai/claude/hooks/caveman-statusline.sh\"",
+    "type": "command"
+  },
+  "tui": "fullscreen",
+  "voiceEnabled": false
 }
