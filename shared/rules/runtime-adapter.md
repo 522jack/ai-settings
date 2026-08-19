@@ -22,7 +22,7 @@ Use these canonical terms in shared rules, skills, and agents:
 | Contract | Claude Code | Codex | Generic fallback |
 |---|---|---|---|
 | Project instructions | `CLAUDE.md` plus imported rules | `AGENTS.md` plus skills/rules | Read every available instruction file explicitly. |
-| Specialist delegation | `Task` / custom agents / `Explore` | multi-agent tools when available; otherwise new Codex thread only on explicit user request | Use a separate worktree/process if available; otherwise state the limitation and keep the work local only when safe. |
+| Specialist delegation | `Task` / custom agents / `Explore` | multi-agent tools when available; load the selected profile from `~/dotfiles/ai/shared/agents/` into the delegation packet | Use a separate worktree/process if available; otherwise state the limitation and keep the work local only when safe. |
 | Codebase search specialist | `Explore` or configured search agent | `explorer` subagent when available | Use indexed search first; avoid broad raw grep. |
 | User choice tool | `AskUserQuestion` | `request_user_input` when available, otherwise one concise chat question | Ask in chat; never park user-resolvable questions in files. |
 | Skill invocation | Slash command or Skill tool | Installed skill from `~/.codex/skills` | Follow the `SKILL.md` manually. |

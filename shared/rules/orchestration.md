@@ -41,6 +41,18 @@ workflow, map the contract to the current runtime's actual tools:
 
 Do not encode a new shared rule that only one runtime can execute unless it also names the fallback.
 
+## Specialist profile and completion receipt
+
+For non-trivial feature implementation, review, debugging, or runtime QA, apply the
+`specialist-routing` skill when available. Before delegation, the main session must select the
+smallest sufficient profile from `~/dotfiles/ai/shared/agents/`, read it, and include its path and
+constraints in the delegation packet. A subagent's response must identify the profile actually
+used, checks performed, and a verdict (`PASS`, `PASS_WITH_NOTES`, or `BLOCKED`).
+
+The final synthesis must include a specialist receipt with required profiles, applied profiles,
+delegation method, verdicts, verification gates, and open risks. If the runtime cannot delegate,
+record `ADAPTER_LIMITATION`; never imply that a specialist profile was applied when it was not.
+
 ## What specialists inherit (context delivery)
 
 **[Claude Code]** Custom and built-in subagents inherit the main session's `CLAUDE.md`, `MEMORY.md`, and every unconditional `~/dotfiles/ai/shared/rules/*.md` (those with no `paths:` frontmatter). They already carry the always-on rules — do **not** re-paste them into the delegation prompt.
