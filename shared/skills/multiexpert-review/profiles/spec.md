@@ -1,6 +1,6 @@
 ---
 name: spec
-description: Profile for feature specifications (docs/specs/<date>-<slug>.md). Panel of business-analyst + architecture-expert. Rubric checks falsifiable AC, scope boundaries, explicit decisions, prerequisite realism.
+description: Профиль спецификаций функциональности (docs/specs/<date>-<slug>.md). Панель business-analyst + architecture-expert. Критерии проверяют фальсифицируемые AC, границы области, явные решения и реалистичность предусловий.
 
 detect:
   frontmatter_type: [spec]
@@ -36,44 +36,44 @@ source_routing:
   conversation: inline-revise
 ---
 
-## Rubric
+## Критерии
 
-Reviewers evaluate the spec against these criteria. Each bullet carries the **item ID** (matches `severity_mapping.items`) in parentheses — use the ID verbatim in every Issue title stem so synthesizer aggregation and receipts stay greppable.
+Рецензенты оценивают spec по этим критериям. Каждый пункт содержит в скобках **ID элемента** (соответствует `severity_mapping.items`) — используйте ID буквально в начале каждого заголовка Issue, чтобы агрегация синтезатора и квитанции оставались доступными для поиска.
 
-### Critical — spec is not implementable without these
+### Critical — без этого spec невозможно реализовать
 
-- **(acceptance_criteria) Acceptance Criteria are falsifiable** — every AC is a grep-check, diff-check, YAML-parse, fixture-run, or structural-equivalence assertion. «Feels right» or «should be fast» is not acceptable. An implementing agent must know unambiguously when each AC passes.
-- **(prerequisites) Prerequisites realistic and complete** — every prerequisite has status (Done / Todo), owner (Human / Agent), and concrete exit criterion (how do we verify it's satisfied). No hand-waved «everything is ready».
+- **(acceptance_criteria) Acceptance Criteria фальсифицируемы** — каждый AC является grep-проверкой, diff-проверкой, разбором YAML, запуском фикстуры или утверждением о структурной эквивалентности. «Выглядит правильно» или «должно быть быстро» недопустимо. Реализующий агент должен однозначно понимать, когда каждый AC выполнен.
+- **(prerequisites) Предусловия реалистичны и полны** — у каждого предусловия есть статус (Done / Todo), владелец (Human / Agent) и конкретный критерий выхода (как проверить выполнение). Никаких расплывчатых «всё готово».
 
-### Major — spec is implementable but risky without these
+### Major — spec реализуем, но без этого рискован
 
-- **(out_of_scope) Out of Scope is explicit** — there is an «Out of Scope» section that enumerates what will NOT be done. Sweeping things under the rug or leaving out-of-scope implied = violation.
-- **(decisions_made) Decisions Made have rationale** — each locked decision has a «Rationale» column/line. «We chose X» without «because Y» = violation.
-- **(affected_modules) Affected modules/files complete** — table listing every file touched with change type (New / Modified / Renamed / Deleted) and notes. Missing files → implementing agent re-plans mid-implementation.
+- **(out_of_scope) Out of Scope указан явно** — есть секция «Out of Scope» с перечнем того, что НЕ будет сделано. Замалчивание или неявное указание границ = нарушение.
+- **(decisions_made) У принятых решений есть обоснование** — у каждого зафиксированного решения есть строка/колонка «Rationale». «Мы выбрали X» без «потому что Y» = нарушение.
+- **(affected_modules) Затронутые модули/файлы перечислены полностью** — таблица со всеми изменяемыми файлами, типом изменения (New / Modified / Renamed / Deleted) и примечаниями. Пропущенные файлы → реализующий агент перепланирует работу посреди реализации.
 
-### Minor — spec is implementable but less clear
+### Minor — spec реализуем, но недостаточно ясен
 
-- **(open_questions_tagged) Open questions tagged blocking vs non-blocking** — each OQ has explicit tag. Unmarked OQs leave ambiguity.
-- **(technical_approach_detail) Technical approach detail** — enough design detail that the implementing agent doesn't need further research. High-level «use pattern X» without concrete locations/contracts = minor issue.
+- **(open_questions_tagged) Открытые вопросы помечены как blocking или non-blocking** — у каждого OQ есть явная метка. Немаркированные OQ создают неоднозначность.
+- **(technical_approach_detail) Детализация технического подхода** — достаточно проектных деталей, чтобы реализующему агенту не требовалось дополнительное исследование. Высокоуровневое «использовать паттерн X» без конкретных мест/контрактов = minor-проблема.
 
-## Prompt augmentation
+## Дополнение запроса
 
-Reviewers: evaluate the spec against the rubric above AND apply your general expertise (architecture-expert checks dependency direction / module boundaries; business-analyst checks scope / requirements consistency / user value).
+Рецензенты: оценивайте spec по приведённым критериям И применяйте общую экспертизу (architecture-expert проверяет направление зависимостей/границы модулей; business-analyst проверяет область/согласованность требований/ценность для пользователя).
 
-**Issue title stem format (mandatory):** `(<item_id>) <violated | partial | satisfied>: <one-line summary>`. Example: `(acceptance_criteria) violated: AC-R4 grep check unsatisfiable given AC-R6 whitelist`. This lets the engine map your issue to `severity_mapping` deterministically — unprefixed Issues fall back to reviewer-assigned severity, losing the profile's intended weighting.
+**Обязательный формат начала заголовка Issue:** `(<item_id>) <violated | partial | satisfied>: <однострочное резюме>`. Пример: `(acceptance_criteria) violated: AC-R4 grep check unsatisfiable given AC-R6 whitelist`. Это позволяет движку детерминированно сопоставить замечание с `severity_mapping` — Issues без префикса используют серьёзность рецензента и теряют предусмотренное профилем взвешивание.
 
-## Verdict policy
+## Политика вердикта
 
-Matches engine default for `[PASS, CONDITIONAL, FAIL]`:
+Соответствует настройкам движка по умолчанию для `[PASS, CONDITIONAL, FAIL]`:
 
-- **PASS** — no critical issues, no important improvements, or only minor suggestions
-- **CONDITIONAL** — no critical issues but major items from the rubric are violated (strongly recommended to fix before implementation)
-- **FAIL** — any critical rubric item violated OR any blocker from reviewer expertise
+- **PASS** — нет critical-проблем, важных улучшений или есть только minor-предложения;
+- **CONDITIONAL** — critical-проблем нет, но нарушены major-пункты критериев (настойчиво рекомендуется исправить до реализации);
+- **FAIL** — нарушен любой critical-пункт критериев ИЛИ есть blocker по экспертизе рецензента.
 
-## No receipt
+## Без receipt
 
-Spec profile does not write a receipt. Verdict is a conversation-level output consumed by `write-spec` Phase 4 loop.
+Профиль spec не записывает receipt. Вердикт — результат уровня разговора, который потребляет цикл шага 4 `write-spec`.
 
-## Rationale (why this profile exists)
+## Обоснование (зачем нужен этот профиль)
 
-Before this profile, `write-spec` Phase 4.3 invoked the review engine on a spec artifact, and the detector silently classified it as an implementation-plan. The implementation-plan rubric is generic tech-review; it doesn't specifically check whether AC are falsifiable, whether Out of Scope is explicit, whether decisions have rationale, etc. Specs ended up reviewed by a rubric that didn't match their structure. This profile closes that drift.
+До появления этого профиля шаг 4.3 `write-spec` вызывал движок ревью для артефакта spec, а детектор молча классифицировал его как implementation-plan. Критерии implementation-plan — это общее техническое ревью; они специально не проверяют, фальсифицируемы ли AC, явно ли указан Out of Scope, есть ли у решений обоснование и т. д. В результате specs проверялись по критериям, не соответствующим их структуре. Этот профиль устраняет расхождение.

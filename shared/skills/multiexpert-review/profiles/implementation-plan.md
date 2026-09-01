@@ -1,6 +1,6 @@
 ---
 name: implementation-plan
-description: Default profile for implementation plans (Plan Mode output, plan.md files, conversation-described plans). Verdict alphabet PASS/CONDITIONAL/FAIL. Agents selected by tech-match from plan content.
+description: Профиль по умолчанию для планов реализации (вывод Plan Mode, файлы plan.md, планы, описанные в разговоре). Алфавит вердиктов PASS/CONDITIONAL/FAIL. Агенты выбираются по совпадению технологий в содержимом плана.
 
 detect:
   frontmatter_type: [implementation-plan, plan]
@@ -26,60 +26,59 @@ receipt:
   fields_to_update: [review_verdict, review_blockers]
 ---
 
-## Rubric
+## Критерии
 
-Generic implementation-plan assessment. Each reviewer applies their expertise:
+Общая оценка плана реализации. Каждый рецензент применяет свою экспертизу:
 
-- Scope of changes clearly described
-- Architectural fit — modules, layers, dependency direction
-- Technical approach sufficient for implementation without further questions
-- Risks named and addressed
-- Trade-offs surfaced where multiple valid approaches exist
-- Dependencies (code, libraries, services) identified
-- Testing approach outlined (if implementation includes test code)
-- Verification & Sources present — the source(s) of truth that define "done" are named, collected,
-  and sufficient to verify the finished change; testing strategy (pyramid levels) stated
+- Область изменений описана ясно
+- Архитектурное соответствие — модули, слои, направление зависимостей
+- Технический подход достаточен для реализации без дополнительных вопросов
+- Риски названы и учтены
+- Компромиссы обозначены там, где есть несколько допустимых подходов
+- Зависимости (код, библиотеки, сервисы) определены
+- Подход к тестированию изложен (если реализация включает тестовый код)
+- Присутствуют Verification & Sources — названы и собраны источники истины, определяющие состояние «готово», и их достаточно для проверки завершённого изменения; указана стратегия тестирования (уровни пирамиды)
 
 No fixed severity mapping — reviewers judge severity from their expertise.
 
-## Prompt augmentation
+## Дополнение запроса
 
-**Adversarial stance (strict but fair).** You are a red-team critic, not an approver. The agent that
-wrote this plan had an incentive to pass review quickly; your job is to find what is *wrong* before
-it reaches implementation. Do not reward plausible-looking prose. Equally, do not invent blockers to
-look thorough — every finding must name the weakness, where it is, and why it matters.
+**Противоборствующая позиция (строго, но справедливо).** Вы критик red team, а не утверждающий. Агент,
+написавший этот план, был заинтересован быстро пройти ревью; ваша задача — найти, что *не так*, до
+начала реализации. Не вознаграждайте правдоподобную на вид прозу. При этом не выдумывайте блокеры,
+чтобы казаться основательнее — каждое замечание должно называть слабое место, его расположение и причину важности.
 
-**Anti-gaming rubric — flag these as blockers/majors:**
+**Критерии против обхода проверки — отмечайте это как блокеры/major:**
 
-- **Hand-waving verbs** — "handle errors appropriately", "wire it up", "update the relevant files",
-  "as needed" with no concrete file/contract/behaviour. Demand the specifics.
-- **Unfalsifiable acceptance** — a task `check` a human must judge ("looks right", "works well").
-  Demand a test name, grep, or build target.
-- **Missing failure modes** — happy-path-only design. Demand the error / edge / empty / concurrent
-  cases the change can actually hit.
-- **Invisible scope** — a one-line task hiding a subsystem. Demand it be split or sized honestly.
-- **Untraced requirements** — a referenced spec `AC-N` with no task that satisfies it, or a task
-  satisfying nothing. Demand the mapping be complete.
-- **Missing or hollow verification** — no `## Verification & Sources` section, or one that names a
-  source of truth without confirming it is collected and sufficient ("baseline TBD", a
-  migration/behavior-preserving task with no before-state captured), or omits the testing strategy
-  (which pyramid levels apply, L5 where mandatory). Demand the concrete source, its status, and a
-  sufficiency claim — a plan that can't say how the finished change is verified is not approvable.
+- **Расплывчатые глаголы** — «корректно обработать ошибки», «подключить», «обновить соответствующие файлы»,
+  «при необходимости» без конкретного файла/контракта/поведения. Требуйте конкретики.
+- **Нефальсифицируемая приёмка** — проверка задачи `check`, которую должен оценивать человек («выглядит правильно», «хорошо работает»).
+  Требуйте имя теста, grep или цель сборки.
+- **Пропущенные режимы отказа** — дизайн только для успешного пути. Требуйте ошибки, граничные, пустые и конкурентные
+  случаи, в которые изменение действительно может попасть.
+- **Скрытый масштаб** — однострочная задача, скрывающая подсистему. Требуйте разделить её или честно оценить размер.
+- **Непрослеживаемые требования** — ссылка на spec `AC-N` без задачи, которая её выполняет, или задача,
+  не выполняющая ни одного требования. Требуйте полного сопоставления.
+- **Отсутствующая или пустая проверка** — нет секции `## Verification & Sources`, либо в ней назван
+  источник истины без подтверждения, что он собран и достаточен («baseline TBD», задача миграции/сохранения
+  поведения без зафиксированного исходного состояния), либо не указана стратегия тестирования
+  (какие уровни пирамиды применимы, включая обязательный L5). Требуйте конкретный источник, его статус и
+  утверждение о достаточности — план, не объясняющий, как проверяется готовое изменение, нельзя утверждать.
 
-This rubric is what converts "a plan that passes" into "a plan that is right".
+Эти критерии превращают «план, прошедший проверку» в «правильный план».
 
-## Agent pre-selection heuristic
+## Эвристика предварительного выбора агентов
 
-`reviewer_roster.primary` is intentionally empty. The engine falls back to **tech-match selection**: scan plan content for technology keywords, map to agent expertise, recommend 2–3 agents whose specialties the plan actually touches. Rules:
+`reviewer_roster.primary` намеренно пуст. Движок переходит к **выбору по совпадению технологий**: ищет в содержимом плана ключевые слова технологий, сопоставляет их с экспертизой агентов и рекомендует 2–3 агентов, чьи специализации действительно затрагивает план. Правила:
 
-- **Technology match** — plan must specifically mention technologies, frameworks, or layers the agent specializes in. Generic "architecture" or "security" relevance is NOT enough (e.g., `security-expert` only when plan touches auth, encryption, tokens, or user data; `architecture-expert` only when new modules, dependency direction changes, or public API modifications are involved).
-- **Problem-specific value** — would this agent catch issues that others on the panel wouldn't?
-- **Gap coverage** — does this agent cover a blind spot that other recommended agents miss?
+- **Совпадение технологий** — план должен явно упоминать технологии, фреймворки или слои, в которых специализируется агент. Общей релевантности к «архитектуре» или «безопасности» НЕДОСТАТОЧНО (например, `security-expert` — только если план затрагивает auth, шифрование, токены или пользовательские данные; `architecture-expert` — только при новых модулях, изменении направления зависимостей или публичного API).
+- **Ценность для конкретной проблемы** — заметит ли этот агент проблемы, которые не заметят остальные участники панели?
+- **Покрытие пробелов** — закрывает ли этот агент слепую зону, которую пропускают другие рекомендуемые агенты?
 
-Prefer 2–3 agents, but quality over quantity — if only 1 is genuinely relevant, recommend 1 (permitted by `allow_single_reviewer: true`). `general-purpose` is a fallback only when no specialist covers a real gap.
+Предпочитайте 2–3 агентов, но качество важнее количества — если действительно релевантен только 1, рекомендуйте 1 (это разрешено `allow_single_reviewer: true`). `general-purpose` — запасной вариант только когда ни один специалист не закрывает реальный пробел.
 
-## Source routing notes
+## Примечания по маршрутизации источника
 
-- **Plan Mode** — on FAIL/CONDITIONAL fix, engine calls `EnterPlanMode` with the issues list.
-- **File** — engine edits the plan file directly, adding `## Issues to Resolve` or restructuring inline.
-- **Conversation** — engine presents blockers and works through them with the user inline.
+- **Plan Mode** — при исправлении FAIL/CONDITIONAL движок вызывает `EnterPlanMode` со списком замечаний.
+- **File** — движок редактирует файл плана напрямую, добавляя `## Issues to Resolve` или перестраивая текст на месте.
+- **Conversation** — движок показывает блокеры и разбирает их с пользователем прямо в разговоре.

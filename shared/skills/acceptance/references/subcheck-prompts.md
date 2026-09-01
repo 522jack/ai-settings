@@ -1,38 +1,38 @@
 Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step 3: Run Checks — per-agent sub-check prompts).
 
-# Acceptance — Per-Agent Sub-Check Prompts
+# Acceptance — запросы под-проверок для агентов
 
-## Spawn `manual-tester` (UI branch)
+## Запуск `manual-tester` (UI-ветвь)
 
-`manual-tester` owns the runtime environment end-to-end per its Step 0 Environment Setup.
-Acceptance does not pre-launch — that is intentional delegation.
+`manual-tester` полностью отвечает за среду выполнения согласно разделу Step 0 Environment Setup.
+Acceptance не запускает её заранее — это намеренное делегирование.
 
-Prompt contents:
-1. **Spec context** — full text or clear pointers.
-2. **Test plan** — the complete set of test cases.
-3. **Target hints** (optional) — device/URL if the user already named one.
-4. **Scope** — which tiers (default: Smoke + Feature).
-5. **Output path** — `swarm-report/<slug>-acceptance-manual.md` with the per-check schema.
+Содержимое запроса:
+1. **Контекст spec** — полный текст или ясные указатели.
+2. **Test plan** — полный набор тестовых случаев.
+3. **Подсказки цели** (необязательно) — устройство/URL, если пользователь уже назвал их.
+4. **Область** — какие уровни (по умолчанию: Smoke + Feature).
+5. **Путь вывода** — `swarm-report/<slug>-acceptance-manual.md` со схемой проверки.
 
-If the agent returns `WARN` with `blocked_on`, surface that text to the user as the primary
-next-step requirement before re-running acceptance.
+Если агент возвращает `WARN` с `blocked_on`, покажите этот текст пользователю как главное
+требование следующего шага до повторного запуска acceptance.
 
-## Spawn `code-reviewer` (delta review, skipped if Step 2.5 matched)
+## Запуск `code-reviewer` (ревью изменений, пропускается при совпадении на шаге 2.5)
 
-Prompt contents:
-1. **Task description** — one sentence from spec or PR title.
-2. **Plan pointer** — path to implement receipt or research report if present.
-3. **Git diff** — current diff.
-4. **Output path** — `swarm-report/<slug>-acceptance-code.md`.
+Содержимое запроса:
+1. **Описание задачи** — одно предложение из spec или заголовка PR.
+2. **Указатель плана** — путь к receipt реализации или отчёту исследования, если есть.
+3. **Git diff** — текущий diff.
+4. **Путь вывода** — `swarm-report/<slug>-acceptance-code.md`.
 
-Verdict rules: `PASS` if no semantic bugs, logic errors, or security issues; `WARN` for
-style/minor; `FAIL` for blockers.
+Правила вердикта: `PASS`, если нет семантических ошибок, логических ошибок или проблем безопасности;
+`WARN` для style/minor; `FAIL` для блокеров.
 
-## Build smoke (non-UI branch)
+## Smoke сборки (non-UI-ветвь)
 
-Pick the command by `ecosystem`:
+Выберите команду по `ecosystem`:
 
-| `ecosystem` | Command |
+| `ecosystem` | Команда |
 |---|---|
 | `gradle` | `./gradlew build -x test --quiet` (single-module) or `./gradlew :check` (multi-module) |
 | `node` | `npm run build` (or `pnpm build` / `yarn build`) |
@@ -40,137 +40,135 @@ Pick the command by `ecosystem`:
 | `go` | `go build ./...` |
 | `python` | `python -m compileall .` or package-specific build |
 
-Multi-module detection: scan `settings.gradle*` for `include(` statements. If subprojects are
-declared and the user did not specify a target module, ask which module is the smoke target
-**before** entering Step 3 (do not block the fan-out message with a question).
+Определение нескольких модулей: просканируйте `settings.gradle*` на наличие выражений `include(`. Если
+объявлены подпроекты, а пользователь не указал целевой модуль, спросите, какой модуль является целью smoke,
+**до** перехода к шагу 3 (не блокируйте сообщение fan-out вопросом).
 
-If the `ecosystem` or command is not resolvable, skip with `verdict: SKIPPED` and
+Если `ecosystem` или команду определить нельзя, пропустите с `verdict: SKIPPED` и
 `blocked_on: build command unknown`. On success write `verdict: PASS`; on failure capture the
 last ~50 lines and write `verdict: FAIL`. Receipt at
 `swarm-report/<slug>-acceptance-build.md`.
 
-## Spawn `business-analyst` (conditional — AC coverage)
+## Запуск `business-analyst` (условный — покрытие AC)
 
-Fires when `acceptance_criteria_ids` in spec frontmatter is a non-empty list.
+Срабатывает, когда `acceptance_criteria_ids` во frontmatter spec — непустой список.
 
-Prompt contents:
-1. **Spec** — the spec file path.
-2. **Diff / implement receipt** — evidence for each AC.
-3. **Test plan** (if any) — TC list mapped to AC via each test case's `Source:` field
-   (e.g. `Source: AC-1` or `Source: AC-2, AC-3`). This is the canonical mapping used by
-   `generate-test-plan`; do not invent a new `AC-ref:` field.
-4. **manual-tester output** (if running) — pointer to
+Содержимое запроса:
+1. **Spec** — путь к файлу spec.
+2. **Diff / receipt реализации** — свидетельство для каждого AC.
+3. **Test plan** (если есть) — список TC, сопоставленных с AC через поле `Source:` каждого тестового
+   случая (например, `Source: AC-1` или `Source: AC-2, AC-3`). Это каноническое сопоставление,
+   используемое `generate-test-plan`; не придумывайте новое поле `AC-ref:`.
+4. **Вывод manual-tester** (если запускается) — указатель на
    `swarm-report/<slug>-acceptance-manual.md`.
-5. **Output path** — `swarm-report/<slug>-acceptance-ac-coverage.md`.
+5. **Путь вывода** — `swarm-report/<slug>-acceptance-ac-coverage.md`.
 
-Verdict rules: `PASS` if every `AC-N` has at least one evidence pointer; `WARN` for weak
-coverage (single witness on high-risk AC); `FAIL` for any missing AC. Severity: `FAIL` on
-missing AC is `critical`; weak coverage is `major`.
+Правила вердикта: `PASS`, если у каждого `AC-N` есть хотя бы один указатель на свидетельство;
+`WARN` для слабого покрытия (единственное свидетельство для высокорискового AC); `FAIL` для любого
+отсутствующего AC. Серьёзность: `FAIL` при отсутствии AC — `critical`; слабое покрытие — `major`.
 
-## Spawn `ux-expert` (conditional — design-review or a11y)
+## Запуск `ux-expert` (условный — design-review или a11y)
 
-Fires when **`has_ui_surface == true`** AND (`design.figma` is set for design-review mode
-**or** `non_functional.a11y` is set for a11y mode). Non-UI projects never trigger this even
-if `non_functional.a11y` is present — a11y on backend/library/CLI has no surface to audit.
+Срабатывает, когда **`has_ui_surface == true`** И задано (`design.figma` для режима design-review
+**или** `non_functional.a11y` для режима a11y). Non-UI-проекты никогда не запускают этот блок,
+даже если задано `non_functional.a11y`: у backend/library/CLI нет поверхности для аудита a11y.
 
-Design-review and a11y can both fire in one invocation. When both trigger, spawn `ux-expert`
-once with mode `both`; the agent writes **two** artifacts (one per concern) so aggregation in
-Step 4 treats them as independent checks:
+Design-review и a11y могут сработать за один вызов. При срабатывании обоих один раз запустите `ux-expert`
+с mode `both`; агент записывает **два** артефакта (по одному на вопрос), чтобы агрегация на шаге 4
+рассматривала их как независимые проверки:
 
 - `swarm-report/<slug>-acceptance-design.md` with `check: design`
 - `swarm-report/<slug>-acceptance-a11y.md` with `check: a11y`
 
-When only one mode fires, only the corresponding artifact is written.
+Если срабатывает только один режим, записывается только соответствующий артефакт.
 
-Prompt contents:
+Содержимое запроса:
 1. **Mode** — `design-review` / `a11y` / `both`.
-2. **Spec** — file path.
-3. **Design source** — `design.figma` URL (design-review mode).
-4. **a11y target** — value of `non_functional.a11y` (e.g. `wcag-aa`).
-5. **Running app pointer** — target hints; the agent reads running-app state via MCP only
-   when the environment is already prepared, otherwise works from screenshots/code.
-6. **Output paths** — one or both of the filenames listed above, matching the mode.
+2. **Spec** — путь к файлу.
+3. **Источник дизайна** — URL `design.figma` (режим design-review).
+4. **Цель a11y** — значение `non_functional.a11y` (например, `wcag-aa`).
+5. **Указатель на запущенное приложение** — подсказки цели; агент читает состояние приложения через MCP
+   только если среда уже подготовлена, иначе работает по скриншотам/коду.
+6. **Пути вывода** — одно или оба перечисленных выше имени файлов в зависимости от режима.
 
-Verdict rules: `PASS` if design matches reference and a11y criteria met; `WARN` for minor
-spacing/color deviations or AA soft failures; `FAIL` for missing components, broken
-interaction paths, or hard a11y violations (keyboard trap, contrast below threshold).
+Правила вердикта: `PASS`, если дизайн соответствует эталону и критерии a11y выполнены; `WARN` для
+небольших отклонений отступов/цветов или мягких сбоев AA; `FAIL` для отсутствующих компонентов,
+сломанных путей взаимодействия или жёстких нарушений a11y (клавиатурная ловушка, контраст ниже порога).
 
-## Spawn `security-expert` (conditional)
+## Запуск `security-expert` (условный)
 
-Fires when `risk_areas` intersects `{auth, payment, pii, data-migration}`.
+Срабатывает, когда `risk_areas` пересекается с `{auth, payment, pii, data-migration}`.
 
-Prompt contents:
-1. **Risk list** — the intersection subset.
-2. **Diff** — full git diff.
-3. **Spec** — file path.
-4. **Output path** — `swarm-report/<slug>-acceptance-security.md`.
+Содержимое запроса:
+1. **Список рисков** — подмножество пересечения.
+2. **Diff** — полный git diff.
+3. **Spec** — путь к файлу.
+4. **Путь вывода** — `swarm-report/<slug>-acceptance-security.md`.
 
-Verdict rules: `PASS` if no applicable OWASP / project-security-rule violations; `WARN` for
-minor hardening opportunities; `FAIL` for exploitable issues, secret leaks, or regulation
-breaches.
+Правила вердикта: `PASS`, если нет применимых нарушений OWASP / project-security-rule; `WARN` для
+небольших возможностей усиления защиты; `FAIL` для эксплуатируемых проблем, утечек секретов или нарушений
+требований регулирования.
 
-## Spawn `performance-expert` (conditional)
+## Запуск `performance-expert` (условный)
 
-Fires when `non_functional.sla` is set **or** `risk_areas` contains `perf-critical`.
+Срабатывает, когда задано `non_functional.sla` **или** `risk_areas` содержит `perf-critical`.
 
-Prompt contents:
-1. **SLA target** — from `non_functional.sla`, or implicit `perf-critical` baseline.
-2. **Diff** — full git diff.
-3. **Output path** — `swarm-report/<slug>-acceptance-performance.md`.
+Содержимое запроса:
+1. **Цель SLA** — из `non_functional.sla` или неявный baseline `perf-critical`.
+2. **Diff** — полный git diff.
+3. **Путь вывода** — `swarm-report/<slug>-acceptance-performance.md`.
 
-Verdict rules: `PASS` if no regression; `WARN` for borderline; `FAIL` for violations.
+Правила вердикта: `PASS`, если нет регрессии; `WARN` для пограничных результатов; `FAIL` для нарушений.
 
-## Spawn `architecture-expert` (conditional — diff-triggered)
+## Запуск `architecture-expert` (условный — триггер diff)
 
-Fires when the diff touches a public API symbol **or** spans ≥ 3 top-level modules (see the
-heuristic at §Conditional triggers).
+Срабатывает, когда diff затрагивает символ публичного API **или** охватывает ≥3 модуля верхнего уровня
+(см. эвристику в §Conditional triggers).
 
-Prompt contents:
-1. **Trigger reason** — `public-api` / `cross-module` / `both` with the specific file list
-   that matched.
-2. **Diff** — full git diff (scoped to triggered files + their immediate neighbours).
-3. **Module map** — list of top-level modules touched, discovered from
-   `settings.gradle*` / `package.json` workspaces / `Cargo.toml` workspace members.
-4. **Output path** — `swarm-report/<slug>-acceptance-architecture.md` with `check: architecture`.
+Содержимое запроса:
+1. **Причина триггера** — `public-api` / `cross-module` / `both` с конкретным списком совпавших файлов.
+2. **Diff** — полный git diff (только сработавшие файлы и их непосредственные соседи).
+3. **Карта модулей** — список затронутых модулей верхнего уровня, обнаруженных в
+   `settings.gradle*` / workspaces `package.json` / участниках workspace `Cargo.toml`.
+4. **Путь вывода** — `swarm-report/<slug>-acceptance-architecture.md` с `check: architecture`.
 
-Verdict rules: `PASS` if public contracts are preserved and module dependency direction is
-clean; `WARN` for style issues (e.g., missing deprecation annotation, avoidable coupling);
-`FAIL` for contract breakage, circular dependencies, or leaking internals into a public API.
+Правила вердикта: `PASS`, если публичные контракты сохранены и направление зависимостей модулей
+чистое; `WARN` для стилевых проблем (например, отсутствует аннотация deprecation, есть предотвратимая
+связанность); `FAIL` при нарушении контракта, циклических зависимостях или утечке внутренней реализации
+в публичный API.
 
-## Spawn `build-engineer` (conditional — diff-triggered)
+## Запуск `build-engineer` (условный — триггер diff)
 
-Fires when the diff touches any build file listed in §Conditional triggers.
+Срабатывает, когда diff затрагивает любой build-файл из §Conditional triggers.
 
-Prompt contents:
-1. **Build files changed** — exact file list from the diff.
-2. **Diff** — scoped to those files plus any touched module manifests.
-3. **Ecosystem** — resolved `ecosystem` from Step 0 (drives which toolchain the agent should
-   evaluate against).
-4. **Output path** — `swarm-report/<slug>-acceptance-build-config.md` with
+Содержимое запроса:
+1. **Изменённые build-файлы** — точный список файлов из diff.
+2. **Diff** — только эти файлы и затронутые манифесты модулей.
+3. **Ecosystem** — определённый на шаге 0 `ecosystem` (определяет toolchain для проверки агентом).
+4. **Путь вывода** — `swarm-report/<slug>-acceptance-build-config.md` с
    `check: build-config`.
 
-Note: `check: build` is already used by the non-UI build smoke (§3.3). The expert review of
-**config changes** uses a distinct check identifier `build-config` so aggregation can treat
-the two axes independently (a project can have a clean smoke and a broken config, or vice
-versa).
+Примечание: `check: build` уже используется non-UI smoke сборки (§3.3). Экспертное ревью
+**изменений конфигурации** использует отдельный идентификатор проверки `build-config`, чтобы агрегация
+рассматривала эти две оси независимо (у проекта может быть чистый smoke, но сломанная конфигурация, и наоборот).
 
-Verdict rules: `PASS` if dependency additions are pinned/hash-verified, plugin versions are
-consistent, and task wiring is intact; `WARN` for unpinned version ranges, unused
-dependencies, or minor style issues; `FAIL` for breaking plugin mismatches, missing required
-configuration, or dependency choices that conflict with project policy.
+Правила вердикта: `PASS`, если добавленные зависимости закреплены/проверены по хэшу, версии плагинов
+согласованы и wiring задач сохранён; `WARN` для незакреплённых диапазонов версий, неиспользуемых
+зависимостей или небольших стилевых проблем; `FAIL` при несовместимости плагинов, отсутствии обязательной
+конфигурации или выборе зависимостей, противоречащем политике проекта.
 
-## Spawn `devops-expert` (conditional — diff-triggered)
+## Запуск `devops-expert` (условный — триггер diff)
 
-Fires when the diff touches CI / release configuration (see §Conditional triggers).
+Срабатывает, когда diff затрагивает конфигурацию CI / release (см. §Conditional triggers).
 
-Prompt contents:
-1. **CI files changed** — exact file list.
-2. **Diff** — scoped to CI/release files.
-3. **Repo context** — `public` vs `private` (affects secret handling guidance),
-   and any related marketplace/deployment manifests if present.
-4. **Output path** — `swarm-report/<slug>-acceptance-devops.md` with `check: devops`.
+Содержимое запроса:
+1. **Изменённые CI-файлы** — точный список.
+2. **Diff** — только CI/release-файлы.
+3. **Контекст репозитория** — `public` или `private` (влияет на рекомендации по обработке секретов),
+   а также связанные манифесты marketplace/deployment, если они есть.
+4. **Путь вывода** — `swarm-report/<slug>-acceptance-devops.md` с `check: devops`.
 
-Verdict rules: `PASS` if pipeline health is preserved, secrets are handled correctly, and
-rollout gates remain sound; `WARN` for minor inefficiencies or missing
-`timeout-minutes` / `concurrency` guards; `FAIL` for leaked secrets, disabled safety gates,
-or breaking workflow syntax.
+Правила вердикта: `PASS`, если работоспособность pipeline сохранена, секреты обрабатываются корректно,
+а rollout-gates остаются надёжными; `WARN` для небольших неэффективностей или отсутствующих защит
+`timeout-minutes` / `concurrency`; `FAIL` при утечке секретов, отключённых защитных гейтах
+или ломающем синтаксисе workflow.

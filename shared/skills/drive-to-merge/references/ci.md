@@ -1,8 +1,9 @@
-# drive-to-merge — Phase 2.2 CI Handling
+# drive-to-merge — обработка CI на фазе 2.2
 
-Investigate failing checks, classify, retry infra flakes, and hand off code-fix rows to Phase 3 delegation.
+Исследуйте неуспешные проверки, классифицируйте их, повторяйте инфраструктурные сбои и передавайте строки
+с исправлениями кода на делегирование в фазу 3.
 
-## Resolve the failing workflow run id (GitHub)
+## Определите id неуспешного запуска workflow (GitHub)
 
 `statusCheckRollup` nodes expose `detailsUrl` of the form
 `https://<host>/<owner>/<repo>/actions/runs/<RUN_ID>/job/<JOB_ID>` for GitHub
@@ -35,19 +36,19 @@ For GitLab: `glab ci view` on the pipeline id from `MR_INFO.head_pipeline.id`, o
 `glab api "/projects/$PROJECT/pipelines/<pipeline_id>/jobs"` to enumerate jobs and
 `glab api "/projects/$PROJECT/jobs/<job_id>/trace"` to pull a specific job log.
 
-## Per-check flow
+## Процесс для каждой проверки
 
-For each failed check (once `RUN_ID` is resolved):
+Для каждой неуспешной проверки (после определения `RUN_ID`):
 
 1. Download the job log:
    - GitHub: `gh run view --log-failed "$RUN_ID"`
    - GitLab: `glab ci trace` on the specific job id
-2. Classify the failure:
-   - Test failure → symptom + failing test path.
-   - Build failure → file + error.
-   - Lint / format → specific rule.
-   - Infra / runner / network error → retryable without code change.
-3. Render a **CI failure table** in session:
+2. Классифицируйте сбой:
+   - сбой теста → симптом + путь к упавшему тесту;
+   - сбой сборки → файл + ошибка;
+   - lint / форматирование → конкретное правило;
+   - ошибка инфраструктуры / runner / сети → можно повторить без изменения кода.
+3. Выведите в сессии **таблицу сбоя CI**:
 
    ```
    | Check | Failure | Likely cause | Proposed action | Delegate |
@@ -57,10 +58,11 @@ For each failed check (once `RUN_ID` is resolved):
    | lint  | ktlint wrapping            | auto-fixable               | run `ktlint --format` | implement |
    | e2e   | network timeout            | flake                      | retry once                | — |
    ```
-4. Retry infra flakes once automatically (`gh run rerun "$RUN_ID" --failed`). Do not retry actual failures.
-5. For code-fix rows — delegate per the **Delegation protocol** (see `references/delegation.md`, § Phase 3).
-6. After fixes land: push, re-enter Phase 2.1.
+4. Автоматически повторите инфраструктурный сбой один раз (`gh run rerun "$RUN_ID" --failed`). Настоящие сбои не повторяйте.
+5. Для строк с исправлением кода — делегируйте согласно **протоколу делегирования** (см. `references/delegation.md`, § Phase 3).
+6. После появления исправлений: выполните push и вернитесь к фазе 2.1.
 
-## Failure-loop guard
+## Защита от цикла сбоев
 
-If the same check name fails 3 rounds in a row with no new commit diagnosis (same error signature), stop and surface as a blocker. Record it in state file's `Blockers raised` and ask the user what to do.
+Если одна и та же проверка не проходит 3 раунда подряд без нового коммита с диагностикой (та же сигнатура ошибки),
+остановитесь и покажите blocker. Запишите его в `Blockers raised` файла состояния и спросите пользователя, что делать.

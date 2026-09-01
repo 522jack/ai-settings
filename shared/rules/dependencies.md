@@ -1,25 +1,25 @@
-# Dependencies
+# Зависимости
 
-Never add a new dependency without explicit user approval. Prefer what's already in the project. If a new dependency is the only reasonable option, propose it and wait for go-ahead.
+Никогда не добавлять новую dependency без явного одобрения пользователя. Предпочитать уже имеющееся в проекте. Если новая dependency — единственный разумный вариант, предложить её и ждать разрешения.
 
-**Gradle / JVM:** to read a dependency's source, use `ksrc` (`ksrc --help`) instead of digging through the `.gradle/` cache directory by hand. This is about *inspecting* deps — editing build scripts when a task needs it follows `gradle-style.md`.
+**Gradle / JVM:** для чтения исходников dependency использовать `ksrc` (`ksrc --help`), а не искать вручную в каталоге кэша `.gradle/`. Это относится к *инспектированию* deps; редактирование build scripts, когда оно нужно задаче, регулируется `gradle-style.md`.
 
-## Adding or upgrading a dependency — mandatory plan-stage gate
+## Добавление или обновление dependency — обязательный plan-stage gate
 
-Adding a **new** dependency / plugin or **bumping** an existing one is a **plan-stage decision**, not an implementation detail. The plan cannot be finalized — and implementation cannot start — until the library is **studied** and the version is **verified**. A plan that proposes a library without these outputs is incomplete and must be revised before approval.
+Добавление **новой** dependency / plugin или **bumping** существующей — это **решение на этапе планирования**, а не деталь реализации. Нельзя завершить план — и нельзя начинать реализацию — пока библиотека не **изучена**, а версия не **проверена**. План, предлагающий библиотеку без этих результатов, неполон и должен быть пересмотрен до одобрения.
 
-This rule covers Gradle / Maven plugins on equal footing with library deps — plugin id, version, and source repository all go through the same gate.
+Это правило в равной степени распространяется на Gradle / Maven plugins и library deps — plugin id, version и source repository проходят те же ворота.
 
-### Plan-stage outputs (must appear in the plan before approval)
+### Результаты этапа планирования (должны появиться в плане до одобрения)
 
-For every new dependency / plugin / bumped version, the plan contains four items in this order:
+Для каждой новой dependency / plugin / bumped version план содержит четыре пункта в следующем порядке:
 
-1. **Identity.** Exact `groupId:artifactId` (or plugin id, or `name@registry` for non-Maven ecosystems) + the role it plays (one line: what it does, why it's needed, why existing project deps don't cover this).
-2. **Freshness.** Latest stable version resolved via `maven-mcp:latest-version` (or `maven-mcp:check-deps` for the whole project; ecosystem-equivalent scanner for non-Maven — `npm view <pkg> version`, `pip index versions`, `cargo search`, etc.). Format: "latest stable: X.Y.Z". If the latest is a pre-release / RC and stable is older — pick stable and note the gap explicitly. Never pin to a version "because it was in the snippet / blog post / training data".
-3. **Vulnerabilities.** `maven-mcp:check-deps-vulnerabilities` against the chosen coordinate (non-Maven → `npm audit`, `pip-audit`, `cargo audit`, etc.). Any CVE / GHSA hit → stop the plan, report severity + advisory ID + fixed-in version, propose a safe alternative or wait for user call. "No advisories" is also a valid output — state it.
-4. **API surface study.** Read the actual library — for JVM/Kotlin use `ksrc` on the resolved version; for Android also use `android docs`; for other ecosystems use Context7 / official docs (see the API-truth priority chain). The plan must demonstrate that the proposed integration uses the library's **current** API, not a memorized signature. For a bump that crosses a major version or a known evolving library (Ktor, Room, Compose, AGP, Hilt, kotlinx.*, etc.) — also run `maven-mcp:dependency-changes <old> <new>` and surface breaking changes / migration notes in the plan.
+1. **Identity.** Точный `groupId:artifactId` (или plugin id, или `name@registry` для не-Maven экосистем) + роль (одна строка: что делает, зачем нужен, почему существующие deps проекта не подходят).
+2. **Freshness.** Последняя стабильная версия, полученная через `maven-mcp:latest-version` (или `maven-mcp:check-deps` для всего проекта; эквивалентный scanner экосистемы для non-Maven — `npm view <pkg> version`, `pip index versions`, `cargo search` и т. д.). Формат: «latest stable: X.Y.Z». Если последняя версия — pre-release / RC, а stable старше, выбрать stable и явно отметить разрыв. Никогда не фиксировать версию «потому что она была в snippet / blog post / training data».
+3. **Vulnerabilities.** Выполнить `maven-mcp:check-deps-vulnerabilities` для выбранной координаты (non-Maven → `npm audit`, `pip-audit`, `cargo audit` и т. д.). Любое попадание CVE / GHSA → остановить план, сообщить severity + advisory ID + fixed-in version, предложить безопасную альтернативу или ждать решения пользователя. «No advisories» — также допустимый результат, его нужно указать.
+4. **API surface study.** Прочитать саму библиотеку — для JVM/Kotlin использовать `ksrc` разрешённой версии; для Android также использовать `android docs`; для других экосистем — Context7 / official docs (см. цепочку приоритета API-truth). План должен показывать, что предлагаемая интеграция использует **текущий** API библиотеки, а не запомненную сигнатуру. Для bump, пересекающего major version, или известной evolving library (Ktor, Room, Compose, AGP, Hilt, kotlinx.* и т. д.) также выполнить `maven-mcp:dependency-changes <old> <new>` и отразить в плане breaking changes / migration notes.
 
-The plan therefore contains a block like:
+Поэтому план должен содержать блок такого вида:
 
 ```
 Dependency: io.example:foo-bar  — role: <one line>
@@ -28,13 +28,12 @@ Dependency: io.example:foo-bar  — role: <one line>
 - Bump diff (1.2.0 → 1.4.2): no breaking changes in public API
 ```
 
-No such block → the plan is not ready. Implementation must not begin.
+Нет такого блока → план не готов. Реализацию начинать нельзя.
 
-### Implementation-stage check
+### Проверка на этапе реализации
 
-By the time `libs.versions.toml` / `build.gradle*` / `pom.xml` / `package.json` / `Cargo.toml` is edited, the version is already approved in the plan. The implementing agent's only job at this point is: confirm the resolved version still matches the plan (no day-of bump needed) and write the edit. Do **not** silently swap versions; if the freshness check needs re-running, report it back to the main session.
+К моменту редактирования `libs.versions.toml` / `build.gradle*` / `pom.xml` / `package.json` / `Cargo.toml` версия уже должна быть одобрена в плане. Единственная задача implementing agent на этом этапе: подтвердить, что разрешённая версия всё ещё соответствует плану (повторно получать свежую версию в тот же день не нужно), и внести изменение. **Не** менять версии молча; если проверку свежести нужно повторить, сообщить об этом main session.
 
-### Ecosystem fallback (no maven-mcp)
+### Fallback для экосистемы (без maven-mcp)
 
-If the dependency is not on Maven Central — name the ecosystem scanner explicitly in the plan output and use it. Do not silently skip checks because `maven-mcp` is the wrong tool. The four plan outputs are mandatory regardless of stack.
-
+Если dependency отсутствует в Maven Central — явно назвать в результате плана scanner экосистемы и использовать его. Не пропускать проверки молча только потому, что `maven-mcp` — неподходящий инструмент. Четыре результата планирования обязательны независимо от стека.

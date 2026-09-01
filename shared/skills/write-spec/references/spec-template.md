@@ -1,6 +1,6 @@
 Referenced from: `plugins/developer-workflow/skills/write-spec/SKILL.md` (§Phase 3 Write Spec Draft).
 
-# Spec Draft Template
+# Шаблон черновика spec
 
 ```markdown
 ---
@@ -22,7 +22,7 @@ design:                          # Optional.
   design_system:                 # Optional reference to a design system doc.
 ---
 
-# Spec: {Feature Name}
+# Spec: {Название функциональности}
 
 Date: {YYYY-MM-DD}
 Status: draft
@@ -30,18 +30,18 @@ Slug: {slug}
 
 ---
 
-## Context and Motivation
+## Контекст и мотивация
 
-{2-4 sentences: what this feature does, who benefits, why now.
-Write the "why" that will still make sense in 6 months.}
+{2–4 предложения: что делает функциональность, кто получает пользу и почему сейчас.
+Напишите «почему», которое останется понятным через 6 месяцев.}
 
-## Acceptance Criteria
+## Критерии приёмки
 
-The feature is complete when ALL of the following are true. Each criterion is assigned a
-stable `AC-N` id. The frontmatter `acceptance_criteria_ids` list is **optional** for
-back-compat, but when it is provided, it MUST include every `AC-N` id listed here and nothing
-else; that is what `acceptance` uses to drive AC-coverage checks via `business-analyst`.
-Leaving `acceptance_criteria_ids` empty disables the business-analyst conditional.
+Функциональность завершена, когда выполнены ВСЕ следующие условия. Каждому критерию присваивается
+стабильный ID `AC-N`. Список `acceptance_criteria_ids` во frontmatter **не обязателен** для
+обратной совместимости, но если он задан, то ДОЛЖЕН включать каждый перечисленный здесь ID `AC-N`
+и ничего больше; именно его `acceptance` использует для проверок покрытия AC через `business-analyst`.
+Пустой `acceptance_criteria_ids` отключает условный запуск business-analyst.
 
 - [ ] **AC-1** — {Concrete, observable behavior — not internal state}
 - [ ] **AC-2** — {Another criterion}
@@ -49,44 +49,44 @@ Leaving `acceptance_criteria_ids` empty disables the business-analyst conditiona
 - [ ] **AC-4** — {Performance criterion with specific numbers, if relevant}
 - [ ] **AC-5** — {Compatibility criterion, if relevant}
 
-**Authoritative definition of done.** The implementing agent validates against this
-list before marking any task complete.
+**Авторитетное определение готовности.** Реализующий агент сверяется с этим списком
+до отметки любой задачи как завершённой.
 
-## Prerequisites
+## Предусловия
 
-Steps that must be completed BEFORE implementation begins. Each item is either
-already done, or is an explicit task for the implementing agent or a human.
+Шаги, которые должны быть завершены ДО начала реализации. Каждый пункт либо уже выполнен,
+либо является явной задачей для реализующего агента или человека.
 
-| Prerequisite | Status | Owner | Notes |
+| Предусловие | Статус | Владелец | Примечания |
 |--------------|--------|-------|-------|
 | {e.g., Create FCM project in Firebase console} | ⬜ Todo / ✅ Done | Human / Agent | {how to do it} |
 | {e.g., Add notification entitlement to app} | ⬜ Todo | Agent | {file to modify} |
 
-*(Remove this section if there are no prerequisites outside of code changes.)*
+*(Удалите эту секцию, если вне изменений кода предусловий нет.)*
 
-## Affected Modules and Files
+## Затронутые модули и файлы
 
-| Module / File | Change type | Notes |
+| Модуль / файл | Тип изменения | Примечания |
 |---------------|-------------|-------|
 | {path or module name} | New / Modified / Deleted | {what changes and why} |
 
-Key integration points:
+Ключевые точки интеграции:
 - {Interface or class that new code must implement or call}
 - {Existing service or repository that will be extended}
 
-## Technical Approach
+## Технический подход
 
-{High-level description of HOW the feature will be implemented — not code, but enough
-to guide architecture:
-- Which pattern to follow (existing or new)
-- Data flow: source → transformation → destination
-- Key new abstractions (classes, interfaces, modules)
-- Error handling strategy
-- State management approach (if UI-relevant)}
+{Высокоуровневое описание того, КАК будет реализована функциональность — не код, но достаточно,
+чтобы направить архитектуру:
+- какой паттерн использовать (существующий или новый);
+- поток данных: источник → преобразование → назначение;
+- ключевые новые абстракции (классы, интерфейсы, модули);
+- стратегия обработки ошибок;
+- подход к управлению состоянием (если применимо к UI).}
 
-## Technical Constraints
+## Технические ограничения
 
-Rules the implementing agent must follow without deviation:
+Правила, которым реализующий агент должен следовать без отклонений:
 
 - {Must use X library — already in project}
 - {Must NOT add new dependencies without approval}
@@ -95,38 +95,38 @@ Rules the implementing agent must follow without deviation:
 - {Must be KMP-compatible / Android-only}
 - {No blocking operations on the main thread}
 
-## Decisions Made
+## Принятые решения
 
-Choices locked in during spec. The implementing agent does NOT revisit these.
+Решения, зафиксированные в spec. Реализующий агент НЕ пересматривает их.
 
-| Decision | Choice | Rationale |
+| Решение | Выбор | Обоснование |
 |----------|--------|-----------|
 | {What was decided} | {The choice} | {Why this over alternatives} |
 
-## Out of Scope
+## Вне области работ
 
-Will NOT be implemented as part of this spec:
+В рамках этого spec НЕ будет реализовано:
 
 - {Behavior or feature explicitly excluded}
 - {Edge case deferred to a future spec} *(owner: {team/person}, target: {Phase N / separate spec})*
 - {Migration or compatibility concern left out}
 
-## Open Questions
+## Открытые вопросы
 
-Unresolved questions the implementing agent must handle or escalate:
+Нерешённые вопросы, которые реализующий агент должен обработать или эскалировать:
 
 - [ ] {Question} — *blocking / non-blocking*
   - Options: {A}, {B}
   - Recommendation: {preferred}
 
-If none: write "None — spec is complete." and remove this section.
+Если их нет: напишите «None — spec is complete.» и удалите эту секцию.
 
-## Future Phases
+## Будущие фазы
 
-*(Only when feature was split into phases)*
+*(Только если функциональность разделена на фазы)*
 
 **Phase 2 — {name}:** {brief description, why deferred}
 **Phase 3 — {name}:** {brief description}
 
-Specced separately after Phase 1 is implemented and validated in production.
+Описываются отдельно после реализации фазы 1 и её проверки в production.
 ```

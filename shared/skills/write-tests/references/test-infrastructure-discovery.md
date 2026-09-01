@@ -1,15 +1,14 @@
-# Test Infrastructure Discovery
+# Обнаружение инфраструктуры тестирования
 
 Reference for `write-tests` Phase 2 — see `../SKILL.md` for the skill entry point.
 
-Use these tables while inspecting existing tests (3-5 samples if available) and build
-configuration to produce the Test Infrastructure Summary that drives downstream code
-generation. Generated tests must be indistinguishable from hand-written tests in the
-project — do not introduce a new framework, assertion library, or mocking tool.
+Используйте эти таблицы при проверке существующих тестов (3–5 примеров, если доступны) и build-конфигурации,
+чтобы подготовить Test Infrastructure Summary для последующей генерации кода. Созданные тесты должны быть
+неотличимы от написанных вручную в проекте — не вводите новый фреймворк, библиотеку утверждений или mocking tool.
 
-## Detect frameworks and libraries
+## Определите фреймворки и библиотеки
 
-| Category | What to detect | Where to look |
+| Категория | Что определить | Где искать |
 |----------|---------------|---------------|
 | Test framework (Kotlin) | JUnit 4, JUnit 5, Kotest | `build.gradle(.kts)` dependencies, existing test imports |
 | Test framework (Swift) | Swift Testing (`@Test` / `@Suite`), XCTest (`XCTestCase`), Quick | `Package.swift` dependencies, Xcode test targets, existing test imports |
@@ -19,9 +18,9 @@ project — do not introduce a new framework, assertion library, or mocking tool
 | UI testing | Compose `createComposeRule`, `compose-ui-test`; ViewInspector, XCUITest, snapshot tests | Existing test imports, build config |
 | DI in tests | Hilt test, Koin test, manual construction (both stacks) | Existing test setup patterns |
 
-## Detect conventions
+## Определите соглашения
 
-| Convention | What to detect | How |
+| Соглашение | Что определить | Как |
 |-----------|---------------|-----|
 | Naming | `should verb`, `test verb`, backtick names, `given_when_then`, Swift Testing descriptive strings (`@Test("Empty cart shows zero total")`) | Read existing test function / `@Test` names |
 | File placement | Kotlin: same package as source, or separate test package; Swift: `Tests/<Target>Tests/` (SwiftPM) or Xcode test target matching the module | Compare test file locations to source |
@@ -29,9 +28,9 @@ project — do not introduce a new framework, assertion library, or mocking tool
 | Setup pattern | `@Before`/`@BeforeEach`, `init {}`, builder/factory; Swift Testing `init` / `deinit`, XCTest `setUp` / `tearDown` | Read existing test setup blocks |
 | Assertion style | Fluent (`assertThat(x).isEqualTo(y)`) vs plain (`assertEquals`); `#expect(...)` vs `XCTAssertEqual(...)` | Read existing assertions |
 
-## Test Infrastructure Summary template
+## Шаблон Test Infrastructure Summary
 
-Compile findings into a structured summary that the code-generation agent consumes verbatim:
+Соберите результаты в структурированную сводку, которую агент генерации кода потребляет буквально:
 
 ```
 ## Test Infrastructure Summary
@@ -43,13 +42,13 @@ Compile findings into a structured summary that the code-generation agent consum
 **Async testing:** {runTest + Turbine / runTest / runBlocking / async tests / XCTestExpectation / none}
 **UI testing:** {compose-ui-test / ViewInspector / XCUITest / snapshot / none}
 
-**Naming convention:** {description — e.g., "backtick names with 'should' prefix", or "Swift Testing descriptive strings"}
-**Class / suite naming:** {e.g., "ClassNameTest", "@Suite struct FooTests"}
-**File placement:** {e.g., "same package in src/test/kotlin/", or "Tests/AuthTests/"}
-**Setup pattern:** {e.g., "@Before with MockK annotations", or "Swift Testing init/deinit"}
-**Assertion style:** {e.g., "Truth fluent assertions", or "#expect with descriptive tests"}
+**Naming convention:** {описание — например, «имена в backtick с префиксом 'should'» или «описательные строки Swift Testing»}
+**Class / suite naming:** {например, «ClassNameTest», «@Suite struct FooTests»}
+**File placement:** {например, «тот же package в src/test/kotlin/» или «Tests/AuthTests/»}
+**Setup pattern:** {например, «@Before с аннотациями MockK» или «init/deinit Swift Testing»}
+**Assertion style:** {например, «плавные утверждения Truth» или «#expect с описательными тестами»}
 
 **Example test file:** {path to a representative existing test for reference}
 ```
 
-Keep the section headings and field names stable — downstream prompts assume this structure.
+Сохраняйте заголовки секций и имена полей стабильными — downstream-запросы предполагают эту структуру.

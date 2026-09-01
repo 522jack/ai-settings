@@ -1,102 +1,102 @@
-# Research Consortium — Expert Prompt Templates
+# Research Consortium — шаблоны запросов экспертам
 
-Phase 2 launches each expert in one parallel message. Each agent runs independently — never share one agent's findings with another. Two **codebase-bound** tracks (Codebase, Architecture) use the verbatim prompts below on Explore / architecture-expert; the three **external** tracks (Web, Docs, Dependencies) run on the `source-researcher` agent (see *External tracks* below).
+На фазе 2 каждый эксперт запускается одним параллельным сообщением. Каждый агент работает независимо — никогда не передавайте результаты одного агента другому. Два направления, **привязанные к кодовой базе** (Codebase, Architecture), используют приведённые ниже дословные запросы на Explore / architecture-expert; три **внешних** направления (Web, Docs, Dependencies) выполняются на агенте `source-researcher` (см. *External tracks* ниже).
 
-> **Intentional overlap with the `write-spec` skill.** The Codebase / Architecture prompts
-> here overlap with `../../write-spec/references/research-prompts.md`, where they appear as an
-> enriched superset. The two files are kept separate **on purpose** so each skill stays
-> self-contained — do not merge them into a shared file. (Both skills route external-source
-> gathering through the same `source-researcher` agent + `rules/external-sources.md`, so that
-> method *is* shared — only the codebase prompts are intentionally duplicated.)
+> **Намеренное пересечение с навыком `write-spec`.** Запросы Codebase / Architecture здесь
+> пересекаются с `../../write-spec/references/research-prompts.md`, где представлены как
+> расширенное надмножество. Эти два файла намеренно разделены, чтобы каждый навык оставался
+> самодостаточным — не объединяйте их в общий файл. (Оба навыка направляют сбор внешних источников
+> через одного агента `source-researcher` и `rules/external-sources.md`, поэтому этот метод общий —
+> намеренно дублируются только запросы к кодовой базе.)
 
-All prompts must include this line: *"Respond in the same language as the research topic description."*
+Все запросы должны содержать строку: *«Respond in the same language as the research topic description.»*
 
 ---
 
-## Tool discovery & multi-channel use — single source
+## Обнаружение инструментов и использование нескольких каналов — единый источник
 
-The method for discovering reachable tools/MCP, querying **all** relevant channels of a class,
-and cross-checking by trust tier is **not duplicated here**. It lives in one place:
+Метод обнаружения доступных инструментов/MCP, запроса **всех** релевантных каналов класса
+и перепроверки по уровням доверия **не дублируется здесь**. Он находится в одном месте:
 `rules/external-sources.md` § *Tool discovery & multi-channel use* (+ § *Verify library API
 before code* for stack composition, § *Trust assessment* for tiers). That rule is unconditional
 and is inherited by every subagent, so the `source-researcher` agent and the Explore /
 architecture tracks all apply the same discipline without restating it.
 
-The three **external** tracks (Web / Docs / Dependencies) do not get a hardcoded tool in their
-prompt — they run on the **`source-researcher`** agent, which does its own runtime discovery.
-The two **codebase-bound** tracks keep their own prompts (Explore and architecture-expert have
-different jobs and toolchains).
+Три **внешних** направления (Web / Docs / Dependencies) не получают в запросе жёстко заданный инструмент —
+они выполняются на агенте **`source-researcher`**, который сам обнаруживает доступные средства. Два
+**направления кодовой базы** сохраняют собственные запросы (Explore и architecture-expert имеют разные
+задачи и toolchain).
 
 ---
 
-## External tracks — launch via the `source-researcher` agent
+## Внешние направления — запуск через агента `source-researcher`
 
-Web, Docs, and Dependencies are three **independent** instances of `source-researcher`, each
-with a different `focus` (independence per instance preserves the synthesis-bias invariant —
-do not collapse them into one call). The agent already knows its method and report structure;
-the launch prompt only supplies focus + topic + constraints. Model/effort are pinned in the
-agent definition (`sonnet` / `medium`) — do not override unless the topic clearly needs more.
+Web, Docs и Dependencies — три **независимых** экземпляра `source-researcher`, каждый
+с отдельным `focus` (независимость экземпляров сохраняет инвариант смещения синтеза — не объединяйте
+их в один вызов). Агент уже знает свой метод и структуру отчёта; запрос запуска передаёт только focus,
+тему и ограничения. Модель/усилие закреплены в определении агента (`sonnet` / `medium`) — не переопределяйте,
+если только тема явно не требует большего.
 
-Launch each selected external track with `agentType: source-researcher` and this prompt:
+Запускайте каждое выбранное внешнее направление с `agentType: source-researcher` и таким запросом:
 
 ```
 focus: {web | library-docs | dependency-intelligence}
 topic: {topic}
 constraints: {known boundaries — KMP-only, no new deps, pinned versions, deadline}
 
-Investigate only your focus class for this topic, per your standing instructions
-(discover available channels → query all relevant ones → cross-check by tier → report
-without synthesizing). Respond in the same language as the topic description.
+Исследуйте для этой темы только свой класс focus согласно постоянным инструкциям
+(обнаружить доступные каналы → запросить все релевантные → перепроверить по уровням → сообщить
+без синтеза). Отвечайте на том же языке, что и описание темы.
 ```
 
 Track → focus mapping:
 
-| Track | `focus` | Covers |
+| Направление | `focus` | Покрытие |
 |---|---|---|
-| Web | `web` | industry practice, trade-offs, pitfalls, real-world examples, ≤12-mo developments, consensus |
-| Docs | `library-docs` | API reference, guides, changelogs, migration/compat, version-specific behavior |
-| Dependencies | `dependency-intelligence` | current vs latest versions, CVEs, KMP/AGP compat, health, breaking changes, alternatives |
+| Web | `web` | практика отрасли, компромиссы, подводные камни, реальные примеры, изменения за ≤12 месяцев, консенсус |
+| Docs | `library-docs` | справочник API, руководства, changelog, миграция/совместимость, поведение конкретной версии |
+| Dependencies | `dependency-intelligence` | текущая и последняя версии, CVE, совместимость KMP/AGP, здоровье, ломающие изменения, альтернативы |
 
-The detailed per-class angles that used to live here now live in the agent's system prompt
-(`agents/source-researcher.md`) and in `external-sources.md` — single source, no restating.
-
----
-
-## Codebase Expert (Explore subagent)
-
-Use a structured code-index tool when available (resolves classes, usages, dependencies, API by symbol). Fall back to `Grep` + `Read` if no index — same report structure either way.
-
-```
-Investigate the codebase for everything related to: {topic}
-
-Find and report:
-1. Existing code that relates to this topic (classes, interfaces, modules)
-2. Current patterns and approaches used for similar concerns
-3. Dependencies already in the project that are relevant
-4. Module boundaries and layers that would be affected
-5. Any existing TODO/FIXME comments related to this topic
-
-Use a code-index tool for symbol resolution when one is available; fall back to
-Grep + Read otherwise. Check build files, configuration, and test code too.
-
-Respond in the same language as the research topic description. Structure: overview,
-then findings grouped by category.
-```
+Подробные ракурсы для каждого класса, ранее находившиеся здесь, теперь описаны в системном запросе агента
+(`agents/source-researcher.md`) и `external-sources.md` — единый источник без повторения.
 
 ---
 
-## Architecture Expert (architecture-expert agent)
+## Эксперт по кодовой базе (Explore subagent)
+
+При наличии используйте структурированный инструмент индексации кода (разрешает классы, использования, зависимости и API по символу). Если индекса нет, перейдите к `Grep` + `Read` — структура отчёта в обоих случаях одинакова.
 
 ```
-Evaluate the architectural implications of: {topic}
+Исследуйте кодовую базу на предмет всего, что связано с: {topic}
 
-Analyze:
-1. Which modules and layers would be affected?
-2. Does this align with the current architecture, or does it require structural changes?
-3. Dependency direction — would this introduce any problematic dependencies?
-4. API boundaries — what contracts need to change or be created?
-5. Integration points — where does this touch existing abstractions?
+Найдите и сообщите:
+1. Существующий код, связанный с темой (классы, интерфейсы, модули)
+2. Текущие паттерны и подходы для подобных вопросов
+3. Уже имеющиеся в проекте релевантные зависимости
+4. Границы модулей и затронутые слои
+5. Существующие комментарии TODO/FIXME по этой теме
 
-Read the relevant module structure and build files before making judgments.
-Respond in the same language as the research topic description.
+При наличии используйте инструмент индексации кода для разрешения символов; иначе переходите к
+Grep + Read. Также проверьте build-файлы, конфигурацию и тестовый код.
+
+Отвечайте на том же языке, что и описание темы исследования. Структура: обзор,
+затем результаты по категориям.
+```
+
+---
+
+## Эксперт по архитектуре (агент architecture-expert)
+
+```
+Оцените архитектурные последствия: {topic}
+
+Проанализируйте:
+1. Какие модули и слои будут затронуты?
+2. Согласуется ли это с текущей архитектурой или требует структурных изменений?
+3. Направление зависимостей — появятся ли проблемные зависимости?
+4. Границы API — какие контракты нужно изменить или создать?
+5. Точки интеграции — где это касается существующих абстракций?
+
+Перед выводами прочитайте структуру соответствующих модулей и build-файлы.
+Отвечайте на том же языке, что и описание темы исследования.
 ```

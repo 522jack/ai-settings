@@ -3,31 +3,31 @@ type: plan
 slug: smoke-test-plan-fixture
 ---
 
-# Plan: Add caching layer to user profile API
+# План: добавить слой кеширования для API профиля пользователя
 
-## Goal
+## Цель
 
-Introduce a Redis-backed cache for the `GET /api/users/:id` endpoint to reduce database load during peak hours. Target: 80% cache hit rate, p99 latency under 50ms.
+Добавить кеш на базе Redis для endpoint `GET /api/users/:id`, чтобы снизить нагрузку на базу данных в часы пик. Цель: доля попаданий в кеш 80%, задержка p99 менее 50 мс.
 
-## Approach
+## Подход
 
-1. Add Redis client dependency (Lettuce) to the user-service module.
-2. Wrap the existing `UserRepository.findById` call with a cache-aside pattern in a new `CachedUserRepository` decorator.
-3. TTL: 5 minutes. Invalidation: on `POST /api/users/:id` update.
-4. Metrics: Micrometer counters for cache-hit / cache-miss, gauge for Redis connection pool usage.
+1. Добавить зависимость клиента Redis (Lettuce) в модуль user-service.
+2. Обернуть существующий вызов `UserRepository.findById` паттерном cache-aside в новом декораторе `CachedUserRepository`.
+3. TTL: 5 минут. Инвалидация: при обновлении через `POST /api/users/:id`.
+4. Метрики: счётчики Micrometer для cache-hit / cache-miss, gauge для использования пула соединений Redis.
 
-## Affected modules
+## Затронутые модули
 
-- `user-service/src/main/kotlin/com/example/user/repository/` — new `CachedUserRepository.kt`, wire via Spring config
-- `user-service/build.gradle.kts` — add `io.lettuce:lettuce-core`
-- `user-service/src/main/resources/application.yml` — Redis connection config
-- `deployment/helm/user-service/values.yaml` — Redis sidecar declaration
+- `user-service/src/main/kotlin/com/example/user/repository/` — новый `CachedUserRepository.kt`, подключить через конфигурацию Spring
+- `user-service/build.gradle.kts` — добавить `io.lettuce:lettuce-core`
+- `user-service/src/main/resources/application.yml` — конфигурация соединения Redis
+- `deployment/helm/user-service/values.yaml` — объявление sidecar Redis
 
-## Risks
+## Риски
 
-- Cache coherence on multi-instance deployments — covered by TTL, no pub/sub invalidation.
-- Redis outage degrades latency but must not break reads — fallback to DB if Redis unreachable.
+- Согласованность кеша при развёртывании нескольких экземпляров — обеспечивается TTL, инвалидации через pub/sub нет.
+- Сбой Redis ухудшает задержку, но не должен ломать чтение — при недоступности Redis использовать fallback на БД.
 
-## Open questions
+## Открытые вопросы
 
-- Should we use Redis AUTH / TLS? (Depends on deployment env — ask infra team.)
+- Нужно ли использовать Redis AUTH / TLS? (Зависит от среды развёртывания — спросить команду инфраструктуры.)

@@ -5,42 +5,41 @@ paths:
   - "**/libs.versions.toml"
 ---
 
-# Gradle Build Script Rules
+# Правила Gradle Build Script
 
-Applies to Gradle build scripts only: `*.gradle.kts`, `*.gradle`, `settings.gradle*`, convention plugins under `build-logic/` and `buildSrc/`.
+Применяется только к Gradle build scripts: `*.gradle.kts`, `*.gradle`, `settings.gradle*`, convention plugins в `build-logic/` и `buildSrc/`.
 
-## Dependency configuration — `implementation` by default, `api` only when types leak
+## Конфигурация dependency — по умолчанию `implementation`, `api` только при утечке типов
 
-For every dependency, pick the narrowest configuration that still works. Priority:
+Для каждой dependency выбирать минимальную конфигурацию, которая обеспечивает работу. Приоритет:
 
-1. **`implementation`** — first choice. The dependency is used internally; its types do not appear in the module's public API. Consumers don't see it on their compile classpath, rebuilds stay isolated.
-2. **`api`** — only when the dependency's types appear in this module's *public* surface and downstream modules need to reference those types directly. Concretely: types of `public`/default-visibility return values, public-API parameters, public class hierarchies, annotations on public symbols, generic type arguments on public APIs.
-3. **`compileOnly`** / **`runtimeOnly`** — for Gradle plugin classpath needs, annotation processors with optional runtime, or libraries provided by the host (Android SDK, plugin runtime).
+1. **`implementation`** — первый выбор. Dependency используется внутренне; её типы не входят в public API модуля. Потребители не видят её в своём compile classpath, rebuilds остаются изолированными.
+2. **`api`** — только когда типы dependency входят в *public* surface модуля и downstream modules должны напрямую ссылаться на эти типы. Конкретно: типы return values с `public`/default visibility, параметры public API, public class hierarchies, annotations на public symbols, generic type arguments в public APIs.
+3. **`compileOnly`** / **`runtimeOnly`** — для потребностей Gradle plugin classpath, annotation processors с optional runtime или библиотек, предоставляемых host (Android SDK, plugin runtime).
 
-Apply the same priority to test configurations (`testImplementation` over `testApi`) and to KMP source sets (`commonMain.dependencies { implementation(...) }` first; `api(...)` only when needed by consuming source sets / modules).
+Применять тот же приоритет к test configurations (`testImplementation` предпочительнее `testApi`) и KMP source sets (`commonMain.dependencies { implementation(...) }` сначала; `api(...)` только если нужен consuming source sets / modules).
 
-### How to decide
+### Как выбирать
 
-A dependency belongs in `api` if **any** of these hold:
-- A `public`/default-visibility type from the dependency appears in the signature of a `public`/default-visibility declaration of this module.
-- A consumer module would otherwise have to redeclare the same dependency just to reference a type that this module already exposes.
-- The dependency provides a public DSL or extension API that consumers invoke directly via this module.
+Dependency относится к `api`, если выполняется **любое** из условий:
+- Тип dependency с `public`/default visibility появляется в сигнатуре объявления этого модуля с `public`/default visibility.
+- Consumer module иначе пришлось бы повторно объявлять ту же dependency только для ссылки на type, который этот модуль уже exposes.
+- Dependency предоставляет public DSL или extension API, который consumers вызывают напрямую через этот модуль.
 
-Otherwise — `implementation`. Default `public` symbols in Kotlin make this easy to miss; check `kotlin-style.md`'s visibility rule first to ensure the symbol is actually meant to be public.
+В противном случае — `implementation`. `public` symbols Kotlin по умолчанию легко пропустить; сначала проверить правило видимости из `kotlin-style.md`, чтобы убедиться, что symbol действительно должен быть public.
 
-### Why it matters
+### Почему это важно
 
-- `implementation` keeps Gradle's classpath isolation intact — touching one module doesn't recompile downstream consumers, and ABI changes in the dep don't ripple.
-- `api` is a transitive contract: every consumer of this module gets the dep on their compile classpath whether they want it or not. Misused `api` inflates the rebuild graph and creates accidental coupling.
-- The cost of fixing later is asymmetric: tightening `api` → `implementation` is a breaking change for anyone who relied on the leak; widening `implementation` → `api` is trivial.
+- `implementation` сохраняет изоляцию classpath Gradle: изменение одного модуля не перекомпилирует downstream consumers, а ABI changes в dep не распространяются дальше.
+- `api` — transitive contract: каждый consumer этого модуля получает dep в compile classpath, хочет он этого или нет. Неправильное использование `api` раздувает rebuild graph и создаёт случайную связанность.
+- Стоимость исправления позже асимметрична: ужесточение `api` → `implementation` — breaking change для тех, кто полагался на утечку; расширение `implementation` → `api` тривиально.
 
-### When unsure
+### Если есть сомнения
 
-Pick `implementation`. Compile failure in a consumer module is a clean signal to widen; silent transitive leaks are not.
+Выбирать `implementation`. Ошибка компиляции в consumer module — ясный сигнал расширить конфигурацию; молчаливые transitive leaks — нет.
 
-## Version catalogs and convention plugins
+## Каталоги версий и convention plugins
 
-- New dependencies go into `gradle/libs.versions.toml` (or the project's version catalog file). Don't hardcode coordinates in module build scripts.
-- Repeated build configuration belongs in convention plugins (`build-logic/`), not duplicated across module build scripts.
-- For multi-module repos, before adding a new dependency to a leaf module, check whether a convention plugin or upstream module already provides it transitively.
-
+- Новые dependencies добавлять в `gradle/libs.versions.toml` (или version catalog file проекта). Не хардкодить coordinates в module build scripts.
+- Повторяющаяся build configuration должна находиться в convention plugins (`build-logic/`), а не дублироваться в module build scripts.
+- В multi-module repos перед добавлением новой dependency в leaf module проверить, не предоставляет ли её уже транзитивно convention plugin или upstream module.

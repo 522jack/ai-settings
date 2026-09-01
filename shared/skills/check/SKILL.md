@@ -1,36 +1,38 @@
 ---
 name: check
 description: >-
-  Run all mechanical verification checks on the project — build, static analysis (lint),
-  tests, and typecheck — in a single command. Reusable utility called by any skill that
-  modifies code: write-tests, finalize, or directly by the user.
+  Запускайте все механические проверки проекта — build, статический анализ (lint),
+  tests и typecheck — одной командой. Это переиспользуемая утилита для любого навыка,
+  изменяющего код: write-tests, finalize или прямого вызова пользователем.
 
-  Auto-detects project tooling (Gradle, npm/pnpm/yarn, cargo, Swift SPM, Xcode, Python,
-  Go, Makefile) and runs the appropriate commands. Does NOT modify code — it only verifies.
+  Автоматически обнаруживает инструменты проекта (Gradle, npm/pnpm/yarn, cargo, Swift SPM, Xcode, Python,
+  Go, Makefile) и выполняет подходящие команды. Код НЕ изменяет — только проверяет.
 
-  Use when: "check the project", "run tests", "verify build", "does it build?", "smoke check",
-  "make sure nothing is broken", "validate the branch", "after I edited X run checks",
-  "is everything clean?", "did I break anything?",
-  or when a pipeline stage needs to confirm that code modifications
-  did not break anything. Do NOT use for code review (that is finalize Phase A), functional
-  acceptance testing (use acceptance), or exploratory QA (call manual-tester agent directly).
+  Используйте при запросах: «проверить проект», «запустить тесты», «проверить сборку», «собирается ли?», «smoke check»,
+  «убедиться, что ничего не сломано», «проверить ветку», «после редактирования X запустить проверки»,
+  «всё ли чисто?», «я что-нибудь сломал?»,
+  или когда этап pipeline должен убедиться, что изменения кода ничего не сломали. НЕ используйте для code review
+  (это фаза A finalize), функциональной приёмки (используйте acceptance) или исследовательского QA
+  (напрямую вызывайте агента manual-tester).
 ---
 
-# Check
+# Проверка
 
-Mechanical verification pass — detect project tooling, run build + lint + typecheck + tests, report pass/fail per category and an aggregate verdict. Fail-fast by default. **Read-only with respect to code:** the skill executes commands and reports; the caller owns the fix cycle.
-
----
-
-## Phase 1: Detect tooling
-
-Marker-file detection (`gradlew`, `package.json`, `Cargo.toml`, `Package.swift`, `*.xcodeproj`, `pyproject.toml`, `go.mod`, `Makefile`) follows `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § Test infrastructure. Stack-specific defaults below override that table only where the test runner alone is insufficient for a full check.
-
-If multiple stacks are detected (monorepo) — run checks for each. No marker found → escalate to the caller.
+Механический проход проверки: обнаружить инструменты проекта, запустить build + lint + typecheck + tests,
+сообщить pass/fail по категориям и итоговый вердикт. По умолчанию fail-fast. **Код не изменяется:**
+навык выполняет команды и сообщает результат; цикл исправления принадлежит вызывающему коду.
 
 ---
 
-## Phase 2: Resolve commands
+## Фаза 1: определите инструменты
+
+Обнаружение файлов-маркеров (`gradlew`, `package.json`, `Cargo.toml`, `Package.swift`, `*.xcodeproj`, `pyproject.toml`, `go.mod`, `Makefile`) выполняется согласно `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § Test infrastructure. Указанные ниже значения по умолчанию для стека переопределяют таблицу только там, где одного test runner недостаточно для полной проверки.
+
+Если обнаружено несколько стеков (monorepo), выполните проверки для каждого. Если маркер не найден → эскалируйте вызывающему коду.
+
+---
+
+## Фаза 2: определите команды
 
 ### Gradle
 
@@ -40,7 +42,7 @@ If multiple stacks are detected (monorepo) — run checks for each. No marker fo
 ./gradlew assemble check
 ```
 
-**Android (AGP)** — `check` alone usually runs only unit tests, and `connectedCheck` needs a device (out of scope). Use variant-scoped commands:
+**Android (AGP)** — один `check` обычно запускает только unit-тесты, а `connectedCheck` требует устройства (вне области). Используйте команды для конкретного варианта:
 
 ```
 ./gradlew assembleDebug lintDebug testDebug
@@ -50,7 +52,7 @@ Detect Android via `android { }` block or `com.android.application` / `com.andro
 
 ### Node (`package.json`)
 
-Read `scripts` and run whichever exist, in this order — **stack override of the default Phase 3 sequence**, since JS projects rarely need a build to surface lint/type/test problems and `build` is the slowest:
+Прочитайте `scripts` и выполните существующие в таком порядке — **переопределение стека для стандартной последовательности фазы 3**, поскольку JS-проектам редко нужна сборка для обнаружения проблем lint/type/test, а `build` выполняется дольше всего:
 
 1. `lint` (or `lint:all`)
 2. `typecheck` (or `tsc` / `type-check`)
@@ -61,13 +63,13 @@ Pick the package manager by lockfile: `pnpm-lock.yaml` → `pnpm run`, `yarn.loc
 
 ### Xcode
 
-Never guess scheme or destination. Escalate with: "Xcode project detected but no check commands configured. Provide `xcodebuild -scheme <Scheme> test -destination '<destination>'` or configure them as a project override." Phase 3 cannot proceed without these.
+Никогда не угадывайте scheme или destination. Эскалируйте с сообщением: «Обнаружен Xcode-проект, но команды проверки не настроены. Предоставьте `xcodebuild -scheme <Scheme> test -destination '<destination>'` или настройте их как переопределение проекта». Фаза 3 не может продолжиться без них.
 
 ### Python
 
-Inspect `pyproject.toml` / `setup.cfg` and run only configured tools — `[tool.ruff]` → `ruff check .`, `[tool.mypy]` → `mypy .`, `[tool.pyright]` → `pyright`, `[tool.pylint]` → `pylint <package>`, `[tool.flake8]` → `flake8 .`, `[tool.pytest.ini_options]` → `pytest`, `[tool.black]` → `black --check .`. Prefer `uv run <tool>` when `uv.lock` or `[tool.uv]` is present. Do not install missing tools.
+Проверьте `pyproject.toml` / `setup.cfg` и запускайте только настроенные инструменты — `[tool.ruff]` → `ruff check .`, `[tool.mypy]` → `mypy .`, `[tool.pyright]` → `pyright`, `[tool.pylint]` → `pylint <package>`, `[tool.flake8]` → `flake8 .`, `[tool.pytest.ini_options]` → `pytest`, `[tool.black]` → `black --check .`. Предпочитайте `uv run <tool>`, если есть `uv.lock` или `[tool.uv]`. Не устанавливайте отсутствующие инструменты.
 
-### Other stacks
+### Другие стеки
 
 - **Rust:** `cargo fmt --check` + `cargo clippy --all-targets -- -D warnings` + `cargo test --all-features` (clippy already type-checks).
 - **Swift SPM:** `swift build` + `swift test`; add `swiftlint` or `swift-format lint` if a config file exists.
@@ -76,55 +78,55 @@ Inspect `pyproject.toml` / `setup.cfg` and run only configured tools — `[tool.
 
 ---
 
-## Phase 3: Execute
+## Фаза 3: выполните
 
-Default: **sequential, fail-fast** in this order — Build → Lint → Typecheck → Tests. On the first failure: stop, report with stderr excerpt, hand back to caller.
+По умолчанию: **последовательно, fail-fast** в порядке Build → Lint → Typecheck → Tests. При первой ошибке остановитесь, сообщите результат с фрагментом stderr и верните управление вызывающему коду.
 
-### Opt-in modes
+### Режимы по запросу
 
-| Flag | Effect |
+| Флаг | Эффект |
 |---|---|
 | `--all` | Run every check regardless of earlier failures (PARTIAL verdict if mixed). |
 | `--fast` | Skip tests AND the public-API coverage gate; build + lint + typecheck only. |
 | `--only <category>` | Single category (`build` / `lint` / `typecheck` / `tests`); coverage gate skipped. |
 | `--no-coverage-gate` | Skip Phase 3.5 only. Recorded as `skipped: [coverage]` plus a Notes entry. |
 
-Callers pass the mode as the first `--<flag>` token or via natural language ("fast mode", "only the tests"). Mutually exclusive flags → fail with a clear error.
+Вызывающий код передаёт режим первым токеном `--<flag>` или естественным языком («fast mode», «only the tests»). Взаимоисключающие флаги → завершение с ясной ошибкой.
 
-### Output capture
+### Сбор вывода
 
-For each command: capture exit code; on failure, capture last ~50 lines of stderr (truncate from the top); on success, do not include stdout in the report — just status.
+Для каждой команды: сохраните код выхода; при ошибке сохраните последние ~50 строк stderr (обрежьте начало); при успехе не включайте stdout в отчёт — достаточно статуса.
 
 ---
 
-## Phase 3.5: Public-API coverage gate (default-on)
+## Фаза 3.5: gate покрытия публичного API (включён по умолчанию)
 
-Runs after the test category. Even when build / lint / typecheck / tests all pass, a new public symbol with no matching test fails this gate — the early check; the late audit lives in `finalize` Phase D.
+Запускается после категории tests. Даже если build / lint / typecheck / tests прошли, новый публичный символ без соответствующего теста проваливает этот gate — это ранняя проверка; поздний аудит находится в фазе D `finalize`.
 
 **Symbol classification, trivial-no-test allow-list, and test-matching priority** — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § Public-API coverage gate.
 
-**When the gate runs:** current branch differs from the remote default branch (derive base via `git remote show origin | grep "HEAD branch"`, fallbacks `main`/`master`/`develop`; operate on `git diff $(git merge-base origin/<base> HEAD)..HEAD`). Branch at default → skip silently. `--no-coverage-gate` → record as `skipped: [coverage]`.
+**Когда запускается gate:** текущая ветка отличается от удалённой ветки по умолчанию (определите base через `git remote show origin | grep "HEAD branch"`, запасные варианты `main`/`master`/`develop`; работайте с `git diff $(git merge-base origin/<base> HEAD)..HEAD`). Если ветка — default, молча пропустите. `--no-coverage-gate` → запишите `skipped: [coverage]`.
 
 **Per-language matching extras** beyond the global rule:
 - Kotlin annotation `@NoTestRequired` or `@Suppress("MissingTest")` satisfies the gate; equivalent line comment `// no-test-required: <reason>` works for Swift / Rust / Go / TS / JS / Python.
 - Files under `no-test-harness/` are an escape hatch for legacy modules.
 
-**Output:** a `coverage` row in the report and arrays of the verdict block. Result: `PASS` (every symbol matched or trivial), `FAIL` (one or more unmatched — list `<file>:<line>: <symbol>` with the rule that was tried), or `SKIP` (explicit override).
+**Вывод:** строка `coverage` в отчёте и массивы блока вердикта. Результат: `PASS` (каждый символ сопоставлен или тривиален), `FAIL` (один или несколько не сопоставлены — перечислите `<file>:<line>: <symbol>` и проверенное правило) или `SKIP` (явное переопределение).
 
-A `coverage: FAIL` from `/check` means the engineer adds tests, marks trivial, or passes `--no-coverage-gate` (discouraged, recorded). When invoked from `finalize`, the engineer who introduced the symbol owns the fix in the same run.
+`coverage: FAIL` от `/check` означает, что инженер добавляет тесты, помечает символ как тривиальный или передаёт `--no-coverage-gate` (не рекомендуется, фиксируется). При вызове из `finalize` исправление в том же запуске выполняет инженер, добавивший символ.
 
 ---
 
-## Phase 4: Report
+## Фаза 4: отчёт
 
-Two parts: human-readable body + mandatory machine-readable summary block at the end.
+Две части: человекочитаемое тело + обязательный машиночитаемый блок сводки в конце.
 
-**Body:**
+**Тело:**
 
-- `## Check report` with `Stack detected`, `Mode`, `Verdict` lines.
-- `### Results` — one row per check with Command / Status / Notes.
-- `### Failures` (if any) — per failure: command, exit code, stderr excerpt, suggested next step.
-- `### Summary` — passed/failed/skipped counts + total wall time.
+- `## Check report` со строками `Stack detected`, `Mode`, `Verdict`.
+- `### Results` — по одной строке на проверку с Command / Status / Notes.
+- `### Failures` (если есть) — для каждой ошибки: команда, код выхода, фрагмент stderr, предлагаемый следующий шаг.
+- `### Summary` — число passed/failed/skipped + общее время.
 
 **Machine-readable trailer** — required, orchestrator/skills tail-parse it:
 
@@ -143,21 +145,21 @@ skipped: [tests]
 
 ---
 
-## Scope rules
+## Правила области
 
-- **In scope:** running mechanical checks; reporting results; truncating noisy output.
-- **Out of scope:** editing code, suggesting fixes, running interactive commands, installing missing tools, creating branches, committing.
-- **Never** auto-fix formatting / lint (even with `--fix`); never modify build files to silence a failure; never run destructive ops (`./gradlew clean` only if the caller asked for it).
+- **В области:** запуск механических проверок; отчёт о результатах; усечение шумного вывода.
+- **Вне области:** редактирование кода, предложения исправлений, интерактивные команды, установка отсутствующих инструментов, создание веток, коммиты.
+- **Никогда** не исправляйте автоматически форматирование/lint (даже с `--fix`); не изменяйте build-файлы, чтобы скрыть сбой; не запускайте разрушительные операции (`./gradlew clean` только по запросу вызывающего кода).
 
 ---
 
-## Escalation
+## Эскалация
 
-Stop and report to the caller when:
+Остановитесь и сообщите вызывающему коду, когда:
 
 - No recognized tooling AND no commands provided.
 - A check hangs or exceeds 15 minutes wall time — abort with a timeout note.
 - Auth / network unavailable (private Maven repo down, etc.).
 - Build wrapper referenced but missing (e.g., `gradlew` absent) — report; do not regenerate.
 
-State what was detected, what was attempted, what the caller needs to decide.
+Укажите, что обнаружено, что предпринято и что должен решить вызывающий код.

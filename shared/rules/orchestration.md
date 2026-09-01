@@ -1,104 +1,105 @@
-# Orchestration Rules
+# Правила оркестрации
 
-Main session = orchestrator on the most capable available model — its value is reasoning, planning, synthesis. Hands-on coding goes to specialists, dispatched through the current runtime adapter at the right **model × effort**; keep the main session for decisions.
+Main session = оркестратор на самой мощной доступной модели — его ценность в рассуждении, планировании и синтезе. Практическое написание кода передаётся специалистам, которые запускаются через текущий runtime adapter с подходящими **model × effort**; main session сохраняется для принятия решений.
 
-**May:** orientation research (Reads until focus drifts, targeted Bash, `git status`/`log`/`ls`/`pwd`, single-page MCP/web lookups, WebFetch); edit process working files (state/report/debug/plan, `~/dotfiles/ai/**`); plan synthesis from specialist summaries; final synthesis + the user-facing answer; subagent/skill invocation with the right model.
-**Must not:** edit project production code, do heavy multi-file code search, or wait on long-running build/test/CI in its own context.
+**Можно:** ориентировочное исследование (Read до потери фокуса, целевой Bash, `git status`/`log`/`ls`/`pwd`, одностраничные запросы к MCP/web, WebFetch); редактировать рабочие файлы процесса (state/report/debug/plan, `~/dotfiles/ai/**`); синтезировать план по сводкам специалистов; выполнять финальный синтез и готовить ответ пользователю; вызывать subagent/skill с подходящей моделью.
+**Нельзя:** редактировать production code проекта, выполнять тяжёлый многофайловый поиск по коду или ждать длительные build/test/CI в собственном контексте.
 
-### Process working files (main session edits directly)
+### Рабочие файлы процесса (main session редактирует напрямую)
 
-| Category | Examples |
+| Категория | Примеры |
 |---|---|
-| State / reports / debug logs | `swarm-report/<slug>-{state,report,debug,e2e-scenario}.md` |
-| Plan files | files created in the current plan/task |
-| Session notes | `MEMORY.md`, files in `memory/`, scratch files for the task |
-| Global rules and configs | `~/dotfiles/ai/shared/AGENTS.md`, `~/dotfiles/ai/shared/rules/**`, runtime adapters (`~/dotfiles/ai/claude/**`, `~/dotfiles/ai/codex/**`), hooks |
-| Process docs | READMEs/docs inside `~/dotfiles/ai/` |
+| Состояние / отчёты / debug logs | `swarm-report/<slug>-{state,report,debug,e2e-scenario}.md` |
+| Файлы плана | файлы, созданные в текущем плане/задаче |
+| Заметки сессии | `MEMORY.md`, файлы в `memory/`, временные файлы задачи |
+| Глобальные правила и конфигурации | `~/dotfiles/ai/shared/AGENTS.md`, `~/dotfiles/ai/shared/rules/**`, адаптеры рантайма (`~/dotfiles/ai/claude/**`, `~/dotfiles/ai/codex/**`), hooks |
+| Документы процесса | READMEs/docs внутри `~/dotfiles/ai/` |
 
-These are **process** files, not project code — editing them is orchestration, not implementation.
+Это **файлы процесса**, а не код проекта — их редактирование является оркестрацией, а не реализацией.
 
-## Forbidden (violation = error)
+## Запрещено (нарушение = ошибка)
 
-- Edit/Write in **project code** (production source, configs, tests) — delegate even one line.
-- Heavy/multi-file grep / deep code search across the codebase → delegate to search specialist. A targeted grep in 1–2 files for orientation is fine.
-- Long-running build/test/CI in the main context → run in background via subagent.
-- Review tasks (security/performance/UX/code review) → the matching expert agent.
+- Edit/Write в **коде проекта** (production source, configs, tests) — делегировать даже одну строку.
+- Тяжёлый/multi-file grep / глубокий поиск по всей кодовой базе → делегировать search specialist. Целевой grep по 1–2 файлам для ориентации допустим.
+- Длительный build/test/CI в основном контексте → запускать в фоне через subagent.
+- Задачи review (security/performance/UX/code review) → соответствующему expert agent.
 
-**STOP before every `Edit`/`Write`/non-trivial `Grep`/`Glob`/`Bash`:** touching project code or mass file reads → subagent; a process file (table above) or `~/dotfiles/ai/**` → fine; lightweight orientation (a few Reads, `git status`/`log`/`ls`, targeted routing grep) → fine.
+**ОСТАНОВИТЬСЯ перед каждым `Edit`/`Write`/нетривиальным `Grep`/`Glob`/`Bash`:** работа с кодом проекта или массовое чтение файлов → subagent; файл процесса (таблица выше) или `~/dotfiles/ai/**` → допустимо; лёгкая ориентация (несколько Read, `git status`/`log`/`ls`, целевой routing grep) → допустима.
 
-## Skill-first
+## Сначала skill
 
-Task matches an installed skill → use the skill (it knows the right agent/model sequence). Direct subagent is the fallback when no skill fits.
+Если задача соответствует установленному skill → использовать skill (он знает подходящую последовательность agent/model). Прямой subagent — fallback, если подходящего skill нет.
 
-## Runtime adapter first
+## Сначала runtime adapter
 
-Shared workflow terms are defined in `runtime-adapter.md`. Before delegating or invoking a named
-workflow, map the contract to the current runtime's actual tools:
+Термины общих рабочих процессов определены в `runtime-adapter.md`. Перед делегированием или вызовом
+именованного рабочего процесса сопоставить контракт с реальными инструментами текущего рантайма:
 
-- Claude Code: custom agents, `Explore`, hooks, slash commands, and Skill tool are native.
-- Codex: use installed skills and multi-agent tools when available; if a specific delegation tool is not available, state the adapter limitation and use the closest safe equivalent.
-- Other agents: read `SKILL.md` files manually and preserve artifact/verdict contracts even when tool names differ.
+- Claude Code: custom agents, `Explore`, hooks, slash commands и Skill tool являются встроенными.
+- Codex: использовать установленные skills и multi-agent tools, если они доступны; если конкретный инструмент делегирования недоступен, указать adapter limitation и использовать ближайший безопасный эквивалент.
+- Другие агенты: вручную читать файлы `SKILL.md` и сохранять контракты артефактов/вердиктов, даже если названия инструментов отличаются.
 
-Do not encode a new shared rule that only one runtime can execute unless it also names the fallback.
+Не добавлять новое общее правило, исполнимое только в одном рантайме, если в нём также не указан fallback.
 
-## Specialist profile and completion receipt
+## Профиль специалиста и квитанция о завершении
 
-For non-trivial feature implementation, review, debugging, or runtime QA, apply the
-`specialist-routing` skill when available. Before delegation, the main session must select the
-smallest sufficient profile from `~/dotfiles/ai/shared/agents/`, read it, and include its path and
-constraints in the delegation packet. A subagent's response must identify the profile actually
-used, checks performed, and a verdict (`PASS`, `PASS_WITH_NOTES`, or `BLOCKED`).
+Для нетривиальной реализации feature, review, debugging или runtime QA применять
+`specialist-routing` skill, если он доступен. Перед делегированием main session должна выбрать
+минимально достаточный профиль из `~/dotfiles/ai/shared/agents/`, прочитать его и включить его путь и
+ограничения в пакет делегирования. Ответ subagent должен указывать фактически использованный
+профиль, выполненные проверки и вердикт (`PASS`, `PASS_WITH_NOTES` или `BLOCKED`).
 
-The final synthesis must include a specialist receipt with required profiles, applied profiles,
-delegation method, verdicts, verification gates, and open risks. If the runtime cannot delegate,
-record `ADAPTER_LIMITATION`; never imply that a specialist profile was applied when it was not.
+Финальный синтез должен включать квитанцию специалиста с обязательными и применёнными профилями,
+методом делегирования, вердиктами, воротами проверки и открытыми рисками. Если рантайм не умеет
+делегировать, зафиксировать `ADAPTER_LIMITATION`; никогда не создавать впечатление, что профиль
+специалиста был применён, если это не так.
 
-## What specialists inherit (context delivery)
+## Что наследуют специалисты (передача контекста)
 
-**[Claude Code]** Custom and built-in subagents inherit the main session's `CLAUDE.md`, `MEMORY.md`, and every unconditional `~/dotfiles/ai/shared/rules/*.md` (those with no `paths:` frontmatter). They already carry the always-on rules — do **not** re-paste them into the delegation prompt.
+**[Claude Code]** Custom и встроенные subagents наследуют `CLAUDE.md`, `MEMORY.md` main session и каждый безусловный `~/dotfiles/ai/shared/rules/*.md` (без frontmatter `paths:`). Они уже получают постоянно действующие правила — **не** вставлять их повторно в prompt делегирования.
 
-Two gaps the subagent does **not** get automatically (Claude Code):
-- **`paths:`-scoped rules** (`kotlin-style.md`, `gradle-style.md`, `android-cli.md`) load lazily when a matching file is read. If the subagent must honor such a rule before it touches a matching file, restate the key point.
-- **Explore and Plan** skip rules entirely for speed. For such agents that need ast-index, include the directive below.
+Два пробела, которые subagent не получает автоматически (Claude Code):
+- Правила, ограниченные **`paths:`** (`kotlin-style.md`, `gradle-style.md`, `android-cli.md`), загружаются лениво при чтении подходящего файла. Если subagent должен соблюдать такое правило до обращения к соответствующему файлу, повторить ключевой пункт.
+- **Explore и Plan** полностью пропускают правила ради скорости. Для таких агентов, которым нужен ast-index, включать приведённую ниже директиву.
 
-**For all runtimes** — what to put in a delegation prompt: the task; the relevant paths/modules; constraints (what not to touch, forbidden tools); the expected output shape; any scoped rule that applies; adapter limitations if the runtime lacks the ideal tool.
+**Для всех рантаймов** — что включать в prompt делегирования: задачу; относящиеся к ней пути/модули; ограничения (что нельзя трогать, запрещённые инструменты); ожидаемую форму вывода; применимые scoped rules; adapter limitations, если в рантайме нет идеального инструмента.
 
-**ast-index directive** (for any agent doing code search before the rule loads):
+**Директива ast-index** (для любого агента, выполняющего поиск по коду до загрузки правила):
 
-> Use `ast-index` via Bash before Grep: `search "q"`, `file "Name"`, `class "Name"`, `usages "Name"`, `implementations "Name"`, `callers "fn"`. Grep only when ast-index is empty or for regex/string-literal search. Before `Read` on a file >~500 lines, run `ast-index outline <file>` and Read only the targeted slice via `offset`/`limit`. On "Index not found" → `ast-index rebuild`, never fall back to Grep.
+> Использовать `ast-index` через Bash до Grep: `search "q"`, `file "Name"`, `class "Name"`, `usages "Name"`, `implementations "Name"`, `callers "fn"`. Использовать Grep только если ast-index пуст или нужен поиск по regex/string-literal. Перед `Read` файла размером более ~500 строк выполнить `ast-index outline <file>` и читать только целевой фрагмент через `offset`/`limit`. При сообщении «Index not found» → `ast-index rebuild`, никогда не переходить к Grep.
 
-## Model & effort
+## Модель и effort
 
-Dispatch is a **(model × effort)** choice. Tune both to reach the result efficiently.
+Dispatch — это выбор **(model × effort)**. Настраивать оба параметра для эффективного результата.
 
-**Heuristic:**
-- Mechanical / search / lookup / admin CRUD → cheapest/fastest model (no extended thinking).
-- Substantive but bounded (implementation, refactor, code review, manual QA) → mid-tier model.
-- Hard reasoning (planning, architecture, security/perf/UX review, debugging root cause, ambiguous trade-offs) → top-tier model at high effort.
-- Unclear model between two adjacent tiers → pick the **smaller**, bump on first failure. Unclear effort → start **lower**, bump if the result comes back thin.
+**Эвристика:**
+- Механическая работа / поиск / lookup / admin CRUD → самая дешёвая/быстрая модель (без extended thinking).
+- Содержательная, но ограниченная задача (implementation, refactor, code review, manual QA) → модель среднего уровня.
+- Сложное рассуждение (planning, architecture, security/perf/UX review, debugging root cause, неоднозначные компромиссы) → топовая модель с высоким effort.
+- Если выбор между двумя соседними уровнями неясен → выбрать **меньший**, повысить при первой ошибке. Если неясен effort → начать с **меньшего**, повысить, если результат окажется поверхностным.
 
-**[Claude Code]** Model param: `sonnet` / `opus` / `haiku` / `fable` / full id / `inherit` on the Agent tool. Effort: `low | medium | high | xhigh | max` on Opus 4.x / Sonnet 4.6 / Fable (Haiku has no effort knob). Set model explicitly — `inherit` silently keeps the expensive main model.
+**[Claude Code]** Параметр модели: `sonnet` / `opus` / `haiku` / `fable` / full id / `inherit` в Agent tool. Effort: `low | medium | high | xhigh | max` для Opus 4.x / Sonnet 4.6 / Fable (у Haiku нет настройки effort). Явно задавать модель — `inherit` незаметно сохраняет дорогую модель main session.
 
-**[Codex]** Prefer the runtime's default model unless the subtask clearly benefits from a cheaper or stronger override exposed by the multi-agent tool. If no effort knob exists for the chosen tool, record only the role/scope.
+**[Codex]** Предпочитать модель по умолчанию рантайма, если только подзадача явно не выигрывает от более дешёвого или сильного переопределения, доступного в multi-agent tool. Если у выбранного инструмента нет настройки effort, фиксировать только роль/область.
 
-## Routing — choose from what's available
+## Маршрутизация — выбирать из доступного
 
-No fixed task→agent table. Match the task to the best-fit available agent/tool, then apply the model/effort heuristic above.
+Фиксированной таблицы task→agent нет. Сопоставить задачу с наиболее подходящим доступным агентом/инструментом, затем применить приведённую выше эвристику model/effort.
 
-**Non-obvious routing & guardrails:**
-- **Planning / architecture / synthesis → keep in the main session.** Never delegate the *reasoning*.
-- Security / performance / UX / code review → the matching **expert agent**, never the main session.
-- Code research / "find X / where is Y used" → search specialist (`Explore`, Codex `explorer`, or equivalent) on the cheapest sufficient model.
-- Long-running build / test / CI → background subagent, never blocking the main session.
-- Implementation in a stack → the stack specialist when available; else general-purpose.
-- PR/issue/board work: use the idempotent, timeout-safe toolkit in `$HOME/dotfiles/ai/shared/scripts/gh/`. Never block on `gh run watch` / `gh pr checks --watch`.
+**Нетипичная маршрутизация и защитные ограничения:**
+- **Planning / architecture / synthesis → оставлять в main session.** Никогда не делегировать *reasoning*.
+- Security / performance / UX / code review → соответствующему **expert agent**, никогда main session.
+- Code research / «найти X / где используется Y» → search specialist (`Explore`, Codex `explorer` или эквивалент) на самой дешёвой достаточной модели.
+- Длительный build / test / CI → фоновый subagent, никогда не блокировать main session.
+- Implementation в конкретном стеке → stack specialist, если доступен; иначе general-purpose.
+- Работа с PR/issue/board: использовать идемпотентный toolkit с безопасными тайм-аутами в `$HOME/dotfiles/ai/shared/scripts/gh/`. Никогда не блокироваться на `gh run watch` / `gh pr checks --watch`.
 
-## Override
+## Переопределение
 
-The user can cancel delegation ("do it yourself", "don't delegate", "write it by hand") → the main session goes hands-on until the current task ends, then returns to orchestrator mode.
+Пользователь может отменить делегирование («сделай сам», «не делегируй», «напиши вручную») → main session работает самостоятельно до конца текущей задачи, затем возвращается в режим orchestrator.
 
-## Anti-patterns (beyond the Forbidden list)
+## Антипаттерны (помимо списка запрещённого)
 
-- Leaving model at default without an explicit choice — the savings are lost.
-- Delegating planning — the main session's synthesis power is wasted.
+- Оставлять модель по умолчанию без явного выбора — экономия теряется.
+- Делегировать planning — способность main session к синтезу расходуется впустую.
 - Сокращение reviewer panel. Если skill / профиль определяет panel правилами — использовать **весь** triggered set. «Эта область уже разобрана» — не основание для пропуска. Полный triggered set применять всегда.

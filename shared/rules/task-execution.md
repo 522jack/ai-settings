@@ -1,19 +1,18 @@
-# Task Execution
+# Выполнение задач
 
-## Error handling during tasks
+## Обработка ошибок во время задач
 
-For **blocking** errors (failures that prevent continuing). For investigation without a blocker, follow Communication Style (dig silently, report once).
+Для **блокирующих** ошибок (сбоев, не позволяющих продолжить). Для расследования без blocker следовать Communication Style (молча разобраться, сообщить один раз).
 
-1. Notify the user immediately that an error occurred.
-2. Diagnose and attempt to fix autonomously.
-3. Report what happened and what was done.
-4. If one attempt is not enough — stop and ask the user how to proceed.
+1. Немедленно сообщить пользователю о возникшей ошибке.
+2. Самостоятельно диагностировать её и попытаться исправить.
+3. Сообщить, что произошло и что было сделано.
+4. Если одной попытки недостаточно — остановиться и спросить пользователя, как продолжить.
 
-## Scope creep
+## Расширение области задачи
 
-If a task turns out significantly more complex than it appeared — stop, report what was found, propose to revise scope or approach before proceeding.
+Если задача оказывается значительно сложнее, чем выглядела изначально, — остановиться, сообщить обнаруженное и предложить пересмотреть область или подход до продолжения.
 
-## Large output handling
+## Обработка большого вывода
 
-For commands that may produce large output (test runs, git logs, build output, API responses, dependency trees) — prefer context-mode over raw Bash. The PreToolUse hook handles Bash automatically; explicitly use `mcp__plugin_context-mode_context-mode__execute` for large MCP tool results.
-
+Для команд, которые могут выдавать большой объём (test runs, git logs, build output, API responses, dependency trees), предпочитать context-mode вместо raw Bash. PreToolUse hook автоматически обрабатывает Bash; для больших результатов MCP tools явно использовать `mcp__plugin_context-mode_context-mode__execute`.

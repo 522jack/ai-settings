@@ -1,9 +1,9 @@
-# Random notes
+# Случайные заметки
 
-Just some brainstorming. No frontmatter, no test-case structure, no spec sections.
+Просто немного идей. Нет frontmatter, структуры тестовых случаев или секций spec.
 
-- Thought about the auth flow
-- Consider retry logic somewhere
-- Maybe refactor later
+- Думал о потоке auth
+- Можно где-нибудь добавить логику повторных попыток
+- Возможно, позже сделать рефакторинг
 
-Not yet a plan, not a spec, not a test-plan. Expected detector behavior: no match → fallback ask-user.
+Пока это не plan, не spec и не test-plan. Ожидаемое поведение детектора: совпадений нет → запасной вариант ask-user.

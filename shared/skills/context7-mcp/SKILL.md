@@ -1,53 +1,53 @@
 ---
 name: context7-mcp
-description: This skill should be used when the user asks about libraries, frameworks, API references, or needs code examples. Activates for setup questions, code generation involving libraries, or mentions of specific frameworks like React, Vue, Next.js, Prisma, Supabase, etc.
+description: Используйте этот навык, когда пользователь спрашивает о библиотеках, фреймворках или справочниках API либо просит примеры кода. Активируется для вопросов по настройке, генерации кода с библиотеками и упоминаний конкретных фреймворков, таких как React, Vue, Next.js, Prisma, Supabase и другие.
 ---
 
-When the user asks about libraries, frameworks, or needs code examples, use Context7 to fetch current documentation instead of relying on training data.
+Когда пользователь спрашивает о библиотеках, фреймворках или просит примеры кода, используйте Context7 для получения актуальной документации вместо того, чтобы полагаться на данные обучения.
 
-## When to Use This Skill
+## Когда использовать этот навык
 
-Activate this skill when the user:
+Активируйте этот навык, когда пользователь:
 
-- Asks setup or configuration questions ("How do I configure Next.js middleware?")
-- Requests code involving libraries ("Write a Prisma query for...")
-- Needs API references ("What are the Supabase auth methods?")
-- Mentions specific frameworks (React, Vue, Svelte, Express, Tailwind, etc.)
+- задаёт вопросы по настройке или конфигурации ("Как настроить middleware Next.js?");
+- просит код с использованием библиотек ("Напиши запрос Prisma для...");
+- запрашивает справочник API ("Какие методы auth есть в Supabase?");
+- упоминает конкретные фреймворки (React, Vue, Svelte, Express, Tailwind и т. д.).
 
-## How to Fetch Documentation
+## Как получать документацию
 
-### Step 1: Resolve the Library ID
+### Шаг 1: Определите идентификатор библиотеки
 
-Call `resolve-library-id` with:
+Вызовите `resolve-library-id` с параметрами:
 
-- `libraryName`: The library name extracted from the user's question
-- `query`: The user's full question (improves relevance ranking)
+- `libraryName`: название библиотеки, извлечённое из вопроса пользователя;
+- `query`: полный вопрос пользователя (улучшает ранжирование релевантности).
 
-### Step 2: Select the Best Match
+### Шаг 2: Выберите лучшее совпадение
 
-From the resolution results, choose based on:
+В результатах разрешения выбирайте на основании следующих критериев:
 
-- Exact or closest name match to what the user asked for
-- Higher benchmark scores indicate better documentation quality
-- If the user mentioned a version (e.g., "React 19"), prefer version-specific IDs
+- точное или наиболее близкое совпадение с названием из запроса пользователя;
+- более высокий результат бенчмарка указывает на лучшее качество документации;
+- если пользователь указал версию (например, "React 19"), отдавайте предпочтение идентификаторам конкретной версии.
 
-### Step 3: Fetch the Documentation
+### Шаг 3: Получите документацию
 
-Call `query-docs` with:
+Вызовите `query-docs` с параметрами:
 
-- `libraryId`: The selected Context7 library ID (e.g., `/vercel/next.js`)
-- `query`: The user's specific question
+- `libraryId`: выбранный идентификатор библиотеки Context7 (например, `/vercel/next.js`);
+- `query`: конкретный вопрос пользователя.
 
-### Step 4: Use the Documentation
+### Шаг 4: Используйте документацию
 
-Incorporate the fetched documentation into your response:
+Включите полученную документацию в ответ:
 
-- Answer the user's question using current, accurate information
-- Include relevant code examples from the docs
-- Cite the library version when relevant
+- ответьте на вопрос пользователя, используя актуальную и точную информацию;
+- включите релевантные примеры кода из документации;
+- укажите версию библиотеки, если это важно.
 
-## Guidelines
+## Рекомендации
 
-- **Be specific**: Pass the user's full question as the query for better results
-- **Version awareness**: When users mention versions ("Next.js 15", "React 19"), use version-specific library IDs if available from the resolution step
-- **Prefer official sources**: When multiple matches exist, prefer official/primary packages over community forks
+- **Будьте конкретны:** передавайте полный вопрос пользователя в качестве `query`, чтобы повысить релевантность.
+- **Учитывайте версии:** когда пользователь указывает версии ("Next.js 15", "React 19"), используйте идентификаторы конкретных версий, если они доступны на шаге разрешения.
+- **Отдавайте предпочтение официальным источникам:** при нескольких совпадениях выбирайте официальные/первичные пакеты, а не форки сообщества.

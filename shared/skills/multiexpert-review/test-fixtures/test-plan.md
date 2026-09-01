@@ -3,11 +3,11 @@ type: test-plan
 slug: smoke-test-test-plan-fixture
 ---
 
-# Test Plan: User profile caching
+# План тестирования: кеширование профиля пользователя
 
-_Synthetic fixture for smoke-testing the `test-plan` profile. The acceptance criteria and test cases below are fabricated for detector/roster assertions — no corresponding source spec exists in this repo._
+_Синтетическая фикстура для smoke-тестирования профиля `test-plan`. Приведённые ниже критерии приёмки и тестовые случаи выдуманы для проверки детектора/roster — соответствующего исходного spec в этом репозитории нет._
 
-## Acceptance Criteria (fabricated for this fixture)
+## Критерии приёмки (выдуманы для этой фикстуры)
 
 - AC-1: `GET /api/users/:id` returns cached result when cache hit
 - AC-2: Cache hit rate ≥80% under steady state
@@ -15,41 +15,41 @@ _Synthetic fixture for smoke-testing the `test-plan` profile. The acceptance cri
 - AC-4: Cache invalidates on `POST /api/users/:id` update
 - AC-5: Redis outage: endpoint falls back to DB, returns 200 with degraded latency
 
-## Test Cases
+## Тестовые случаи
 
-### TC-1: Cache hit on repeated read
+### TC-1: попадание в кеш при повторном чтении
 **Priority:** P0
 
-Steps:
+Шаги:
 1. Warm cache by calling `GET /api/users/42`
 2. Call `GET /api/users/42` again within 5 minutes
 
-Expected: second call returns `X-Cache: HIT` header, response time <20ms.
+Ожидается: второй вызов возвращает заголовок `X-Cache: HIT`, время ответа <20 мс.
 
-### TC-2: Cache miss on cold read
+### TC-2: промах кеша при холодном чтении
 **Priority:** P1
 
-Steps:
+Шаги:
 1. Flush Redis
 2. Call `GET /api/users/42`
 
-Expected: response has `X-Cache: MISS`, user data loaded from DB.
+Ожидается: ответ содержит `X-Cache: MISS`, данные пользователя загружены из БД.
 
-### TC-3: Cache invalidates on user update
+### TC-3: инвалидация кеша при обновлении пользователя
 **Priority:** P0
 
-Steps:
+Шаги:
 1. Warm cache for user 42
 2. POST user update for 42
 3. GET user 42 again
 
-Expected: response has `X-Cache: MISS` (invalidation occurred), new data reflected.
+Ожидается: ответ содержит `X-Cache: MISS` (инвалидация произошла), отражены новые данные.
 
-### TC-4: Redis outage fallback
+### TC-4: fallback при сбое Redis
 **Priority:** P1
 
-Steps:
+Шаги:
 1. Stop Redis container
 2. Call `GET /api/users/42`
 
-Expected: 200 OK, response loaded from DB, latency degraded but under 200ms.
+Ожидается: 200 OK, ответ загружен из БД, задержка выросла, но остаётся менее 200 мс.

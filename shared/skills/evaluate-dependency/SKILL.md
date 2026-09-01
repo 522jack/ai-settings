@@ -1,94 +1,93 @@
 ---
 name: evaluate-dependency
-description: "Evaluate whether a new library/dependency is worth adopting BEFORE adding it to a build file. Gathers objective signals (latest version, stability, known CVEs, GitHub activity, issue dynamics, license, owner) — via a Maven dependency-intelligence tool when available — plus web reputation/sentiment and adoption, then delegates to the dependency-evaluator agent for a verdict (ADOPT / ADOPT WITH CAUTION / AVOID) and asks how to proceed. Optimised for JVM/Maven; degrades to web-only for other ecosystems. Use when: about to add a new dependency, \"should we use X\", \"is this library worth adding\", \"vet/evaluate this library\", \"is X still maintained\". Do NOT use for: bumping an already-used dependency's version (use a version/changelog lookup tool), resolving version conflicts or BOM alignment (build-engineer), or deep code security audits (security-expert)."
+description: "Оценивайте целесообразность новой библиотеки/зависимости ДО добавления в build-файл. Собирайте объективные сигналы (последняя версия, стабильность, известные CVE, активность на GitHub, динамика issues, лицензия, владелец) — через инструмент Maven dependency-intelligence, если он доступен, — а также репутацию/тональность в сети и распространённость, затем передавайте результат агенту dependency-evaluator для вердикта (ADOPT / ADOPT WITH CAUTION / AVOID) и спрашивайте, как продолжить. Оптимизировано для JVM/Maven; для других экосистем используется только web. Используйте, когда: собираетесь добавить новую зависимость, спрашиваете «стоит ли использовать X», «стоит ли добавлять эту библиотеку», «проверить/оценить эту библиотеку», «поддерживается ли X». НЕ используйте для: обновления версии уже используемой зависимости (используйте инструмент поиска версии/changelog), разрешения конфликтов версий или выравнивания BOM (build-engineer), глубокого аудита безопасности кода (security-expert)."
 ---
 
-# Evaluate Dependency
+# Оценка зависимости
 
-Vet a candidate library before it enters the build. The skill collects objective signals,
-hands them to the `dependency-evaluator` agent for a verdict, and brings the
-adopt/avoid decision back to you in chat — so a dependency is a deliberate choice, not a
-side effect of writing code.
+Проверьте библиотеку-кандидата до её попадания в сборку. Навык собирает объективные сигналы,
+передаёт их агенту `dependency-evaluator` для получения вердикта и возвращает решение adopt/avoid
+в чат — так зависимость становится осознанным выбором, а не побочным эффектом написания кода.
 
-**When this fires.** Trigger it the moment a *new* dependency is about to be introduced —
-whether the user asks "should we use X?" or you are about to edit `build.gradle[.kts]`,
+**Когда срабатывает.** Запускайте навык в момент, когда собираются добавить *новую* зависимость —
+по вопросу пользователя «стоит ли использовать X?» или перед редактированием `build.gradle[.kts]`,
 `gradle/libs.versions.toml`, or `pom.xml` to add a coordinate that is not already present.
-Upgrading an already-used dependency is out of scope (that is a version/changelog lookup).
+Обновление уже используемой зависимости вне области (для этого нужен поиск версии/changelog).
 
-**Graceful degradation — non-negotiable.** This skill must run without any MCP server. When a
-Maven dependency-intelligence capability is available, use it for the deep objective metrics;
-when it is not, fall back to web evidence and say so. Describe the data you need (latest
-version, stability, CVEs, maintenance/activity/license signals) — do not depend on a specific
-tool name.
-
----
-
-## Phase 1: Identify the candidate(s)
-
-Pin down what is being evaluated:
-- **Coordinate / package** — `groupId:artifactId` for JVM/Maven, or the package name otherwise.
-- **Version** — the one under consideration, or "latest" if unspecified.
-- **Purpose** — what the user wants it for (feeds the "fit" judgement and alternative search).
-
-If several libraries are proposed at once, evaluate them as a batch. If the coordinate is
-ambiguous (e.g. only a feature is named), ask via `AskUserQuestion` or state the assumed
-candidate before proceeding.
-
-If the dependency is **already declared** in the project, stop — this skill is for *new*
-adoptions. Redirect to a version/changelog lookup instead.
-
-## Phase 2: Gather objective signals
-
-Collect what is knowable without judgement:
-
-- **JVM/Maven (preferred path):** if a Maven dependency-intelligence capability is available,
-  request latest version + stability, known CVEs for the candidate version, and the library's
-  health signals — maintenance (last commit/release, archived), activity (release cadence,
-  open/closed issue counts, close ratio, time-to-close), license, owner type, publisher scale
-  (public-repo count, account age), repository.
-- **No such capability / other ecosystems:** gather the equivalents from the web — the project's
-  repository, release history, issue tracker, and registry page.
-
-Record signals as facts; do not interpret them yet. Mark anything unavailable as unknown rather
-than guessing.
-
-## Phase 3: Judge
-
-Launch the `dependency-evaluator` agent via the Task tool, passing the candidate, its purpose,
-and every signal gathered in Phase 2. Let the agent add web reputation/sentiment and adoption
-checks and return the verdict — **ADOPT / ADOPT WITH CAUTION / AVOID** — with a signal table,
-risks (with severity), and any alternatives.
-
-Do not second-guess the agent's verdict; if it is missing a signal you can cheaply provide,
-fetch it and re-run rather than overriding.
-
-## Phase 4: Decide (dialogue)
-
-Present a compact summary in chat — verdict, the 2–4 signals that drove it, and the top risk —
-then use `AskUserQuestion` to let the user choose how to proceed. Offer options aligned to the
-verdict, e.g.:
-- **Adopt** — proceed to add the dependency.
-- **Adopt with caution** — proceed, noting the mitigation(s).
-- **Evaluate an alternative** — re-run this skill on the suggested alternative.
-- **Don't adopt** — abandon this dependency.
-
-The decision lives in chat, never parked in a file. Only after the user chooses "adopt" do you
-edit the build file.
-
-## Phase 5: Optional artifact
-
-For a non-trivial evaluation worth keeping (e.g. a decision the team will revisit), save the
-verdict and signal table to `./swarm-report/evaluate-dependency-<slug>.md`. Skip this for a
-quick yes/no check — the chat summary is enough.
+**Корректная деградация — обязательна.** Этот навык должен работать без MCP-сервера. Если
+доступен Maven dependency-intelligence, используйте его для глубоких объективных метрик;
+если нет, перейдите к свидетельствам из web и скажите об этом. Опишите нужные данные (последняя
+версия, стабильность, CVE, сигналы поддержки/активности/лицензии) — не завязывайтесь на конкретное
+имя инструмента.
 
 ---
 
-## Red Flags / STOP Conditions
+## Фаза 1: определите кандидата(-ов)
 
-- **Coordinate cannot be resolved anywhere** (not in Maven, not on the web) — report it; a
-  package that cannot be found is itself a strong AVOID signal.
-- **Active CVE with no fixed version** — surface as a critical risk before anything else.
-- **Closed source / no public repository** — not an automatic AVOID, but call it out explicitly
-  so the user weighs the reduced auditability.
-- **User is mid-implementation and adding the dep is blocking them** — keep the evaluation tight;
-  lead with the verdict so they can move.
+Точно определите, что оценивается:
+- **Coordinate / package** — `groupId:artifactId` для JVM/Maven или имя пакета в остальных случаях.
+- **Version** — рассматриваемая версия или «latest», если версия не указана.
+- **Purpose** — для чего это нужно пользователю (влияет на оценку соответствия и поиск альтернатив).
+
+Если одновременно предложено несколько библиотек, оценивайте их пакетом. Если coordinate
+неоднозначен (например, назван только признак), спросите через `AskUserQuestion` или перед продолжением
+зафиксируйте предполагаемого кандидата.
+
+Если зависимость **уже объявлена** в проекте, остановитесь — этот навык предназначен для *новых*
+зависимостей. Вместо него используйте поиск версии/changelog.
+
+## Фаза 2: соберите объективные сигналы
+
+Соберите то, что можно узнать без интерпретации:
+
+- **JVM/Maven (предпочтительный путь):** если доступен Maven dependency-intelligence, запросите
+  последнюю версию и стабильность, известные CVE для версии кандидата и сигналы здоровья библиотеки —
+  поддержку (последний коммит/релиз, архивность), активность (периодичность релизов, число открытых/
+  закрытых issues, долю закрытия, время до закрытия), лицензию, тип владельца, масштаб издателя
+  (число публичных репозиториев, возраст аккаунта), репозиторий.
+- **Такой возможности нет / другие экосистемы:** соберите эквивалентные данные из web — репозиторий
+  проекта, историю релизов, issue tracker и страницу в registry.
+
+Записывайте сигналы как факты; пока не интерпретируйте их. Недоступное помечайте как unknown,
+а не угадывайте.
+
+## Фаза 3: оцените
+
+Запустите агента `dependency-evaluator` через инструмент Task, передав кандидата, его назначение
+и все сигналы, собранные на фазе 2. Пусть агент добавит проверки репутации/тональности в web и
+распространённости и вернёт вердикт — **ADOPT / ADOPT WITH CAUTION / AVOID** — с таблицей сигналов,
+рисками (с серьёзностью) и альтернативами.
+
+Не ставьте под сомнение вердикт агента; если не хватает сигнала, который легко получить, получите его
+и повторите запуск вместо переопределения вердикта.
+
+## Фаза 4: примите решение (диалог)
+
+Представьте в чате краткое резюме — вердикт, 2–4 определяющих сигнала и главный риск —
+затем через `AskUserQuestion` дайте пользователю выбрать дальнейшее действие. Предлагайте варианты,
+соответствующие вердикту, например:
+- **Adopt** — перейти к добавлению зависимости.
+- **Adopt with caution** — продолжить, зафиксировав меры снижения риска.
+- **Evaluate an alternative** — повторить навык для предложенной альтернативы.
+- **Don't adopt** — отказаться от этой зависимости.
+
+Решение остаётся в чате и никогда не откладывается в файл. Редактируйте build-файл только после
+выбора пользователем «adopt».
+
+## Фаза 5: необязательный артефакт
+
+Для нетривиальной оценки, которую стоит сохранить (например, решения, к которому команда вернётся),
+сохраните вердикт и таблицу сигналов в `./swarm-report/evaluate-dependency-<slug>.md`. Для быстрой
+проверки yes/no пропустите это — достаточно резюме в чате.
+
+---
+
+## Красные флаги / условия STOP
+
+- **Coordinate нигде не удаётся разрешить** (ни в Maven, ни в web) — сообщите об этом; ненайденный
+  пакет сам по себе является сильным сигналом AVOID.
+- **Активный CVE без исправленной версии** — прежде всего покажите как critical-риск.
+- **Закрытый исходный код / нет публичного репозитория** — это не автоматический AVOID, но явно
+  укажите, чтобы пользователь учёл сниженную проверяемость.
+- **Пользователь уже реализует функциональность, а добавление зависимости блокирует его** — сократите
+  оценку; начните с вердикта, чтобы пользователь мог двигаться дальше.

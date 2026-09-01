@@ -1,75 +1,75 @@
-# multiexpert-review — smoke-test harness
+# multiexpert-review — harness smoke-тестов
 
-Lightweight manual-run smoke-test for the `multiexpert-review` skill. Verifies that each profile activates correctly and produces structurally valid output.
+Лёгкий smoke-тест с ручным запуском для навыка `multiexpert-review`. Проверяет, что каждый профиль активируется корректно и выдаёт структурно валидный результат.
 
-## Scope
+## Область
 
-This harness checks **structural** properties, not content-level correctness. Because PoLL is stochastic, content of individual issues will differ run-to-run. Structural invariants are stable and what we assert against.
+Этот harness проверяет **структурные** свойства, а не корректность содержания. Поскольку PoLL стохастичен, содержание отдельных замечаний будет различаться от запуска к запуску. Структурные инварианты стабильны — именно их мы проверяем.
 
-## Fixtures
+## Фикстуры
 
-| Fixture | Expected profile | Expected behavior |
+| Фикстура | Ожидаемый профиль | Ожидаемое поведение |
 |---------|------------------|-------------------|
-| `plan.md` | `implementation-plan` | Tech-match agent selection; verdict alphabet `PASS/CONDITIONAL/FAIL` |
-| `test-plan.md` | `test-plan` | Roster includes `business-analyst`; verdict alphabet `PASS/WARN/FAIL`; review prompt augmented with 5-item checklist (a)–(e) |
-| `spec.md` | `spec` | Roster = `[business-analyst, architecture-expert]`; verdict alphabet `PASS/CONDITIONAL/FAIL`; severity mapping uses rubric-item keys (`acceptance_criteria`, `prerequisites`, `out_of_scope`, etc.) |
-| `unknown-artifact.md` | (none — ask user) | Detector falls through all four stages; engine returns profile-choice prompt to user, does not silently default |
+| `plan.md` | `implementation-plan` | Выбор агентов по tech-match; алфавит вердиктов `PASS/CONDITIONAL/FAIL` |
+| `test-plan.md` | `test-plan` | Roster включает `business-analyst`; алфавит вердиктов `PASS/WARN/FAIL`; запрос на ревью дополнен чек-листом из 5 элементов (a)–(e) |
+| `spec.md` | `spec` | Roster = `[business-analyst, architecture-expert]`; алфавит вердиктов `PASS/CONDITIONAL/FAIL`; сопоставление серьёзности использует ключи элементов критериев (`acceptance_criteria`, `prerequisites`, `out_of_scope` и т. д.) |
+| `unknown-artifact.md` | (нет — спросить пользователя) | Детектор проходит все четыре этапа; движок возвращает пользователю запрос выбора профиля и не выбирает профиль молча |
 
-## Running a smoke-test manually
+## Ручной запуск smoke-теста
 
-1. Pick a fixture, e.g. `plan.md`.
-2. Invoke `multiexpert-review` in a Claude Code session on the fixture. For `spec.md`, you can either rely on frontmatter detection or prepend `profile: spec\n---\n` hint (the `write-spec` callsite does the latter for in-memory drafts — see `write-spec/SKILL.md` section 4.3 "Run multiexpert-review (spec profile)").
-3. Capture the **structural** properties of the run (not the content of individual issues):
-   - Which profile the engine detected (logged in state file under `Profile:` and `Profile source:`)
-   - Reviewer roster actually invoked
-   - Verdict label chosen from the profile's alphabet
-   - Whether a receipt was written (only the `test-plan` profile has a `receipt:` section)
-   - Error prefix if any (e.g. `[multiexpert-review ERROR] UNKNOWN_PROFILE_HINT: ...`)
-4. Compare observed structural properties to the expectations table above.
+1. Выберите фикстуру, например `plan.md`.
+2. Вызовите `multiexpert-review` в сессии Claude Code для фикстуры. Для `spec.md` можно положиться на обнаружение frontmatter или добавить префикс-подсказку `profile: spec\n---\n` (так делает место вызова `write-spec` для черновиков в памяти — см. раздел 4.3 «Run multiexpert-review (spec profile)» в `write-spec/SKILL.md`).
+3. Зафиксируйте **структурные** свойства запуска (не содержание отдельных замечаний):
+   - какой профиль обнаружил движок (записан в файле состояния в `Profile:` и `Profile source:`);
+   - какой roster рецензентов фактически вызван;
+   - какая метка вердикта выбрана из алфавита профиля;
+   - записан ли receipt (секция `receipt:` есть только у профиля `test-plan`);
+   - префикс ошибки, если есть (например, `[multiexpert-review ERROR] UNKNOWN_PROFILE_HINT: ...`).
+4. Сравните наблюдаемые структурные свойства с таблицей ожиданий выше.
 
-## Expected outcomes per fixture
+## Ожидаемые результаты по фикстурам
 
 ### `plan.md` (implementation-plan)
 
-- **Profile detected:** `implementation-plan`
-- **Profile source:** `frontmatter` (from `type: plan`)
-- **Reviewer roster:** derived by tech-match selection; for this fixture typically at least one of `architecture-expert` (cache layer → architecture), `build-engineer` (Gradle / Redis client dep), `devops-expert` (Helm / deployment)
-- **Verdict:** one of `PASS / CONDITIONAL / FAIL`
-- **Receipt:** none (implementation-plan profile omits `receipt:`)
+- **Обнаруженный профиль:** `implementation-plan`
+- **Источник профиля:** `frontmatter` (из `type: plan`)
+- **Roster рецензентов:** определяется выбором по tech-match; для этой фикстуры обычно присутствует хотя бы один из `architecture-expert` (слой кеша → архитектура), `build-engineer` (Gradle / зависимость клиента Redis), `devops-expert` (Helm / развёртывание)
+- **Вердикт:** один из `PASS / CONDITIONAL / FAIL`
+- **Receipt:** нет (профиль implementation-plan не содержит `receipt:`)
 
 ### `test-plan.md` (test-plan)
 
-- **Profile detected:** `test-plan`
-- **Profile source:** `frontmatter` (from `type: test-plan`)
-- **Reviewer roster:** `business-analyst` (always); plus `security-expert` if fixture mentions `auth|token|encryption|PII|credential` (this fixture does not); plus `performance-expert` because fixture mentions `latency` and `p99` (matches `SLA|latency|throughput|budget`)
-- **Verdict:** one of `PASS / WARN / FAIL`
-- **Receipt writing:** under engine orchestration, `receipt.path_template` resolves to `swarm-report/smoke-test-test-plan-fixture-test-plan.md` and the engine **creates or updates** that file with `review_verdict` + optional `review_warnings` / `review_blockers`. If you run this fixture via the real engine, expect a new or updated file at that path. If you capture baseline via direct-agent invocation (the mode used in `baseline-results.md`), no receipt is written because the engine is bypassed.
-- **Rubric applied:** 5-item checklist (a)–(e) must be evaluated explicitly
+- **Обнаруженный профиль:** `test-plan`
+- **Источник профиля:** `frontmatter` (из `type: test-plan`)
+- **Roster рецензентов:** `business-analyst` (всегда); плюс `security-expert`, если фикстура упоминает `auth|token|encryption|PII|credential` (эта фикстура не упоминает); плюс `performance-expert`, поскольку фикстура упоминает `latency` и `p99` (совпадает с `SLA|latency|throughput|budget`)
+- **Вердикт:** один из `PASS / WARN / FAIL`
+- **Запись receipt:** при оркестрации движком `receipt.path_template` разрешается в `swarm-report/smoke-test-test-plan-fixture-test-plan.md`, и движок **создаёт или обновляет** этот файл с `review_verdict` и необязательными `review_warnings` / `review_blockers`. При запуске этой фикстуры через настоящий движок ожидайте новый или обновлённый файл по этому пути. При снятии baseline через прямой вызов агента (режим из `baseline-results.md`) receipt не записывается, поскольку движок обходится.
+- **Применённые критерии:** чек-лист из 5 элементов (a)–(e) должен быть оценён явно
 
 ### `spec.md` (spec)
 
-- **Profile detected:** `spec`
-- **Profile source:** `frontmatter` (from `type: spec`) OR `path_glob` if placed under `docs/specs/**`
-- **Reviewer roster:** `[business-analyst, architecture-expert]` (mandatory primary per profile)
-- **Verdict:** one of `PASS / CONDITIONAL / FAIL`
-- **Severity mapping:** issues titled with rubric-item keys (`acceptance_criteria`, `prerequisites`, `out_of_scope`, `decisions_made`, `affected_modules`, `open_questions_tagged`, `technical_approach_detail`)
-- **Expected findings:** this synthetic spec is deliberately skeletal → reviewers should find critical violations of `acceptance_criteria` (ACs like "works", "fast enough" are not observable/verifiable) and major violations of `decisions_made` (no rationale) and `affected_modules` (vague)
+- **Обнаруженный профиль:** `spec`
+- **Источник профиля:** `frontmatter` (из `type: spec`) ИЛИ `path_glob`, если файл находится под `docs/specs/**`
+- **Roster рецензентов:** `[business-analyst, architecture-expert]` (обязательные primary согласно профилю)
+- **Вердикт:** один из `PASS / CONDITIONAL / FAIL`
+- **Сопоставление серьёзности:** заголовки issues используют ключи элементов критериев (`acceptance_criteria`, `prerequisites`, `out_of_scope`, `decisions_made`, `affected_modules`, `open_questions_tagged`, `technical_approach_detail`)
+- **Ожидаемые замечания:** этот синтетический spec намеренно скелетный → рецензенты должны найти critical-нарушения `acceptance_criteria` (AC вроде «работает», «достаточно быстро» не наблюдаемы/проверяемы) и major-нарушения `decisions_made` (нет обоснования) и `affected_modules` (расплывчато)
 
-### `unknown-artifact.md` (no profile)
+### `unknown-artifact.md` (без профиля)
 
-- **Profile detected:** none
-- **Detector path:** all four stages fall through (no hint, no frontmatter, no path glob match, no structural signatures)
-- **Expected engine behavior:** prompt user with `AskUserQuestion` listing `PROFILE_INVENTORY = [implementation-plan, test-plan, spec]`. **Never** silent fallback to implementation-plan.
-- **Verdict:** N/A until user selects a profile
+- **Обнаруженный профиль:** нет
+- **Путь детектора:** все четыре этапа проходят без результата (нет подсказки, frontmatter, совпадения маски пути или структурных сигнатур)
+- **Ожидаемое поведение движка:** запросить пользователя через `AskUserQuestion`, перечислив `PROFILE_INVENTORY = [implementation-plan, test-plan, spec]`. **Никогда** не использовать implementation-plan молча.
+- **Вердикт:** N/A, пока пользователь не выберет профиль
 
-## What this harness does NOT cover
+## Что этот harness НЕ покрывает
 
-- Pre/post structural equivalence against the pre-refactor `plan-review` — this would require a baseline captured before the rename/refactor landed (see PR #101), which was not done. Future refactors should capture baseline first; this harness provides the fixture set to do so.
-- Multi-run modal match (3 runs per fixture) — stochasticity smoothing is out of scope for this lightweight harness.
-- Fail-loud error cases (`UNKNOWN_PROFILE_HINT`, `FORBIDDEN_PROFILE_FIELD`, `NO_REVIEWERS_AVAILABLE`, `PROFILE_INVENTORY_MISMATCH`) — documented in `../profiles/README.md` but not executed here because they would require mutating the live profile set.
-- Actual receipt writing for the `test-plan` profile — the captured baseline was produced via direct-agent invocation that bypasses the engine, so no receipt file is written during that capture. A real engine run on the same fixture (which has a `slug` in frontmatter and a profile with `receipt:` defined) will create or update `swarm-report/smoke-test-test-plan-fixture-test-plan.md`. Full receipt-payload validation must be exercised via a real `generate-test-plan → multiexpert-review` pipeline run.
-- Test-plan receipt consumer flow (acceptance skill reading `review_verdict`) — out of scope.
+- Пред/пост-структурную эквивалентность с `plan-review` до рефакторинга — для этого потребовался бы baseline, снятый до переименования/рефакторинга (см. PR #101), но этого не сделали. В будущих рефакторингах сначала снимайте baseline; этот harness предоставляет набор фикстур для этого.
+- Модальное совпадение при нескольких запусках (3 запуска на фикстуру) — сглаживание стохастичности выходит за рамки этого лёгкого harness.
+- Случаи громких ошибок (`UNKNOWN_PROFILE_HINT`, `FORBIDDEN_PROFILE_FIELD`, `NO_REVIEWERS_AVAILABLE`, `PROFILE_INVENTORY_MISMATCH`) — описаны в `../profiles/README.md`, но здесь не выполняются, поскольку потребовали бы изменения набора активных профилей.
+- Фактическую запись receipt для профиля `test-plan` — сохранённый baseline получен прямым вызовом агента в обход движка, поэтому при снятии baseline receipt-файл не записывается. Настоящий запуск движка для той же фикстуры (с `slug` во frontmatter и профилем с `receipt:`) создаст или обновит `swarm-report/smoke-test-test-plan-fixture-test-plan.md`. Полную проверку содержимого receipt нужно выполнять через настоящий pipeline `generate-test-plan → multiexpert-review`.
+- Поток потребления receipt test-plan (навык acceptance читает `review_verdict`) — вне области работ.
 
-## Captured baseline
+## Снятый baseline
 
-See `baseline-results.md` in the same directory for a one-time capture of actual outputs against these fixtures. Newer runs can be compared against it for structural drift — keeping in mind PoLL stochasticity means exact content match is expected to fail; only structural invariants (profile detected, roster composition, verdict alphabet) are stable.
+Однократную фиксацию фактических результатов для этих фикстур см. в `baseline-results.md` в том же каталоге. Новые запуски можно сравнивать с ним на предмет структурного дрейфа — помните, что из-за стохастичности PoLL точное совпадение содержания ожидаемо будет нарушаться; стабильны только структурные инварианты (обнаруженный профиль, состав roster, алфавит вердиктов).

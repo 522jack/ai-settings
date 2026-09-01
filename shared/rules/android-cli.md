@@ -6,66 +6,65 @@ paths:
   - "**/*.kt"
 ---
 
-# Android CLI Rules
+# Правила Android CLI
 
-Google's `android` CLI (https://developer.android.com/tools/agents/android-cli) is the **primary** tool for Android-platform tasks — it bundles official docs search/fetch, project metadata, AVD/SDK management, device screen/layout capture, APK deploy, and bundled skills. Assume it is installed — it is standard on these machines. Rules tested against `v1.0.x` (~2026-05).
+CLI Google `android` (https://developer.android.com/tools/agents/android-cli) — **основной** инструмент для задач Android platform: он объединяет поиск/получение official docs, project metadata, управление AVD/SDK, захват screen/layout устройства, APK deploy и bundled skills. Считать его установленным — на этих машинах это стандарт. Правила проверены на `v1.0.x` (~2026-05).
 
-**Applies when** a `*.gradle*` references `com.android.{application,library,kotlin.multiplatform.library}`, or there's an `AndroidManifest.xml` / `local.properties` with `sdk.dir`, or the question is about the Android platform / SDK / Jetpack / Compose / AGP / tooling. Silent otherwise.
+**Применяется, если** в `*.gradle*` есть ссылка на `com.android.{application,library,kotlin.multiplatform.library}`, существует `AndroidManifest.xml` / `local.properties` с `sdk.dir` или вопрос касается Android platform / SDK / Jetpack / Compose / AGP / tooling. В противном случае не действует.
 
-**Availability:** assume present. Only if an `android` call errors, probe `command -v android` once; on miss, use the Fallback section and do not retry `android` for the rest of the session.
+**Доступность:** считать инструмент доступным. Только если вызов `android` завершается ошибкой, один раз проверить `command -v android`; если команда не найдена, использовать раздел Fallback и не повторять вызовы `android` до конца сессии.
 
-## Decision matrix
+## Матрица решений
 
-| Task | Command |
+| Задача | Команда |
 |------|---------|
-| Search Android / Jetpack / Compose / AGP / SDK docs | `android docs search "<query>"` |
-| Fetch a doc page (url returned by `docs search`) | `android docs fetch <url>` |
-| Project metadata (build targets, APK output paths) | `android describe --project_dir=.` |
-| Live device UI tree | `android layout --pretty` |
-| UI tree diff after action | `android layout -d` |
-| Device screenshot | `android screen capture -o <path>` |
-| Visual UI element targeting (no stable id) | `android screen capture -a` then `android screen resolve --screenshot <p> --string "tap on #3"` |
-| List AVDs | `android emulator list` |
-| Start / stop / remove AVD | `android emulator start <avd> [--cold]` / `stop` / `remove` |
-| Create AVD from a profile (watch / phone / XR…) | `android emulator create <profile>` (`--list-profiles` to enumerate) |
-| SDK package install / update / remove / list | `android sdk install|update|remove|list` |
-| Deploy a built APK | `android run --apks <p1,p2…> --activity <name> --device <id> [--debug]` — `--type` = component type (ACTIVITY/SERVICE…), **not** build variant |
-| Environment info (SDK path, CLI version) | `android info` |
-| New project scaffold (only on explicit request) | `android create [template] --name <n> --minSdk <v>` |
-| List / find bundled skills (read-only) | `android skills list` / `android skills find <keyword>` |
-| Read a bundled skill as guidance (no install) | `Read ~/.android/cli/skills/**/<skill-name>/SKILL.md` |
-| Install a skill (routing via Skill tool; per-project with `--project=<path>`) | `android skills add <skill-name> --agent=<agent>` |
+| Поиск docs Android / Jetpack / Compose / AGP / SDK | `android docs search "<query>"` |
+| Получение страницы документации (URL из `docs search`) | `android docs fetch <url>` |
+| Метаданные проекта (build targets, APK output paths) | `android describe --project_dir=.` |
+| Дерево UI работающего устройства | `android layout --pretty` |
+| Diff дерева UI после действия | `android layout -d` |
+| Screenshot устройства | `android screen capture -o <path>` |
+| Визуальный выбор UI-элемента (без стабильного id) | `android screen capture -a` then `android screen resolve --screenshot <p> --string "tap on #3"` |
+| Список AVD | `android emulator list` |
+| Запуск / остановка / удаление AVD | `android emulator start <avd> [--cold]` / `stop` / `remove` |
+| Создание AVD из профиля (watch / phone / XR…) | `android emulator create <profile>` (`--list-profiles` to enumerate) |
+| Установка / обновление / удаление / список SDK packages | `android sdk install|update|remove|list` |
+| Deploy собранного APK | `android run --apks <p1,p2…> --activity <name> --device <id> [--debug]` — `--type` = component type (ACTIVITY/SERVICE…), **не** build variant |
+| Информация об окружении (SDK path, CLI version) | `android info` |
+| Scaffold нового проекта (только по явному запросу) | `android create [template] --name <n> --minSdk <v>` |
+| Список / поиск bundled skills (только чтение) | `android skills list` / `android skills find <keyword>` |
+| Чтение bundled skill как руководства (без install) | `Read ~/.android/cli/skills/**/<skill-name>/SKILL.md` |
+| Установка skill (маршрутизация через Skill tool; для проекта через `--project=<path>`) | `android skills add <skill-name> --agent=<agent>` |
 
-> Android Studio integration (`android studio *`) intentionally omitted — not used.
+> Интеграция с Android Studio (`android studio *`) намеренно не включена — она не используется.
 
-## Routing vs existing tools
+## Маршрутизация относительно существующих инструментов
 
-Команды — в таблицах выше; здесь только когда `android` primary, а когда fallback.
+Команды перечислены в таблицах выше; здесь указано только, когда `android` primary, а когда fallback.
 
 - **Docs:** `android docs search` — единственный курируемый канал guides (как принято / migration / best practice). Для API truth — **параллельно с `ksrc`** (jar = реальный API, docs = рекомендованная форма; расхождение = legacy / устаревшая версия). Context7 / Web — fallback, когда оба молчат.
 - **Bundled skills** (`~/.android/cli/skills/**/SKILL.md`, 19 шт, T2) — третий канал guides, **install не нужен**: `find <kw>` → `Read SKILL.md` → structured workflow (~10 шагов). Триггер: миграция / upgrade / узкая область (Wear M3, XR, CameraX, Navigation 3, edge-to-edge, Compose Styles/adaptive, R8, Perfetto, testing-setup, PBL, Engage, AppFunctions, XML→Compose, AGP 9). `last-updated` старше года в evolving стеке → понизить вес. **Не использовать**, когда глобальный Claude Code skill покрывает 1:1 (`agp-9-upgrade` ↔ `kotlin-tooling-agp9-migration`) — глобальный приоритетнее (routable, интегрирован с gates).
-- **Device / SDK / AVD / screen / layout:** `android` primary над raw `adb` / `sdkmanager` / `avdmanager` / `emulator` — на raw только при отсутствующем флаге.
-- **Build:** сама сборка — проектным Gradle; `android run` — только deploy-and-launch уже собранного APK.
+- **Device / SDK / AVD / screen / layout:** `android` primary над raw `adb` / `sdkmanager` / `avdmanager` / `emulator` — на raw переходить только при отсутствии нужного флага.
+- **Build:** саму сборку выполнять проектным Gradle; `android run` — только для deploy-and-launch уже собранного APK.
 
-## Hard rules
+## Жёсткие правила
 
-- **Skills: регистрация ≠ доступность.** Файлы уже на диске — `Read` работает всегда, проактивно. `android skills add` / `init` *регистрируют* skill в роутинге Skill tool — **только по явной просьбе** и когда нужно автосрабатывание по триггерам. **Never** авто `android init` / `skills add --all`: дублирует глобальные skills и ломает routing. Синтаксис: имя позиционное (`--skill=` удалён); флаги `--agent` / `--project` — проверять через usage, не угадывать.
-- **Never auto-update:** на "A new version available" — одна строка раз в сессию, спросить перед `android update`. (`info`: `version` ядра vs `launcher_version` обёртки; лаг launcher нормален.)
+- **Skills: регистрация ≠ доступность.** Файлы уже на диске — `Read` работает всегда, проактивно. `android skills add` / `init` *регистрируют* skill в роутинге Skill tool — **только по явной просьбе** и когда нужно автосрабатывание по триггерам. **Никогда** не выполнять автоматически `android init` / `skills add --all`: это дублирует глобальные skills и ломает routing. Синтаксис: имя позиционное (`--skill=` удалён); флаги `--agent` / `--project` — проверять через usage, не угадывать.
+- **Никогда не обновлять автоматически:** при сообщении «A new version available» — одна строка раз в сессию, спросить перед `android update`. (`info`: `version` ядра и `launcher_version` обёртки; отставание launcher нормально.)
 
-## Fallback when CLI is missing
+## Fallback при отсутствии CLI
 
-Edge case (CLI отсутствует на машине). Notify once: "Android CLI not installed — install per the docs URL, or proceeding with fallbacks." Then:
+Крайний случай (CLI отсутствует на машине). Один раз сообщить: «Android CLI not installed — install per the docs URL, or proceeding with fallbacks». Затем:
 
-| Task | Fallback |
+| Задача | Fallback |
 |------|----------|
-| Documentation | Context7 (`resolve-library-id`) → WebSearch on `developer.android.com` → WebFetch the page |
-| Project metadata | Read `app/build.gradle*` / `settings.gradle*`; `ksrc` for dep sources |
+| Documentation | Context7 (`resolve-library-id`) → WebSearch по `developer.android.com` → WebFetch страницы |
+| Метаданные проекта | Read `app/build.gradle*` / `settings.gradle*`; `ksrc` для dep sources |
 | Layout / screenshot | `adb shell uiautomator dump` + `adb pull /sdcard/window_dump.xml` / `adb exec-out screencap -p > shot.png` |
 | SDK / Emulator | `$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager` / `$ANDROID_HOME/emulator/emulator -list-avds`, `avdmanager` |
-| Deploy | `./gradlew :app:installDebug` then `adb shell am start -n <pkg>/<activity>` |
+| Deploy | `./gradlew :app:installDebug` затем `adb shell am start -n <pkg>/<activity>` |
 
-## Operational notes
+## Операционные заметки
 
-- `android skills list` (and similar) emit a long ANSI progress bar before the result — when piped/captured, treat trailing non-progress lines as the payload.
-- **`--help` quirks (v1.0):** groups `sdk`/`skills` (+ `skills` subcommands), `info`/`init`, and `screen capture` reject `--help` (`Unknown option`, but still print a usage line); the `screen` **group** `--help` errors out entirely (i/o error) — call `screen capture`/`screen resolve` directly. `docs`(+`search`/`fetch`), `emulator`, `create`, `describe`, `run`, `layout` accept `--help` normally. First invocation per session may prepend `Unpacking embedded installation…` noise.
-
+- `android skills list` (и аналогичные команды) выводят длинную ANSI progress bar перед результатом — при передаче через pipe/сохранении воспринимать завершающие строки, не относящиеся к progress, как payload.
+- **Особенности `--help` (v1.0):** группы `sdk`/`skills` (и subcommands `skills`), `info`/`init` и `screen capture` отклоняют `--help` (`Unknown option`, но всё равно печатают строку usage); `--help` у **группы** `screen` полностью завершается ошибкой (i/o error) — вызывать `screen capture`/`screen resolve` напрямую. `docs` (и `search`/`fetch`), `emulator`, `create`, `describe`, `run`, `layout` обычно принимают `--help`. Первый вызов за сессию может предваряться шумом `Unpacking embedded installation…`.

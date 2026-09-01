@@ -1,169 +1,171 @@
 ---
 name: generate-test-plan
 description: >-
-  Generate a structured test plan when the user asks to "create a test plan", "write test cases",
+  Создавайте структурированный план тестирования, когда пользователь просит "create a test plan", "write test cases",
   "generate QA scenarios", "prepare a testing checklist", "identify what to test", "find edge cases",
   "plan testing coverage", "document test scenarios", "create a QA handoff document", "what should
-  I test?", "what are the edge cases?", or "how would you test this?". Also use when the user
-  describes requirements or acceptance criteria and asks how to verify them, or wants to plan testing
-  before actually running tests. Produces a structured, prioritized test plan document saved to
-  docs/testplans/ with risk analysis, coverage matrix, automation candidates, and proper TC format.
-  Do NOT trigger when: the user wants to execute tests on a running app (use acceptance or
-  the manual-tester agent), the user wants automated unit/integration tests in code (out of scope),
-  or the user wants to run an existing test plan (use acceptance). Never launches an app, device,
-  or browser — only produces a document.
+  I test?", "what are the edge cases?" или "how would you test this?". Также используйте навык, когда
+  пользователь описывает требования или критерии приёмки и спрашивает, как их проверить, либо хочет
+  спланировать тестирование до фактического запуска тестов. Навык создаёт структурированный
+  приоритизированный документ плана тестирования в `docs/testplans/` с анализом рисков, матрицей
+  покрытия, кандидатами на автоматизацию и корректным форматом TC. Не запускайте навык, когда
+  пользователь хочет выполнить тесты в работающем приложении (используйте `acceptance` или агента
+  `manual-tester`), хочет написать автоматизированные unit/integration-тесты в коде (вне области
+  задачи) или хочет запустить существующий план тестирования (используйте `acceptance`). Навык
+  никогда не запускает приложение, устройство или браузер — он только создаёт документ.
 ---
 
-# Generate Test Plan
+# Создание плана тестирования
 
-Analyze a feature from its specification, design, or implementation and produce a structured,
-prioritized test plan as a markdown document. No tests are executed — the output is a plan ready
-for a human QA engineer or the `manual-tester` agent to pick up later.
+Проанализируйте функциональность по её спецификации, дизайну или реализации и создайте структурированный
+приоритизированный test plan в виде Markdown-документа. Тесты не выполняются — результатом является план,
+готовый для последующей работы QA-инженера или агента `manual-tester`.
 
-## Output
+## Вывод
 
-Save every test plan to the repository:
+Сохраняйте каждый test plan в репозитории:
 
 ```
 docs/testplans/<slug>-test-plan.md
 ```
 
-Create the `docs/testplans/` directory if it doesn't exist. The slug is the canonical
-filename anchor — `acceptance` mounts by exact slug match, so the filename must be
-slug-based regardless of invocation mode.
+Создайте каталог `docs/testplans/`, если его нет. Slug — канонический идентификатор имени файла;
+`acceptance` подключает артефакт по точному совпадению slug, поэтому имя файла должно быть основано
+на slug независимо от режима вызова.
 
-Slug resolution rules (apply in order):
+Правила разрешения slug (применяйте по порядку):
 
-1. **Caller-provided** — when a `slug` argument is passed explicitly, use it as-is.
-2. **Standalone invocation, slug provided inline** — the user may supply a slug
-   directly (e.g. `"slug: login-flow"`). Use it as-is.
-3. **Standalone invocation, no slug** — derive one from the feature name with the
-   stable kebab-case convention used elsewhere: lowercase the name, replace runs
-   of spaces or punctuation with `-`, trim leading/trailing `-`.
+1. **Передан вызывающим кодом** — если аргумент `slug` передан явно, используйте его как есть.
+2. **Самостоятельный вызов, slug задан inline** — пользователь может указать slug
+   непосредственно (например, `"slug: login-flow"`). Используйте его без изменений.
+3. **Самостоятельный вызов без slug** — выведите его из имени функциональности по
+   стабильному соглашению kebab-case, используемому в других местах: приведите имя к нижнему
+   регистру, замените последовательности пробелов или знаков пунктуации на `-`, удалите начальные
+   и конечные `-`.
 
-Examples of derivation (rule 3): `"User authentication"` → `user-authentication`,
+Примеры получения slug (правило 3): `"User authentication"` → `user-authentication`,
 `"Cart & checkout"` → `cart-checkout`, `"Token refresh (auth)"` → `token-refresh-auth`.
-The resulting filename is then `docs/testplans/<slug>-test-plan.md` (for example,
+Итоговое имя файла: `docs/testplans/<slug>-test-plan.md` (например,
 `docs/testplans/user-authentication-test-plan.md`).
 
-### Receipt (when invoked with a slug)
+### Receipt (при вызове со slug)
 
-When invoked with a `slug` argument, also emit a receipt at
-`swarm-report/<slug>-test-plan.md` so `multiexpert-review` and `acceptance` can mount
-the artifact via receipt-based gating. The permanent file remains the source of truth;
-the receipt is metadata + pointer. Standalone invocations (no slug passed) skip the
-receipt entirely and write only the canonical `docs/testplans/<slug>-test-plan.md` file.
+При вызове с аргументом `slug` также создайте receipt в
+`swarm-report/<slug>-test-plan.md`, чтобы `multiexpert-review` и `acceptance` могли подключить
+артефакт через проверку на основе receipt. Постоянный файл остаётся источником истины;
+receipt содержит метаданные и указатель. Самостоятельные вызовы (без переданного slug) полностью
+пропускают receipt и записывают только канонический файл `docs/testplans/<slug>-test-plan.md`.
 
-See [`references/receipt-format.md`](references/receipt-format.md) for the full YAML schema, field conventions
+Полную YAML-схему, соглашения для полей
 (`status`, `review_verdict`, `review_warnings` / `review_blockers`, `phase_coverage`,
-`platform`, `created` / `updated`), and the standalone-without-slug backward-compatibility
-rules.
+`platform`, `created` / `updated`) и правила обратной совместимости для самостоятельного вызова
+без slug см. в [`references/receipt-format.md`](references/receipt-format.md).
 
-## Input Discovery
+## Обнаружение входных данных
 
-Sources may be a text spec (PRD / AC / user story), a Figma mockup, or existing code — often a combination. Cross-reference them; flag spec/code discrepancies as a finding, mark behaviour inferred from code alone with `[inferred from code]`.
+Источниками могут быть текстовый spec (PRD / AC / user story), макет Figma или существующий код — часто комбинация. Сопоставляйте их; расхождения spec/кода отмечайте как finding, поведение, выведенное только из кода, помечайте `[inferred from code]`.
 
-**Spec frontmatter.** When the source is a file with YAML frontmatter and contains a `platform:` list, copy it verbatim into the receipt's `platform:` field (canonical values: `android | ios | web | desktop | backend-jvm | backend-node | cli | library | generic`, same as `write-spec`). Otherwise leave `platform:` empty in the receipt — `acceptance` falls back to its project-type heuristic.
+**Frontmatter спецификации.** Если источник — файл с YAML frontmatter, содержащий список `platform:`, скопируйте его дословно в поле receipt `platform:` (канонические значения: `android | ios | web | desktop | backend-jvm | backend-node | cli | library | generic`, как в `write-spec`). В противном случае оставьте `platform:` в receipt пустым — `acceptance` использует эвристику типа проекта.
 
-**Figma mockup.** Use Figma MCP tools (`get_design_context`, `get_screenshot`) to extract screen states, interactive elements, navigation flows, and platform variants.
+**Макет Figma.** Используйте инструменты Figma MCP (`get_design_context`, `get_screenshot`), чтобы извлечь состояния экранов, интерактивные элементы, навигационные потоки и варианты платформ.
 
-### Non-UI detector — when to use the lightweight template
+### Non-UI-детектор — когда использовать упрощённый шаблон
 
-Non-UI test plan trigger — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 3. When the trigger fires, drop mockup-driven sections (Steps / Expected Result columns) and produce TCs whose behaviour is fully captured by Given/When/Then — focus on input validation, state transitions, and error paths. Mixed features (backend + thin UI) default to the standard format.
+Триггер плана тестирования Non-UI описан в `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 3. При срабатывании триггера уберите разделы, зависящие от макета (столбцы Steps / Expected Result), и создайте TC, поведение которых полностью описывается через Given/When/Then; сосредоточьтесь на проверке входных данных, переходах состояний и ошибочных сценариях. Для смешанных функций (backend + тонкий UI) используйте стандартный формат.
 
-When the detector triggers, note it in the Findings section of the permanent file:
+При срабатывании детектора укажите это в разделе Findings постоянного файла:
 `**Lightweight template applied** — no UI surface detected; TCs use Given/When/Then only.`
 
-## Test Plan Format
+## Формат Test Plan
 
-Every generated test plan has the same top-level layout: YAML frontmatter with `type: test-plan`
-and `slug`, a header metadata table, then `Findings`, `Risk Areas`, `Test Cases`,
-`Edge Cases & Negative Scenarios`, `Coverage Matrix`, and `Suggested Automation Candidates`.
-Each `TC-[N]` block is itself a table with `Priority`, `Tier`, `Preconditions`, `Steps`,
-`Expected Result`, and `Source` rows.
+Каждый созданный план тестирования имеет одинаковую структуру верхнего уровня: YAML frontmatter с
+`type: test-plan` и `slug`, таблица метаданных в начале, затем `Findings`, `Risk Areas`, `Test Cases`,
+`Edge Cases & Negative Scenarios`, `Coverage Matrix` и `Suggested Automation Candidates`.
+Каждый блок `TC-[N]` сам является таблицей со строками `Priority`, `Tier`, `Preconditions`, `Steps`,
+`Expected Result` и `Source`.
 
 Two variants exist:
 
-- **Standard format** — the default; full Steps + Expected Result columns.
-- **Lightweight format (non-UI features)** — when the non-UI detector triggers, TC blocks
-  collapse Steps and Expected Result into a single `Scenario (Given/When/Then)` row.
-  All other sections are unchanged.
+- **Standard format** — формат по умолчанию; полные столбцы Steps + Expected Result.
+- **Lightweight format (non-UI features)** — при срабатывании Non-UI-детектора блоки TC
+  объединяют Steps и Expected Result в одну строку `Scenario (Given/When/Then)`. Все остальные
+  разделы не изменяются.
 
-When the feature has two or more phases (e.g. a multi-stage rollout) and test cases can
-be grouped by phase, split the `## Test Cases` section into `### Phase N (T-i..T-j) — <label>`
-subsections (still one permanent file per feature). The receipt's `phase_coverage` then lists
-the phase labels present.
+Если функция имеет две или более фазы (например, поэтапный rollout), и тестовые случаи можно
+сгруппировать по фазам, разделите `## Test Cases` на подразделы `### Phase N (T-i..T-j) — <label>`
+(по-прежнему создаётся один постоянный файл на функцию). После этого `phase_coverage` в receipt
+перечисляет присутствующие названия фаз.
 
-See [`references/format-templates.md`](references/format-templates.md) for the full standard and lightweight templates (verbatim
-markdown), the phase-segmentation worked example, and the rules for when each variant applies.
+Полные стандартный и облегчённый шаблоны (дословный Markdown), рабочий пример сегментации по фазам
+и правила применения каждого варианта см. в [`references/format-templates.md`](references/format-templates.md).
 
 ## Field Definitions
 
 ### Type
 
-Every test case declares an explicit `Type` plus a one-line `Type rationale` (see `references/format-templates.md`). Downstream consumers (`finalize` Phase D coverage audit, `multiexpert-review` test-plan profile, engineer agents writing the actual tests) read this field — it is not optional.
+Каждый тестовый случай явно объявляет `Type` и однострочное обоснование `Type rationale` (см. `references/format-templates.md`). Последующие потребители (аудит покрытия в Phase D навыка `finalize`, профиль test-plan навыка `multiexpert-review`, агенты-разработчики, пишущие реальные тесты) читают это поле — оно обязательно.
 
-| Type | Scope | Pick when |
+| Type | Охват | Выбирайте, когда |
 |------|-------|-----------|
-| `unit` | One class/function with mocked collaborators | Pure logic, transform, validator, mapper, parser, state-holder math |
-| `integration` | Several classes plus real / in-memory dependencies | Repository + DB, service + test API, data pipeline, multi-class interaction |
-| `ui-instrumentation` | One UI component inside its framework (Compose UI test, XCUITest single screen, ViewInspector) | Single screen / component user action with visible state assertion |
-| `ui-scenario` | Running app driven by an MCP-based device / browser automation runner, re-runnable scripted journey | Multi-screen user journey, cross-platform critical flow |
-| `screenshot` | Visual render comparison (Paparazzi, swift-snapshot-testing) | Visual fidelity is part of the contract — additive, never the sole coverage |
-| `e2e` | Whole application end-to-end | Release-critical journey that cannot be split into smaller types — keep the count small |
+| `unit` | Один класс/функция с замоканными зависимостями | Чистая логика, преобразование, валидатор, маппер, парсер, математика держателя состояния |
+| `integration` | Несколько классов и реальные / находящиеся в памяти зависимости | Репозиторий + БД, сервис + тестовый API, конвейер данных, взаимодействие нескольких классов |
+| `ui-instrumentation` | Один UI-компонент внутри своего фреймворка (Compose UI test, XCUITest single screen, ViewInspector) | Действие пользователя на одном экране / компоненте с проверкой видимого состояния |
+| `ui-scenario` | Работающее приложение под управлением устройства на основе MCP / средства автоматизации браузера, повторяемый сценарий | Многоэкранный пользовательский путь, критичный кроссплатформенный поток |
+| `screenshot` | Сравнение визуального рендера (Paparazzi, swift-snapshot-testing) | Визуальное соответствие является частью контракта — только как добавочное покрытие, никогда не единственное |
+| `e2e` | Всё приложение от начала до конца | Критичный для релиза путь, который нельзя разделить на меньшие типы — число таких тестов должно быть небольшим |
 
-#### Selection heuristic
+#### Эвристика выбора
 
-Per acceptance criterion: pick the **smallest scope that catches a real failure of that AC**. Climb only when needed. When in doubt, prefer the cheaper type.
+Для каждого критерия приёмки выбирайте **минимальный охват, который обнаружит реальный сбой этого AC**. Расширяйте его только при необходимости. Если сомневаетесь, предпочитайте более дешёвый тип.
 
-| AC shape | Type |
+| Форма AC | Type |
 |---|---|
-| Value transform / pure computation | `unit` |
-| Component interaction with real or fake collaborators | `integration` |
-| Single-screen user action with visible state change | `ui-instrumentation` |
-| Multi-screen journey | `ui-scenario` |
-| Release-critical journey + visual fidelity matters | `screenshot` (additive) and/or `e2e` |
-| Release-critical end-to-end flow that cannot be split | `e2e` |
+| Преобразование значения / чистое вычисление | `unit` |
+| Взаимодействие компонента с реальными или фиктивными зависимостями | `integration` |
+| Действие пользователя на одном экране с видимым изменением состояния | `ui-instrumentation` |
+| Многоэкранный путь | `ui-scenario` |
+| Критичный для релиза путь + важно визуальное соответствие | `screenshot` (добавочно) и/или `e2e` |
+| Критичный для релиза сквозной поток, который нельзя разделить | `e2e` |
 
-This heuristic is the canonical reference for picking a TC type within this plugin family.
+Эта эвристика является каноническим справочником выбора типа TC в семействе плагинов.
 
 ### Priority
 
-Priority framework — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 2.
+Система приоритетов описана в `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 2.
 
 ### Tier
 
-| Tier | Meaning | Guideline |
+| Tier | Значение | Рекомендация |
 |------|---------|-----------|
-| **Smoke** | Is it alive? | Minimum set to confirm the feature works at all (3-5 tests max) |
-| **Feature** | Does it work correctly? | Thorough coverage of the feature's behavior |
-| **Regression** | Did we break anything? | Guards against breaking existing functionality |
+| **Smoke** | Функция вообще работает? | Минимальный набор для подтверждения работоспособности (не более 3–5 тестов) |
+| **Feature** | Функция работает корректно? | Полное покрытие поведения функции |
+| **Regression** | Ничего не сломали? | Защита от нарушения существующей функциональности |
 
 ### Source
 
-| Source type | Format | Example |
+| Тип источника | Формат | Пример |
 |-------------|--------|---------|
-| Spec section | `Spec §[section]` | `Spec §3.2 — Login flow` |
-| Figma frame | `Figma: [frame name]` | `Figma: Login / Error State` |
-| Code path | backtick-wrapped path with line | `src/auth/LoginViewModel.kt:87` |
-| Inferred | `[inferred from code]` | Behavior derived from code with no spec backing |
+| Раздел спецификации | `Spec §[section]` | `Spec §3.2 — Login flow` |
+| Кадр Figma | `Figma: [frame name]` | `Figma: Login / Error State` |
+| Путь в коде | путь в обратных кавычках с номером строки | `src/auth/LoginViewModel.kt:87` |
+| Выведено | `[inferred from code]` | Поведение выведено из кода без опоры на спецификацию |
 
-### Non-functional / Instrumentation (mandatory for user-facing / prod-bound)
+### Non-functional / Instrumentation (обязательно для user-facing / prod-bound)
 
-Every plan ends with a `## Non-functional / Instrumentation` section that declares observability **before** implementation, not after the first incident. Required when the spec / task is tagged `user-facing` or `prod-bound`, or when the feature touches an observability hot-path: network calls, payments, background jobs, auth, data migrations.
+Каждый план завершается разделом `## Non-functional / Instrumentation`, где требования к наблюдаемости фиксируются **до** реализации, а не после первого инцидента. Раздел обязателен, если спецификация или задача помечены `user-facing` или `prod-bound`, либо функция затрагивает критичный для наблюдаемости путь: сетевые вызовы, платежи, фоновые задания, auth, миграции данных.
 
-`N/A: <reason>` (one line) is allowed for internal / developer-only tooling and for pure refactors with no change to observable behavior. Never delete the heading.
+Для внутренних инструментов, инструментов только для разработчиков и чистого рефакторинга без изменения наблюдаемого поведения допускается одна строка `N/A: <reason>`. Никогда не удаляйте заголовок.
 
-The section covers five subsections — Log events / Metrics / Traces / Alerts / Dashboards (full template in [`references/format-templates.md`](references/format-templates.md#non-functional--instrumentation)). The skill reads naming and stack conventions (OpenTelemetry, Prometheus, StatsD, vendor-specific) from the project's runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent) and reuses them; it does not prescribe a stack. If the project has no convention, the skill asks one question and records the answer.
+Раздел охватывает пять подразделов — Log events / Metrics / Traces / Alerts / Dashboards (полный шаблон: [`references/format-templates.md`](references/format-templates.md#non-functional--instrumentation)). Навык считывает соглашения об именовании и стеке (OpenTelemetry, Prometheus, StatsD, вендорские решения) из файлов runtime-инструкций проекта (`AGENTS.md`, `CLAUDE.md` или эквивалента) и повторно использует их; стек не навязывается. Если соглашение отсутствует, навык задаёт один вопрос и фиксирует ответ.
 
-Downstream stages consume this section:
+Следующие этапы используют этот раздел:
 
-- `multiexpert-review` test-plan profile checks the section is filled or carries an explicit `N/A: <reason>`.
-- `acceptance` verifies, against the running app, that declared events / metrics actually fire when the tested behavior runs.
+- профиль test-plan навыка `multiexpert-review` проверяет, что раздел заполнен или содержит явное `N/A: <reason>`;
+- `acceptance` проверяет в работающем приложении, что заявленные события и метрики действительно срабатывают при выполнении тестируемого поведения.
 
 ## Guidelines
 
-- Number test cases sequentially: TC-1, TC-2, TC-3 ... (manual-tester assigns session-scoped IDs at execution time).
-- Each test case asserts exactly one thing — split multi-outcome verifications.
-- Mark inferred behaviour with `[inferred from code]`.
-- Target 15-30 test cases for a medium feature; every TC must earn its place.
+- Нумеруйте тестовые случаи последовательно: TC-1, TC-2, TC-3 ... (во время выполнения `manual-tester` назначает идентификаторы в пределах сессии).
+- Каждый тестовый случай должен проверять ровно одно утверждение — проверки с несколькими результатами разделяйте.
+- Помечайте поведение, выведенное из кода, как `[inferred from code]`.
+- Для функции среднего размера планируйте 15–30 тестовых случаев; каждый TC должен быть обоснован.

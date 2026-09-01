@@ -1,27 +1,27 @@
-# multiexpert-review — profile contract
+# multiexpert-review — контракт профиля
 
-Profiles parameterize `multiexpert-review` for specific artifact types (plan, test-plan, spec, etc.). The engine (`../SKILL.md`) is artifact-agnostic; all artifact-specific logic lives here.
+Профили настраивают `multiexpert-review` для конкретных типов артефактов (plan, test-plan, spec и т. д.). Движок (`../SKILL.md`) не зависит от типа артефакта; вся логика для конкретных артефактов находится здесь.
 
-## Canonical inventory
+## Канонический перечень
 
 ```
 PROFILE_INVENTORY = [implementation-plan, test-plan, spec]
 ```
 
-(All three profiles exist as of this writing: `implementation-plan.md`, `test-plan.md`, `spec.md`.)
+(На момент написания существуют все три профиля: `implementation-plan.md`, `test-plan.md`, `spec.md`.)
 
-This list is **authoritative**. The engine reads it on startup by parsing this file. Adding a profile requires: (1) create `profiles/<name>.md`, (2) add `<name>` to the list above in the same commit. Mismatch (file exists but not in list, or list entry with no file) → engine fails with `[multiexpert-review ERROR] PROFILE_INVENTORY_MISMATCH: <name> <direction>`.
+Этот список **является источником истины**. Движок читает его при запуске, разбирая этот файл. Для добавления профиля нужно: (1) создать `profiles/<name>.md`, (2) добавить `<name>` в список выше в том же коммите. Несоответствие (файл существует, но отсутствует в списке, или запись есть без файла) → движок завершается ошибкой `[multiexpert-review ERROR] PROFILE_INVENTORY_MISMATCH: <name> <direction>`.
 
-**Parser format (engine contract):** the engine matches the first line in this file that satisfies the regex `^PROFILE_INVENTORY\s*=\s*\[([^\]]+)\]\s*$`. The capture group is split on `,` and each element is trimmed of whitespace. The line MUST live inside a fenced code block (``` ```) so prose edits above do not accidentally match it. Editors of this file must preserve the exact variable name `PROFILE_INVENTORY`, the `=` token, and the single-line `[...]` form — no multi-line arrays, no quoted strings, no trailing commas.
+**Формат для парсера (контракт движка):** движок сопоставляет первую строку этого файла, удовлетворяющую регулярному выражению `^PROFILE_INVENTORY\s*=\s*\[([^\]]+)\]\s*$`. Группа захвата разделяется по `,`, а из каждого элемента удаляются пробельные символы. Строка ОБЯЗАТЕЛЬНО должна находиться внутри ограждённого блока кода (``` ```), чтобы изменения прозы выше случайно не совпали с ней. Редакторы этого файла должны сохранять точное имя переменной `PROFILE_INVENTORY`, токен `=` и однострочную форму `[...]` — без многострочных массивов, кавычек и завершающих запятых.
 
-## Profile schema (frontmatter)
+## Схема профиля (frontmatter)
 
 Each `profiles/<name>.md` starts with YAML frontmatter declaring:
 
 ```yaml
 ---
 name: <implementation-plan | test-plan | spec | ...>     # must match inventory entry
-description: <one-line human-readable summary>
+description: <однострочное человекочитаемое описание>
 
 detect:
   frontmatter_type: [...]              # artifact frontmatter `type:` values that trigger this profile
@@ -53,57 +53,57 @@ receipt:                               # OPTIONAL section — absence means no r
   fields_to_update: [<field>, ...]
 ---
 
-## Rubric
-(artifact-specific review criteria in markdown; agents evaluate against these)
+## Критерии
+(критерии ревью для конкретного артефакта в Markdown; агенты оценивают по ним)
 
-## Prompt augmentation
-(optional: extra text added to the Step 3 review prompt for this profile)
+## Дополнение запроса
+(необязательный дополнительный текст, добавляемый в запрос на ревью шага 3 для этого профиля)
 ```
 
-## Negative-list — fields FORBIDDEN in profile frontmatter
+## Запретный список — поля, ЗАПРЕЩЁННЫЕ в frontmatter профиля
 
-The engine owns these concerns; profiles **must not** declare any of:
+Эти аспекты принадлежат движку; профили **не должны** объявлять ни одного из следующих полей:
 
-- `output_schema` — review output structure (Summary / Domain Relevance / Issues) is engine-fixed
-- `aggregation_strategy` — synthesis rules (convergence, contradictions, confidence-weighting) are engine-fixed
-- `state_transitions` — state machine transitions are engine-constant
-- `revise_loop_cap` — max 3 cycles is engine-constant
-- `review_prompt_template` — Step 3 prompt template skeleton is engine-fixed; profiles use `## Prompt augmentation` section for additive customization
+- `output_schema` — структура вывода ревью (Summary / Domain Relevance / Issues) фиксирована движком;
+- `aggregation_strategy` — правила синтеза (сходимость, противоречия, взвешивание по уверенности) фиксированы движком;
+- `state_transitions` — переходы конечного автомата фиксированы движком;
+- `revise_loop_cap` — максимум 3 циклов фиксирован движком;
+- `review_prompt_template` — каркас запроса шага 3 фиксирован движком; профили используют секцию `## Prompt augmentation` для добавочных настроек.
 
-Presence of any forbidden field → engine refuses to load the profile: `[multiexpert-review ERROR] FORBIDDEN_PROFILE_FIELD: profile <name> declares forbidden field <field>`.
+Наличие любого запрещённого поля → движок отказывается загружать профиль: `[multiexpert-review ERROR] FORBIDDEN_PROFILE_FIELD: profile <name> declares forbidden field <field>`.
 
-## Detection precedence (Step 1 of engine)
+## Приоритет обнаружения (шаг 1 движка)
 
-1. **Explicit caller hint** — args prefix `profile: <name>\n---\n`. Both lines MUST start at **column 0** (no leading whitespace / indentation — the engine matches `^profile:\s+(\S+)\s*$` on line 1 and `^---\s*$` on line 2). Callsites embedding this block inside markdown lists or docs must unindent the example so contributors copy it verbatim without stray indentation. Unknown `<name>` → fail loud `UNKNOWN_PROFILE_HINT`.
-2. **Frontmatter type** — artifact's YAML frontmatter `type:` value; first profile whose `detect.frontmatter_type` list contains that value wins.
-3. **Path glob** — artifact file path; first profile with matching `detect.path_globs` wins.
-4. **Structural signatures** — all regexes in `detect.structural_signatures` must match artifact content. First profile whose signatures all match wins.
-5. **Fallback — ask user** — engine presents `AskUserQuestion` with `PROFILE_INVENTORY` options. Never silent default.
+1. **Явная подсказка вызывающего кода** — префикс аргументов `profile: <name>\n---\n`. Обе строки ОБЯЗАТЕЛЬНО должны начинаться с **нулевой колонки** (без начальных пробелов/отступа — движок сопоставляет `^profile:\s+(\S+)\s*$` в строке 1 и `^---\s*$` в строке 2). Места вызова, встраивающие этот блок в списки Markdown или документы, должны убрать отступ у примера, чтобы участники могли копировать его буквально без лишних отступов. Неизвестное `<name>` → громкая ошибка `UNKNOWN_PROFILE_HINT`.
+2. **Тип frontmatter** — значение `type:` в YAML frontmatter артефакта; выигрывает первый профиль, в чьём списке `detect.frontmatter_type` есть это значение.
+3. **Маска пути** — путь к файлу артефакта; выигрывает первый профиль с совпадающей `detect.path_globs`.
+4. **Структурные сигнатуры** — все регулярные выражения в `detect.structural_signatures` должны совпасть с содержимым артефакта. Выигрывает первый профиль, для которого совпали все сигнатуры.
+5. **Запасной вариант — спросить пользователя** — движок показывает `AskUserQuestion` с вариантами `PROFILE_INVENTORY`. Никогда не выбирайте значение молча.
 
-## Cycle-locking
+## Фиксация профиля между циклами
 
-The selected profile is recorded in the state file at cycle 1. For cycles ≥2, the engine reads the profile **only** from the state file. Any profile hint in re-invocation args is ignored with a warning entry in Verdict History: `Cycle <N> ignoring profile hint '<value>' — locked to '<locked>' since cycle 1`. This is not fail-loud — the engine continues on the locked profile.
+Выбранный профиль записывается в файл состояния в цикле 1. В циклах ≥2 движок читает профиль **только** из файла состояния. Любая подсказка профиля в аргументах повторного вызова игнорируется, а в Verdict History добавляется предупреждение: `Cycle <N> ignoring profile hint '<value>' — locked to '<locked>' since cycle 1`. Это не громкая ошибка — движок продолжает работу с зафиксированным профилем.
 
-## Source routing — `N/A` semantics
+## Маршрутизация источника — семантика `N/A`
 
-When a profile declares a source as `N/A` (e.g., `source_routing.plan_mode: N/A` on the test-plan profile), the profile asserts that source is not applicable for this artifact type. If the engine nevertheless encounters that source at Step 5 (e.g., a test-plan somehow arrives as a Plan Mode artifact), the engine fails loud with `[multiexpert-review ERROR] ROUTING_NOT_SUPPORTED: profile <name> does not support source <source>`. This category sits under the unified error prefix — consumers may detect it like any other engine error.
+Когда профиль объявляет источник как `N/A` (например, `source_routing.plan_mode: N/A` в профиле test-plan), он утверждает, что источник неприменим к этому типу артефакта. Если движок всё же встречает этот источник на шаге 5 (например, test-plan каким-то образом поступает как артефакт Plan Mode), движок завершается громкой ошибкой `[multiexpert-review ERROR] ROUTING_NOT_SUPPORTED: profile <name> does not support source <source>`. Эта категория использует единый префикс ошибок — потребители могут обнаруживать её как любую другую ошибку движка.
 
-## Severity mapping — item identifier convention
+## Сопоставление серьёзности — соглашение об идентификаторах элементов
 
-Profiles whose rubric is a **labeled checklist** with short IDs (e.g. test-plan items `(a)`–`(e)`) SHOULD use the matching single-letter or short-ID strings in `severity_mapping.items` — `["a", "b", "c"]`. Profiles whose rubric is a **section-based** list of named concerns (e.g. spec's `acceptance_criteria`, `prerequisites`, `out_of_scope`, …) SHOULD use those named identifiers. Engine treats `items` values as opaque strings — both conventions are accepted. The convention is a matter of trace-readability: each agent's Issues output should include the ID in the title stem (`issue: (a) AC coverage violated …` or `issue: acceptance_criteria partial …`) so synthesizer aggregation and receipts stay greppable.
+Профили, чьи критерии — это **помеченный чек-лист** с короткими ID (например, элементы test-plan `(a)`–`(e)`), ДОЛЖНЫ использовать соответствующие односимвольные или короткие ID в `severity_mapping.items` — `["a", "b", "c"]`. Профили с **секционным** списком именованных вопросов (например, `acceptance_criteria`, `prerequisites`, `out_of_scope` в spec) ДОЛЖНЫ использовать эти именованные идентификаторы. Движок рассматривает значения `items` как непрозрачные строки — допустимы оба соглашения. Это соглашение улучшает читаемость трассировки: вывод Issues каждого агента должен содержать ID в начале заголовка (`issue: (a) AC coverage violated …` или `issue: acceptance_criteria partial …`), чтобы агрегация синтезатора и квитанции оставались доступными для поиска.
 
-## Receipt section semantics
+## Семантика секции receipt
 
-- **Present** — after Step 4 synthesis, engine updates the file matching `receipt.path_template` (with `<slug>` substituted) by setting each field in `fields_to_update` to the appropriate value from the verdict.
-- **Absent** — engine skips receipt writing entirely. Use for profiles whose artifact doesn't have a receipt contract (e.g., spec, whose verdict is consumed inline by `write-spec`). `implementation-plan` declares a receipt: it writes its verdict back into the plan's own frontmatter at `docs/plans/<slug>/plan.md`.
+- **Присутствует** — после синтеза шага 4 движок обновляет файл, соответствующий `receipt.path_template` (с подстановкой `<slug>`), устанавливая каждому полю из `fields_to_update` соответствующее значение вердикта.
+- **Отсутствует** — движок полностью пропускает запись receipt. Используйте это для профилей, чей артефакт не имеет контракта receipt (например, spec, вердикт которого `write-spec` потребляет напрямую). `implementation-plan` объявляет receipt: он записывает вердикт обратно во frontmatter самого плана в `docs/plans/<slug>/plan.md`.
 
-## Error semantics (unified across engine)
+## Семантика ошибок (единая для движка)
 
-All engine errors produce the exact prefix `[multiexpert-review ERROR] <CATEGORY>: <details>` as the first line of conversation output. Consumers (e.g. `write-spec`) detect this prefix to distinguish engine errors from ordinary review FAIL verdicts. Categories:
+Все ошибки движка выводят точный префикс `[multiexpert-review ERROR] <CATEGORY>: <details>` в первой строке ответа. Потребители (например, `write-spec`) обнаруживают этот префикс, чтобы отличать ошибки движка от обычных вердиктов ревью FAIL. Категории:
 
-- `UNKNOWN_PROFILE_HINT` — caller passed hint not in inventory
-- `FORBIDDEN_PROFILE_FIELD` — profile frontmatter violates negative-list
-- `NO_REVIEWERS_AVAILABLE` — all roster agents missing; `allow_single_reviewer: false` and only 1 left; or empty roster with no tech-match
-- `AMBIGUOUS_REVIEWER` — short-name resolves to multiple agent files after the family tie-break (see engine SKILL.md Step 2)
-- `PROFILE_INVENTORY_MISMATCH` — README inventory vs. `profiles/` file presence disagree
-- `ROUTING_NOT_SUPPORTED` — engine reached Step 5 with a source the profile declared `N/A`
+- `UNKNOWN_PROFILE_HINT` — вызывающий код передал подсказку, которой нет в перечне;
+- `FORBIDDEN_PROFILE_FIELD` — frontmatter профиля нарушает запретный список;
+- `NO_REVIEWERS_AVAILABLE` — отсутствуют все агенты из roster; `allow_single_reviewer: false` и остался только 1 агент; либо roster пуст и нет совпадения по технологиям;
+- `AMBIGUOUS_REVIEWER` — короткое имя после разрешения с учётом семейства соответствует нескольким файлам агентов (см. шаг 2 `SKILL.md` движка);
+- `PROFILE_INVENTORY_MISMATCH` — перечень в README и наличие файлов в `profiles/` расходятся;
+- `ROUTING_NOT_SUPPORTED` — движок достиг шага 5 с источником, который профиль объявил как `N/A`.

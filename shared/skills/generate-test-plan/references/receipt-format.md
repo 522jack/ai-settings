@@ -1,19 +1,19 @@
 Referenced from: `plugins/developer-workflow/skills/generate-test-plan/SKILL.md` (§Receipt).
 
-# Test Plan Receipt Format
+# Формат receipt плана тестирования
 
-When this skill is invoked with an explicit `slug` argument, in addition to the permanent
-document, produce a **receipt** at `swarm-report/<slug>-test-plan.md` that downstream
-consumers (`multiexpert-review`, `acceptance`) can read for receipt-based gating.
+Когда этот навык вызван с явным аргументом `slug`, помимо постоянного документа создайте
+**receipt** в `swarm-report/<slug>-test-plan.md`, который downstream-потребители
+(`multiexpert-review`, `acceptance`) смогут читать для gate на основе receipt.
 
-The permanent file remains the source of truth. The receipt is metadata + pointer.
+Постоянный файл остаётся источником истины. Receipt — это метаданные и указатель.
 
 Receipt format:
 
 ```markdown
 ---
 name: test-plan-receipt
-description: Test plan artifact for <slug>
+description: Артефакт test plan для <slug>
 slug: <slug>
 type: test-plan-receipt
 status: Draft
@@ -31,39 +31,39 @@ created: YYYY-MM-DD
 updated: YYYY-MM-DD
 ---
 
-# Test Plan Receipt: <slug>
+# Receipt плана тестирования: <slug>
 
 **Status:** <status>
-**Permanent artifact:** [`docs/testplans/<slug>-test-plan.md`](../docs/testplans/<slug>-test-plan.md)
-**Source spec:** <path or description>
-**Review verdict:** <verdict>
+**Постоянный артефакт:** [`docs/testplans/<slug>-test-plan.md`](../docs/testplans/<slug>-test-plan.md)
+**Исходный spec:** <путь или описание>
+**Вердикт ревью:** <verdict>
 ```
 
-## Field conventions
+## Соглашения о полях
 
-- `status`: `Draft` right after generation; `Ready` after multiexpert-review returns PASS/WARN;
-  `Approved` when the user explicitly signs off; `Mounted` when a user-authored permanent
-  file is adopted without regeneration.
+- `status`: `Draft` сразу после генерации; `Ready` после возврата PASS/WARN от multiexpert-review;
+  `Approved`, когда пользователь явно утвердил результат; `Mounted`, когда авторский постоянный
+  файл принят без повторной генерации.
 - `review_verdict`: `pending` at creation; updated by `multiexpert-review` to
   `PASS | WARN | FAIL`; `skipped` on mount (no review occurs).
-- `review_warnings` / `review_blockers`: arrays of short strings populated by `multiexpert-review`.
+- `review_warnings` / `review_blockers`: массивы коротких строк, заполненные `multiexpert-review`.
   `review_warnings` is written on WARN verdicts (items d or e of the checklist violated —
   non-blocking); `review_blockers` is written on FAIL (items a, b, or c violated —
   blocks transition to Implement). Both remain empty arrays on PASS / pending / skipped.
   Frontmatter is the single source of truth for review findings — the receipt body does
   not re-list them, keeping downstream YAML parsers authoritative.
-- `phase_coverage`: list of phase labels present in the permanent file. Empty list if the
-  feature has no phase segmentation.
-- `created` / `updated`: ISO dates (`YYYY-MM-DD`). `updated` must change whenever either the
-  permanent file or any receipt field is modified.
-- Relative path in the markdown link assumes the conventional `swarm-report/` ↔ `docs/`
-  sibling layout at the repo root.
+- `phase_coverage`: список меток фаз, присутствующих в постоянном файле. Пустой список, если
+  функциональность не разделена на фазы.
+- `created` / `updated`: даты ISO (`YYYY-MM-DD`). `updated` должен изменяться при изменении
+  постоянного файла или любого поля receipt.
+- Относительный путь в ссылке Markdown предполагает стандартную структуру соседних каталогов
+  `swarm-report/` ↔ `docs/` в корне репозитория.
 
-## Standalone invocation without slug
+## Самостоятельный вызов без slug
 
-When a user invokes this skill directly (e.g. "create a test plan for X") without an
-explicit `slug`, the receipt is **not** produced. The permanent file is still saved
-under the canonical slug-based filename:
+Когда пользователь напрямую вызывает этот навык (например, «создай test plan для X») без
+явного `slug`, receipt **не создаётся**. Постоянный файл всё равно сохраняется под каноническим
+именем на основе slug:
 
 - Permanent file generated at `docs/testplans/<slug>-test-plan.md`, where `<slug>` is
   either provided inline or derived from the feature name per the Slug resolution rules
@@ -73,7 +73,7 @@ under the canonical slug-based filename:
 - No `swarm-report/<slug>-test-plan.md` receipt is written.
 - No `phase_coverage` or receipt metadata tracked elsewhere.
 
-Standalone callers continue to work: the slug-based filename is the single canonical
-artifact. Pre-existing `docs/testplans/*-test-plan.md` files authored before this
-convention are not auto-migrated — they remain readable by humans, but mount logic
-matches only on the exact `<slug>-test-plan.md` path.
+Самостоятельные вызовы продолжают работать: имя на основе slug — единственный канонический
+артефакт. Существующие `docs/testplans/*-test-plan.md`, созданные до этого соглашения, не
+переносятся автоматически — люди могут их читать, но mount-логика сопоставляет только точный
+путь `<slug>-test-plan.md`.

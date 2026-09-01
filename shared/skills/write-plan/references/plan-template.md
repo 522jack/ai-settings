@@ -1,9 +1,9 @@
-# Plan templates
+# Шаблоны планов
 
-Copy each block verbatim into the matching file under `docs/plans/<slug>/` and fill every
-placeholder. Three files, split by lifetime: `plan.md` and `tasks.md` are the stable design;
-`progress.md` is the volatile execution ledger (Cline-style split — execution churn must never
-rewrite the design).
+Скопируйте каждый блок буквально в соответствующий файл под `docs/plans/<slug>/` и заполните каждый
+placeholder. Три файла разделены по сроку жизни: `plan.md` и `tasks.md` — стабильный дизайн;
+`progress.md` — изменяемый журнал выполнения (разделение в стиле Cline — рабочие изменения никогда
+не должны переписывать дизайн).
 
 ---
 
@@ -21,69 +21,71 @@ review_verdict: pending # pending → pass | conditional | escalate (set by Phas
 review_blockers: []     # filled by the review loop when blockers remain
 ---
 
-# Plan: <title>
+# План: <title>
 
-## Context & Decision
-<2–4 sentences: what is being built and why it is already decided. Link the spec / research /
-request that decided it. This plan is the HOW, not the WHAT — do not re-argue scope here.>
+## Контекст и решение
+<2–4 предложения: что создаётся и почему это уже решено. Добавьте ссылку на spec / research /
+запрос, в котором это решено. Этот план описывает КАК, а не ЧТО — не обсуждайте область заново.>
 
-## Technical Approach
-<The concrete design. Architecture, data flow, key types/interfaces, the integration points in the
-existing codebase (cite file:line from investigation). Enough that an implementing agent does not
-need to re-research.>
+## Технический подход
+<Конкретный дизайн. Архитектура, поток данных, ключевые типы/интерфейсы, точки интеграции в
+существующей кодовой базе (укажите file:line по результатам исследования). Этого должно хватать,
+чтобы реализующему агенту не пришлось повторять исследование.>
 
-## Affected Modules & Files
-| Path | Change | Note |
+## Затронутые модули и файлы
+| Путь | Изменение | Примечание |
 |---|---|---|
 | `<path>` | New / Modified / Renamed / Deleted | <what changes and why> |
 
-## Decisions Made
-| Decision | Rationale | Alternatives rejected |
+## Принятые решения
+| Решение | Обоснование | Отклонённые альтернативы |
 |---|---|---|
 | <what we chose> | <because…> | <X because…> |
 
-## Risks & Mitigations
-| Risk | Severity | Mitigation |
+## Риски и меры снижения
+| Риск | Серьёзность | Мера |
 |---|---|---|
 | <risk> | critical / major / minor | <how the plan handles it> |
 
-## Verification & Sources
-<How the FINISHED implementation is verified — the contract `/acceptance` checks against. Distinct
-from the per-task `check` in tasks.md: that proves each task; this proves the whole change is done
-and correct. Mandatory output — a plan without it cannot be approved (qa-and-testing §6, §0).>
+## Проверка и источники
+<Как проверяется ЗАВЕРШЁННАЯ реализация — контракт, с которым сверяется `/acceptance`. Отличается
+от `check` для каждой задачи в tasks.md: тот доказывает каждую задачу, этот — что всё изменение
+завершено и корректно. Обязательный раздел — план без него нельзя утвердить (qa-and-testing §6, §0).>
 
-| Source of truth | Type | Status | Sufficient for verification? |
+| Источник истины | Тип | Статус | Достаточен для проверки? |
 |---|---|---|---|
 | <path / link / "baseline captured at swarm-report/<slug>-baseline.md"> | spec / test-plan / requirements / before-state baseline / Figma-or-screenshots / debug-repro | present / to-capture-before-impl / absent | yes — <why it lets someone who's never seen the system confirm "done"> / no — <gap + how it's closed before implementation> |
 
-**Testing strategy (pyramid levels):** L0 build always + <levels that apply, e.g. L1 static, L2 unit,
-L3 UI, L5 manual> — <one line: why these levels for this change>. L5 is mandatory for library bumps,
-migrations, and infra-layer (network/storage/auth/DI) changes. If a level the routing matrix marks
-mandatory is skipped, name it and the tracked exception (qa-and-testing §1/§4) — never a silent skip.
+**Стратегия тестирования (уровни пирамиды):** всегда L0 build + <применимые уровни, например L1 static,
+L2 unit, L3 UI, L5 manual> — <одна строка: почему эти уровни нужны для изменения>. L5 обязателен для
+обновлений библиотек, миграций и изменений infra-слоя (network/storage/auth/DI). Если пропущен уровень,
+который матрица маршрутизации помечает обязательным, назовите его и зафиксированное исключение
+(qa-and-testing §1/§4) — никогда не пропускайте молча.
 
-> The frontmatter `spec:` field carries only the spec link for tooling; this section is the full,
-> human-readable verification contract — list every source, not just the spec. For a bug fix the
-> source is `swarm-report/<slug>-debug.md`; for a migration / "shouldn't change behavior" task it is
-> the before-state baseline, captured **before** any edit (task-types § Before-state baseline).
+> Поле `spec:` во frontmatter содержит только ссылку на spec для инструментов; эта секция — полный
+> человекочитаемый контракт проверки, поэтому перечисляйте каждый источник, а не только spec. Для
+> исправления ошибки источником является `swarm-report/<slug>-debug.md`; для миграции/задачи «поведение
+> не должно измениться» — baseline исходного состояния, снятый **до** любого редактирования
+> (task-types § Before-state baseline).
 
-## Out of Scope
-- <explicitly NOT done by this plan, with owner / deferral target if relevant>
+## Вне области работ
+- <что этот план ЯВНО НЕ делает, с владельцем/целью отсрочки, если применимо>
 
-## Open Questions
-- [blocking] <question that must be answered before / during implementation>
-- [non-blocking] <question that can be resolved while implementing>
+## Открытые вопросы
+- [blocking] <вопрос, на который нужно ответить до/во время реализации>
+- [non-blocking] <вопрос, который можно решить во время реализации>
 ```
 
 ---
 
 ## `docs/plans/<slug>/tasks.md`
 
-Ordered, dependency-aware checklist. Each task is small enough to implement AND verify in one
-focused pass, and carries an acceptance condition that is checkable without human judgement — this
-is what makes autonomous execution safe.
+Упорядоченный чек-лист с учётом зависимостей. Каждая задача достаточно мала, чтобы реализовать И
+проверить её за один сфокусированный проход, и содержит условие приёмки, проверяемое без человеческого
+суждения — это делает автономное выполнение безопасным.
 
 ```markdown
-# Tasks: <title>
+# Задачи: <title>
 
 > Plan: ./plan.md · Spec AC referenced inline as AC-N
 
@@ -100,28 +102,28 @@ is what makes autonomous execution safe.
 - check: <how it is verified>   (satisfies AC-2, AC-3)
 ```
 
-Acceptance phrasing: prefer Given/When/Then for behaviour, "THE SYSTEM SHALL …" (EARS) for
-invariants/constraints. Always pair acceptance with a concrete `check` — a test name, a grep, a
-build/lint target — never "looks right".
+Формулировка приёмки: для поведения предпочитайте Given/When/Then, для инвариантов/ограничений —
+«THE SYSTEM SHALL …» (EARS). Всегда связывайте приёмку с конкретной `check` — именем теста, grep или
+целью build/lint — никогда с «выглядит правильно».
 
 ---
 
 ## `docs/plans/<slug>/progress.md`
 
-Initialize with one unchecked box per task and an empty learnings log. The implementer updates this
-as work proceeds; it carries state across sessions and fresh-context runs (so a stop/resume or an
-autonomous loop never loses its place).
+Инициализируйте одним неотмеченным пунктом на задачу и пустым журналом выводов. Реализующий агент
+обновляет его по мере работы; он сохраняет состояние между сессиями и запусками со свежим контекстом
+(поэтому остановка/возобновление или автономный цикл не теряют позицию).
 
 ```markdown
-# Progress: <title>
+# Прогресс: <title>
 
 > Plan: ./plan.md · Tasks: ./tasks.md
 
-## Status
+## Статус
 - [ ] T-1 — <short title>
 - [ ] T-2 — <short title>
 
-## Learnings
-<!-- Append one line per completed task: surprises, gotchas, decisions taken during implementation.
-     This is the memory that survives context resets. -->
+## Выводы
+<!-- Добавляйте одну строку на завершённую задачу: неожиданности, подводные камни, решения во время реализации.
+     Это память, сохраняющаяся при сбросе контекста. -->
 ```

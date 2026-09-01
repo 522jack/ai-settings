@@ -1,40 +1,40 @@
-# Runtime Adapter Rules
+# Правила адаптера рантайма
 
-This harness is agent-agnostic at the contract level and runtime-specific only at the adapter
-level. Shared rules and skills describe **what must happen**; each coding agent runtime maps that
-contract to its own tools.
+На уровне контракта этот каркас не зависит от агента и зависит от конкретного рантайма только на
+уровне адаптера. Общие правила и навыки описывают, **что должно произойти**; каждый рантайм агента
+разработки сопоставляет этот контракт со своими инструментами.
 
-## Contract Vocabulary
+## Терминология контракта
 
-Use these canonical terms in shared rules, skills, and agents:
+Использовать эти канонические термины в общих rules, skills и agents:
 
-| Contract term | Meaning |
+| Термин контракта | Значение |
 |---|---|
-| Main session | The orchestrator that talks to the user, owns synthesis, and coordinates work. |
-| Specialist | Any delegated worker: subagent, side thread, worktree agent, reviewer, tester, or runtime-specific equivalent. |
-| Project instructions | The repo-local and global instruction files available to the runtime: `AGENTS.md`, `CLAUDE.md`, `README.agent.md`, or equivalent. |
-| Runtime tool | A capability exposed by the current agent environment: shell, web, MCP, browser, mobile device, code review, etc. |
-| Skill command | A named workflow such as `check`, `finalize`, or `acceptance`; slash syntax is only one runtime's invocation style. |
-| Adapter limitation | A missing runtime feature that prevents the ideal workflow; it must be stated explicitly and replaced with the closest safe equivalent. |
+| Main session | Оркестратор, который общается с пользователем, отвечает за синтез и координирует работу. |
+| Specialist | Любой делегированный исполнитель: subagent, side thread, worktree agent, reviewer, tester или эквивалент конкретного рантайма. |
+| Project instructions | Доступные рантайму локальные для репозитория и глобальные файлы инструкций: `AGENTS.md`, `CLAUDE.md`, `README.agent.md` или эквивалент. |
+| Runtime tool | Возможность, предоставленная текущим окружением агента: shell, web, MCP, browser, мобильное устройство, code review и т. д. |
+| Skill command | Именованный рабочий процесс, такой как `check`, `finalize` или `acceptance`; синтаксис со слешем — лишь способ вызова в одном из рантаймов. |
+| Adapter limitation | Отсутствующая функция рантайма, мешающая идеальному рабочему процессу; её нужно явно указать и заменить ближайшим безопасным эквивалентом. |
 
-## Adapter Mapping
+## Сопоставление адаптеров
 
-| Contract | Claude Code | Codex | Generic fallback |
+| Контракт | Claude Code | Codex | Общий fallback |
 |---|---|---|---|
-| Project instructions | `CLAUDE.md` plus imported rules | `AGENTS.md` plus skills/rules | Read every available instruction file explicitly. |
-| Specialist delegation | `Task` / custom agents / `Explore` | multi-agent tools when available; load the selected profile from `~/dotfiles/ai/shared/agents/` into the delegation packet | Use a separate worktree/process if available; otherwise state the limitation and keep the work local only when safe. |
-| Codebase search specialist | `Explore` or configured search agent | `explorer` subagent when available | Use indexed search first; avoid broad raw grep. |
-| User choice tool | `AskUserQuestion` | `request_user_input` when available, otherwise one concise chat question | Ask in chat; never park user-resolvable questions in files. |
-| Skill invocation | Slash command or Skill tool | Installed skill from `~/.codex/skills` | Follow the `SKILL.md` manually. |
-| Runtime QA | mobile/browser MCP tools | available MCP/tools, Playwright/browser/mobile plugins | Real device/browser actions where possible; document missing capability. |
-| Hook enforcement | Claude hooks in `settings.json` | Codex sandbox/approvals plus manual session-start sync | Shell guard scripts run manually or through the runtime's hook mechanism. |
+| Project instructions | `CLAUDE.md` плюс импортированные правила | `AGENTS.md` плюс skills/rules | Явно прочитать каждый доступный файл инструкций. |
+| Specialist delegation | `Task` / custom agents / `Explore` | multi-agent tools, если доступны; загрузить выбранный профиль из `~/dotfiles/ai/shared/agents/` в пакет делегирования | Использовать отдельный worktree/process, если доступен; иначе явно указать ограничение и выполнять работу локально только при безопасности такого подхода. |
+| Codebase search specialist | `Explore` или настроенный поисковый агент | subagent `explorer`, если доступен | Сначала использовать индексированный поиск; избегать широкого raw grep. |
+| User choice tool | `AskUserQuestion` | `request_user_input`, если доступен, иначе один краткий вопрос в чате | Спрашивать в чате; никогда не откладывать вопросы, решаемые пользователем, в файлы. |
+| Skill invocation | Slash command или Skill tool | Установленный skill из `~/.codex/skills` | Вручную следовать `SKILL.md`. |
+| Runtime QA | mobile/browser MCP tools | доступные MCP/tools, Playwright/browser/mobile plugins | По возможности выполнять действия на реальном устройстве/в браузере; документировать отсутствующую возможность. |
+| Hook enforcement | Claude hooks в `settings.json` | sandbox/approvals Codex плюс ручная синхронизация при старте сессии | Запускать shell guard scripts вручную или через механизм хуков рантайма. |
 
-## Legacy Aliases
+## Устаревшие псевдонимы
 
-Older shared skills may still use Claude-era names directly. Until those files are migrated, interpret
-them through this table rather than literally:
+Старые общие skills могут напрямую использовать названия эпохи Claude. Пока эти файлы не перенесены,
+интерпретировать их согласно этой таблице, а не буквально:
 
-| Legacy name | Contract term |
+| Устаревшее имя | Термин контракта |
 |---|---|
 | `Task tool`, `Agent tool` | Specialist delegation |
 | `Explore` | Codebase search specialist |
@@ -44,19 +44,19 @@ them through this table rather than literally:
 | `CLAUDE.md` | Project instructions |
 | `mcp__mobile__*` | Runtime QA/mobile-device tool |
 
-## Writing Portable Rules
+## Написание переносимых правил
 
-- Shared files must name the contract first. Runtime names like `Task tool`, `Explore`, `CLAUDE.md`, `AskUserQuestion`, `/check`, or `mcp__mobile__*` may appear only as examples or adapter mappings.
-- If a shared workflow depends on a runtime-only capability, provide a fallback path or an explicit "adapter limitation" outcome.
-- Path-scoped rules with YAML frontmatter apply conditionally. If the runtime does not enforce frontmatter, the agent must apply them only when the current task touches matching files or domain areas.
-- A specialist's output contract must be stable across runtimes: artifact paths, verdict values, and required fields matter more than the tool that produced them.
-- Never assume tool names exist. Discover what is available in the current runtime, then map the contract to the best available tool.
+- Общие файлы должны сначала называть контракт. Названия рантаймов вроде `Task tool`, `Explore`, `CLAUDE.md`, `AskUserQuestion`, `/check` или `mcp__mobile__*` могут встречаться только в примерах или сопоставлениях адаптеров.
+- Если общий рабочий процесс зависит от возможности, доступной только в одном рантайме, предоставить fallback или явно указать результат «ограничение адаптера».
+- Правила, ограниченные путями и снабжённые YAML frontmatter, применяются условно. Если рантайм не обрабатывает frontmatter, агент должен применять их только когда текущая задача затрагивает соответствующие файлы или области.
+- Контракт вывода специалиста должен быть стабильным между рантаймами: пути артефактов, значения вердиктов и обязательные поля важнее инструмента, который их создал.
+- Никогда не предполагать существование названий инструментов. Сначала выяснить, что доступно в текущем рантайме, затем сопоставить контракт с лучшим доступным инструментом.
 
-## Domain Profiles
+## Доменные профили
 
-Android/KMP/Gradle rules are allowed to stay first-class because this harness is optimized for
-that work. They are still **domain profiles**, not universal core:
+Правила Android/KMP/Gradle могут оставаться первоклассными, поскольку этот каркас оптимизирован
+для такой работы. Но это всё равно **доменные профили**, а не универсальное ядро:
 
-- `kotlin-style.md`, `gradle-style.md`, and `android-cli.md` apply when file paths or project markers match.
-- Non-Android stacks should ignore Android-specific commands unless the task explicitly concerns Android tooling.
-- Shared workflows such as `check`, `finalize`, and `acceptance` must keep non-Android fallback behavior intact.
+- `kotlin-style.md`, `gradle-style.md` и `android-cli.md` применяются, когда совпадают пути файлов или маркеры проекта.
+- Не-Android стеки должны игнорировать команды, специфичные для Android, если задача явно не касается Android tooling.
+- Общие рабочие процессы, такие как `check`, `finalize` и `acceptance`, должны сохранять fallback-поведение для не-Android стеков.

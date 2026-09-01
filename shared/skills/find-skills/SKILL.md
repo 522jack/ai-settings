@@ -1,113 +1,113 @@
 ---
 name: find-skills
-description: Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.
+description: Помогает пользователям находить и устанавливать навыки агентов, когда они спрашивают «как сделать X», «найди навык для X», «есть ли навык, который может…» или хотят расширить возможности. Используйте этот навык, когда пользователь ищет функциональность, которая может существовать как устанавливаемый навык.
 ---
 
-# Find Skills
+# Поиск навыков
 
-This skill helps you discover and install skills from the open agent skills ecosystem.
+Этот навык помогает находить и устанавливать навыки из открытой экосистемы навыков агентов.
 
-## When to Use This Skill
+## Когда использовать этот навык
 
-Use this skill when the user:
+Используйте этот навык, когда пользователь:
 
-- Asks "how do I do X" where X might be a common task with an existing skill
-- Says "find a skill for X" or "is there a skill for X"
-- Asks "can you do X" where X is a specialized capability
-- Expresses interest in extending agent capabilities
-- Wants to search for tools, templates, or workflows
-- Mentions they wish they had help with a specific domain (design, testing, deployment, etc.)
+- спрашивает «как сделать X», где X может быть распространённой задачей с существующим навыком;
+- говорит «найди навык для X» или «есть ли навык для X»;
+- спрашивает «можешь ли ты сделать X», где X — специализированная возможность;
+- выражает интерес к расширению возможностей агента;
+- хочет найти инструменты, шаблоны или рабочие процессы;
+- упоминает, что ему нужна помощь в конкретной области (дизайн, тестирование, развёртывание и т. д.).
 
-## What is the Skills CLI?
+## Что такое Skills CLI?
 
-The Skills CLI (`npx skills`) is the package manager for the open agent skills ecosystem. Skills are modular packages that extend agent capabilities with specialized knowledge, workflows, and tools.
+Skills CLI (`npx skills`) — менеджер пакетов открытой экосистемы навыков агентов. Навыки — модульные пакеты, расширяющие возможности агента специализированными знаниями, рабочими процессами и инструментами.
 
-**Key commands:**
+**Основные команды:**
 
-- `npx skills find [query]` - Search for skills interactively or by keyword
-- `npx skills add <package>` - Install a skill from GitHub or other sources
-- `npx skills check` - Check for skill updates
-- `npx skills update` - Update all installed skills
+- `npx skills find [query]` — искать навыки интерактивно или по ключевым словам;
+- `npx skills add <package>` — устанавливать навык из GitHub или других источников;
+- `npx skills check` — проверять обновления навыков;
+- `npx skills update` — обновлять все установленные навыки.
 
 **Browse skills at:** https://skills.sh/
 
-## How to Help Users Find Skills
+## Как помогать пользователям находить навыки
 
-### Step 1: Understand What They Need
+### Шаг 1: поймите, что нужно пользователю
 
-When a user asks for help with something, identify:
+Когда пользователь просит о помощи, определите:
 
-1. The domain (e.g., React, testing, design, deployment)
-2. The specific task (e.g., writing tests, creating animations, reviewing PRs)
-3. Whether this is a common enough task that a skill likely exists
+1. Домен (например, React, тестирование, дизайн, развёртывание);
+2. конкретную задачу (например, написание тестов, создание анимаций, ревью PR);
+3. достаточно ли задача распространена, чтобы для неё, вероятно, существовал навык.
 
-### Step 2: Check the Leaderboard First
+### Шаг 2: сначала проверьте leaderboard
 
-Before running a CLI search, check the [skills.sh leaderboard](https://skills.sh/) to see if a well-known skill already exists for the domain. The leaderboard ranks skills by total installs, surfacing the most popular and battle-tested options.
+Перед поиском через CLI проверьте [leaderboard skills.sh](https://skills.sh/), чтобы узнать, существует ли уже известный навык для этого домена. Leaderboard ранжирует навыки по общему числу установок и показывает наиболее популярные и проверенные варианты.
 
-For example, top skills for web development include:
+Например, среди популярных навыков веб-разработки:
 - `vercel-labs/agent-skills` — React, Next.js, web design (100K+ installs each)
 - `anthropics/skills` — Frontend design, document processing (100K+ installs)
 
-### Step 3: Search for Skills
+### Шаг 3: найдите навыки
 
-If the leaderboard doesn't cover the user's need, run the find command:
+Если leaderboard не покрывает потребность пользователя, выполните команду find:
 
 ```bash
 npx skills find [query]
 ```
 
-For example:
+Например:
 
-- User asks "how do I make my React app faster?" → `npx skills find react performance`
-- User asks "can you help me with PR reviews?" → `npx skills find pr review`
-- User asks "I need to create a changelog" → `npx skills find changelog`
+- Пользователь спрашивает «как ускорить приложение React?» → `npx skills find react performance`
+- Пользователь спрашивает «поможешь с ревью PR?» → `npx skills find pr review`
+- Пользователь говорит «мне нужно создать changelog» → `npx skills find changelog`
 
-### Step 4: Verify Quality Before Recommending
+### Шаг 4: проверьте качество до рекомендации
 
-**Do not recommend a skill based solely on search results.** Always verify:
+**Не рекомендуйте навык только на основании результатов поиска.** Всегда проверяйте:
 
-1. **Install count** — Prefer skills with 1K+ installs. Be cautious with anything under 100.
-2. **Source reputation** — Official sources (`vercel-labs`, `anthropics`, `microsoft`) are more trustworthy than unknown authors.
-3. **GitHub stars** — Check the source repository. A skill from a repo with <100 stars should be treated with skepticism.
+1. **Число установок** — предпочитайте навыки с 1K+ установок. К вариантам с менее чем 100 относитесь осторожно.
+2. **Репутация источника** — официальные источники (`vercel-labs`, `anthropics`, `microsoft`) надёжнее неизвестных авторов.
+3. **Звёзды GitHub** — проверьте исходный репозиторий. К навыку из репозитория с <100 звёзд следует относиться скептически.
 
-### Step 5: Present Options to the User
+### Шаг 5: представьте варианты пользователю
 
-When you find relevant skills, present them to the user with:
+Найдя релевантные навыки, представьте пользователю:
 
-1. The skill name and what it does
-2. The install count and source
-3. The install command they can run
-4. A link to learn more at skills.sh
+1. имя навыка и его назначение;
+2. число установок и источник;
+3. команду установки;
+4. ссылку с дополнительной информацией на skills.sh.
 
-Example response:
+Пример ответа:
 
 ```
-I found a skill that might help! The "react-best-practices" skill provides
-React and Next.js performance optimization guidelines from Vercel Engineering.
-(185K installs)
+Я нашёл навык, который может помочь! Навык «react-best-practices» содержит
+рекомендации Vercel Engineering по оптимизации производительности React и Next.js.
+(185K установок)
 
-To install it:
+Для установки:
 npx skills add vercel-labs/agent-skills@react-best-practices
 
-Learn more: https://skills.sh/vercel-labs/agent-skills/react-best-practices
+Подробнее: https://skills.sh/vercel-labs/agent-skills/react-best-practices
 ```
 
-### Step 6: Offer to Install
+### Шаг 6: предложите установку
 
-If the user wants to proceed, you can install the skill for them:
+Если пользователь хочет продолжить, можно установить навык за него:
 
 ```bash
 npx skills add <owner/repo@skill> -g -y
 ```
 
-The `-g` flag installs globally (user-level) and `-y` skips confirmation prompts.
+Флаг `-g` устанавливает навык глобально (на уровне пользователя), а `-y` пропускает запросы подтверждения.
 
-## Common Skill Categories
+## Распространённые категории навыков
 
-When searching, consider these common categories:
+При поиске учитывайте следующие распространённые категории:
 
-| Category        | Example Queries                          |
+| Категория       | Примеры запросов                         |
 | --------------- | ---------------------------------------- |
 | Web Development | react, nextjs, typescript, css, tailwind |
 | Testing         | testing, jest, playwright, e2e           |
@@ -117,26 +117,26 @@ When searching, consider these common categories:
 | Design          | ui, ux, design-system, accessibility     |
 | Productivity    | workflow, automation, git                |
 
-## Tips for Effective Searches
+## Советы для эффективного поиска
 
-1. **Use specific keywords**: "react testing" is better than just "testing"
-2. **Try alternative terms**: If "deploy" doesn't work, try "deployment" or "ci-cd"
-3. **Check popular sources**: Many skills come from `vercel-labs/agent-skills` or `ComposioHQ/awesome-claude-skills`
+1. **Используйте конкретные ключевые слова:** «react testing» лучше, чем просто «testing».
+2. **Пробуйте альтернативные термины:** если «deploy» не помогает, попробуйте «deployment» или «ci-cd».
+3. **Проверяйте популярные источники:** многие навыки находятся в `vercel-labs/agent-skills` или `ComposioHQ/awesome-claude-skills`.
 
-## When No Skills Are Found
+## Если навыки не найдены
 
-If no relevant skills exist:
+Если релевантных навыков нет:
 
-1. Acknowledge that no existing skill was found
-2. Offer to help with the task directly using your general capabilities
-3. Suggest the user could create their own skill with `npx skills init`
+1. сообщите, что существующий навык не найден;
+2. предложите помочь с задачей напрямую, используя общие возможности;
+3. предложите пользователю создать собственный навык через `npx skills init`.
 
-Example:
+Пример:
 
 ```
-I searched for skills related to "xyz" but didn't find any matches.
-I can still help you with this task directly! Would you like me to proceed?
+Я поискал навыки, связанные с «xyz», но совпадений не нашёл.
+Я всё равно могу помочь с этой задачей напрямую! Продолжить?
 
-If this is something you do often, you could create your own skill:
+Если вы часто выполняете такую задачу, можно создать собственный навык:
 npx skills init my-xyz-skill
 ```

@@ -1,34 +1,33 @@
-# Review loop: writer vs. skeptic
+# Цикл ревью: автор против скептика
 
-The single most important property of this skill is that **the agent that writes the plan is not the
-agent that approves it.** A planner has a built-in incentive to produce something that *passes the
-gate quickly* — to declare the plan "good enough" and move on. Left unchecked, that incentive yields
-plans full of hand-waving ("handle errors appropriately", "wire it up", "update the relevant
-files") that look complete and fall apart in implementation.
+Самое важное свойство этого навыка: **агент, который пишет план, не должен утверждать его.**
+У планировщика есть встроенный стимул создать то, что *быстро проходит gate*, объявить план
+«достаточно хорошим» и двигаться дальше. Без контроля этот стимул приводит к планам, полным расплывчатых
+формулировок («корректно обработать ошибки», «подключить», «обновить соответствующие
+файлы»), которые выглядят завершёнными, но разваливаются при реализации.
 
-The defence is a **separate, adversarial critic** whose only job is to find what is wrong. Two
-mechanisms provide it, and they compose:
+Защита — **отдельный критик-соперник**, чья единственная задача — найти ошибки. Её обеспечивают два
+механизма, работающие вместе:
 
-1. **multiexpert-review (`implementation-plan` profile)** — the panel critique (Phase 3). The
-   profile's prompt augmentation puts each reviewer in a strict-but-fair red-team stance with an
-   explicit anti-gaming rubric. This is the primary critic and is mandatory.
-2. **Adversarial red-team pass** (Phase 3.5) — one skeptic agent that does not *review* the plan but
-   tries to *use* it and break it, surfacing the holes an implementer would hit. Mirrors
-   `write-spec` Phase 4.5.
+1. **multiexpert-review (профиль `implementation-plan`)** — критика панели (фаза 3). Дополнение
+   запроса профиля задаёт каждому рецензенту строгую, но справедливую позицию red team с явными
+   критериями против обхода проверки. Это основной и обязательный критик.
+2. **Соперничающий проход red team** (фаза 3.5) — один скептически настроенный агент, который не
+   *рецензирует* план, а пытается *использовать* его и сломать, выявляя пробелы, с которыми столкнулся
+   бы реализующий агент. Аналогичен фазе 4.5 `write-spec`.
 
-"Strict but fair" cuts both ways: the critic must not wave through real weaknesses, and must not
-invent blockers to look thorough. A finding has to name the weakness, where it is, and why it
-matters.
+«Строго, но справедливо» работает в обе стороны: критик не должен пропускать реальные слабости и не
+должен выдумывать блокеры, чтобы казаться основательным. Замечание должно называть слабость, её место
+и причину важности.
 
 ---
 
-## Phase 3 — multiexpert-review (the panel critic)
+## Фаза 3 — multiexpert-review (критик-панель)
 
-Invoke `multiexpert-review` **inline** (the skill calls it directly, as `write-spec` Phase 4.3 calls
-it — skills do not chain through each other except these established in-skill invocations: the Phase 3
-`multiexpert-review` call and the Phase 3.5 red-team Agent call are both part of the review gate, not
-forbidden downstream chaining). Prepend the profile
-hint so detection is deterministic for an inline file path:
+Вызовите `multiexpert-review` **inline** (навык вызывает его напрямую, как `write-spec` на фазе 4.3 —
+навыки не связываются друг с другом, кроме этих установленных вызовов внутри навыка: вызов на фазе 3
+`multiexpert-review` и Agent red team на фазе 3.5 являются частью review gate, а не запрещённой
+downstream-цепочкой). Добавьте подсказку профиля, чтобы обнаружение inline-пути было детерминированным:
 
 ```
 profile: implementation-plan
@@ -36,33 +35,34 @@ profile: implementation-plan
 docs/plans/<slug>/plan.md
 ```
 
-Why the hint: inline-arg callsites lack the frontmatter the detector classifies on; the prefix
-short-circuits detection. The plan is already on disk, so the engine classifies the source as
-`file` and edits the plan in place on FAIL/CONDITIONAL, and writes the verdict back into the plan's
-frontmatter via the profile's `receipt`.
+Зачем нужна подсказка: у мест inline-вызова в аргументах нет frontmatter, по которому классифицирует
+детектор; префикс сокращает путь обнаружения. План уже находится на диске, поэтому движок классифицирует
+источник как `file`, редактирует план на месте при FAIL/CONDITIONAL и записывает вердикт во frontmatter
+плана через `receipt` профиля.
 
-The profile selects 2–3 reviewers by tech-match from the plan content (do not pad the panel; do not
-drop a genuinely-triggered reviewer). `--quick` permits a single reviewer.
+Профиль выбирает 2–3 рецензентов по tech-match из содержимого плана (не раздувайте панель и не
+исключайте действительно вызванного рецензента). `--quick` разрешает одного рецензента.
 
-**Loop** — 3 review cycles total: 1 initial review + up to 2 re-reviews (same cap as `finalize`):
+**Цикл** — всего 3 цикла ревью: 1 первоначальное ревью + до 2 повторных (тот же предел, что у `finalize`):
 
-| Verdict | Action |
+| Вердикт | Действие |
 |---|---|
-| PASS | `review_verdict: pass` → Phase 4. |
-| CONDITIONAL | Engine edits the plan to address majors; re-review. Residual majors after the cap (cycle 3) → record in `## Open Questions` (non-blocking), proceed. |
-| FAIL | Engine edits to fix blockers; re-review. On cycle 3 returning FAIL → go directly to escalate, no further re-review. |
+| PASS | `review_verdict: pass` → фаза 4. |
+| CONDITIONAL | Движок редактирует план, устраняя major; повторить ревью. Оставшиеся major после предела (цикл 3) → записать в `## Open Questions` (non-blocking) и продолжить. |
+| FAIL | Движок редактирует план, устраняя блокеры; повторить ревью. При FAIL в цикле 3 → сразу перейти к escalate, без дальнейшего ревью. |
 
-After the 3rd cycle with blockers remaining → `review_verdict: escalate`, write blockers into
-`## Open Questions` (tagged blocking), retire (delete) the state file
-`./swarm-report/plan-<slug>-state.md`, and surface. This is the only autonomous stop, and only for
-genuine blockers.
+После 3-го цикла с оставшимися блокерами → `review_verdict: escalate`, записать блокеры в
+`## Open Questions` (с меткой blocking), удалить файл состояния
+`./swarm-report/plan-<slug>-state.md` и показать результат. Это единственная автономная остановка и
+только для настоящих блокеров.
 
 ---
 
-## Phase 3.5 — Adversarial red-team pass (the skeptic)
+## Фаза 3.5 — соперничающий проход red team (скептик)
 
-Run **one** Agent (general-purpose, sonnet) as a hostile implementer. It does not grade the plan
-against a rubric — it tries to build from it and reports every place it would have to guess:
+Запустите **одного** Agent (general-purpose, sonnet) в роли критически настроенного реализующего агента.
+Он не оценивает план по критериям — он пытается создать реализацию по нему и сообщает каждое место,
+где пришлось бы угадывать:
 
 > You are the engineer ordered to implement `docs/plans/<slug>/plan.md` exactly as written, with no
 > further questions allowed. Do not praise or summarize it. Pick the riskiest task in `tasks.md` and
@@ -73,38 +73,36 @@ against a rubric — it tries to build from it and reports every place it would 
 > failure mode, and any task that secretly hides two days of work. Be strict but fair: only real
 > gaps, no invented blockers. Cap 15 items, ordered by how badly each would derail implementation.
 
-For each item:
+Для каждого пункта:
 
-- **Trivially fillable** (one-line clarification) → edit the plan inline, move on.
-- **Real design gap** → fix the plan; if it needs a user decision, surface it subject to the
-  **Headless mode** contract in `SKILL.md` (`AskUserQuestion` only when interactive / a user is
-  present; otherwise record as a `[blocking]` Open Question, set `review_verdict: escalate`, stop).
-- **Already specified, agent missed it** → no action.
+- **Легко устранимый** (однострочное уточнение) → отредактировать план inline и продолжить.
+- **Настоящий пробел дизайна** → исправить план; если требуется решение пользователя, вынести его согласно
+  контракту **Headless mode** в `SKILL.md` (`AskUserQuestion` только при интерактивном режиме/присутствии
+  пользователя; иначе записать как `[blocking]` Open Question, установить `review_verdict: escalate` и остановиться).
+- **Уже указано, но агент пропустил** → без действий.
 
-Skip only with `--quick` on a small, well-bounded change with no risky tasks.
+Пропускайте только с `--quick` для небольшого, чётко ограниченного изменения без рискованных задач.
 
 ---
 
-## Anti-gaming rubric (shared by both critics)
+## Критерии против обхода проверки (общие для обоих критиков)
 
-The critic rejects, as blockers or majors, plans that try to pass without substance:
+Критик отклоняет как blockers или majors планы, которые пытаются пройти проверку без содержания:
 
-- **Hand-waving verbs** — "handle errors appropriately", "wire it up", "update the relevant files",
-  "as needed" with no concrete target. Demand the actual file, contract, or behaviour.
-- **Unfalsifiable acceptance** — any task `check` that a human has to judge ("looks right", "works
-  well"). Demand a test name, grep, or build target.
-- **Missing failure modes** — happy path only. Demand the error/edge/empty/concurrent cases the
-  change can hit.
-- **Invisible scope** — a one-line task that hides a subsystem. Demand it be split or sized
-  honestly.
-- **Untraced requirements** — a spec `AC-N` with no task that satisfies it, or a task that satisfies
-  nothing. Demand the mapping be complete.
-- **Missing or hollow verification** — no `## Verification & Sources` section, or one that names a
-  source of truth without confirming it is collected and sufficient ("baseline TBD", "spec
-  somewhere", a migration/behavior-preserving task with no before-state captured), or omits the
-  testing strategy (which pyramid levels apply, L5 where mandatory). Demand the concrete source, its
-  status, and a sufficiency claim — a plan that can't say how the finished change is verified is not
-  approvable.
+- **Расплывчатые глаголы** — «корректно обработать ошибки», «подключить», «обновить соответствующие файлы»,
+  «при необходимости» без конкретной цели. Требуйте настоящий файл, контракт или поведение.
+- **Нефальсифицируемая приёмка** — любая `check` задачи, которую должен оценивать человек («выглядит правильно»,
+  «хорошо работает»). Требуйте имя теста, grep или цель сборки.
+- **Пропущенные режимы отказа** — только happy path. Требуйте ошибки, граничные, пустые и конкурентные случаи,
+  в которые может попасть изменение.
+- **Скрытый масштаб** — однострочная задача, скрывающая подсистему. Требуйте честно разделить её или оценить размер.
+- **Непрослеживаемые требования** — spec `AC-N` без задачи, которая её выполняет, или задача, не выполняющая ничего.
+  Требуйте полного сопоставления.
+- **Отсутствующая или пустая проверка** — нет секции `## Verification & Sources`, либо она называет источник истины
+  без подтверждения, что он собран и достаточен («baseline TBD», «spec где-то», задача миграции/сохранения поведения
+  без зафиксированного исходного состояния), либо не содержит стратегии тестирования (какие уровни пирамиды
+  применимы, L5 там, где обязателен). Требуйте конкретный источник, его статус и утверждение о достаточности —
+  план, не объясняющий, как проверяется готовое изменение, нельзя утверждать.
 
-This rubric is what converts "a plan that passes" into "a plan that is right". It lives in the
-profile's prompt augmentation so the panel applies it automatically.
+Эти критерии превращают «план, прошедший проверку» в «правильный план». Они находятся в дополнении
+запроса профиля, поэтому панель применяет их автоматически.

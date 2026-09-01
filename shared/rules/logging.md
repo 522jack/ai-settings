@@ -1,28 +1,28 @@
-# Logging Rules
+# Правила логирования
 
-Logging is production behavior, not debug decoration. Add, remove, or change logs only when the
-task requires observability, diagnostics, auditing, or the existing code's logging contract changes.
+Логирование — часть production behavior, а не украшение для debug. Добавлять, удалять или изменять
+логи только если задача требует наблюдаемости, диагностики, аудита или меняется logging contract
+существующего кода.
 
-## Permanent Logs
+## Постоянные логи
 
-- Use the project's existing logger, levels, structured fields, and redaction helpers.
-- Never introduce a new logging framework without explicit dependency approval.
-- Log stable events and failure contexts, not noisy implementation steps.
-- Preserve cancellation semantics: do not swallow exceptions only to log them.
-- Never log secrets, tokens, credentials, raw auth headers, private keys, full cookies, payment data, or unnecessary PII.
-- Mask sensitive values before they enter tool output, runtime logs, screenshots, reports, or model context.
+- Использовать существующие в проекте logger, levels, structured fields и redaction helpers.
+- Никогда не вводить новый logging framework без явного одобрения dependency.
+- Логировать стабильные события и контексты ошибок, а не шумные шаги реализации.
+- Сохранять семантику cancellation: не подавлять exceptions только ради логирования.
+- Никогда не логировать secrets, tokens, credentials, raw auth headers, private keys, full cookies, payment data или ненужные PII.
+- Маскировать чувствительные значения до их попадания в tool output, runtime logs, screenshots, reports или model context.
 
-## Temporary Diagnostic Logs
+## Временные диагностические логи
 
-Temporary logs are allowed only to verify or debug a specific task.
+Временные логи разрешены только для проверки или отладки конкретной задачи.
 
-- Mark them with `// TEMP-LOG: <reason>` or the equivalent comment style.
-- Remove them before `finalize` unless the user explicitly asks to keep them.
-- If a temporary log exposes sensitive data, do not add it. Use scoped assertions, counters, or redacted diagnostics instead.
+- Помечать их через `// TEMP-LOG: <reason>` или эквивалентный стиль комментария.
+- Удалять их до `finalize`, если пользователь явно не просит оставить.
+- Если временный лог раскрывает чувствительные данные, не добавлять его. Вместо этого использовать scoped assertions, counters или redacted diagnostics.
 
-## Log Capture By Agents
+## Сбор логов агентами
 
-- Filter before reading: scope by package, PID, subsystem, test run, or request id.
-- Cap volume: last-N lines, level filters, or a saved artifact path instead of raw streams in chat.
-- Treat logs as diagnostic evidence only. A deterministic verifier still decides pass/fail: test exit code, build result, visible UI assertion, API response assertion, or benchmark result.
-
+- Фильтровать до чтения: ограничивать по package, PID, subsystem, test run или request id.
+- Ограничивать объём: last-N lines, level filters или путь к сохранённому artifact вместо raw streams в чате.
+- Считать логи только диагностическим свидетельством. Pass/fail всё равно определяет детерминированный verifier: test exit code, build result, visible UI assertion, API response assertion или benchmark result.

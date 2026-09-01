@@ -1,6 +1,6 @@
 ---
 name: test-plan
-description: Profile for test-plan artifacts (docs/testplans/<slug>-test-plan.md and swarm-report/<slug>-test-plan.md receipts). Verdict alphabet PASS/WARN/FAIL with 7-item checklist (a, b, c, d, e, f, g). Primary reviewer business-analyst; adds domain specialists when spec invokes their concerns.
+description: Профиль артефактов test-plan (docs/testplans/<slug>-test-plan.md и receipts swarm-report/<slug>-test-plan.md). Алфавит вердиктов PASS/WARN/FAIL с чек-листом из 7 элементов (a, b, c, d, e, f, g). Основной рецензент — business-analyst; специалисты доменов добавляются, когда spec затрагивает их вопросы.
 
 detect:
   frontmatter_type: [test-plan, test-plan-receipt]
@@ -42,56 +42,56 @@ receipt:
   fields_to_update: [review_verdict, review_warnings, review_blockers]
 ---
 
-## Rubric
+## Критерии
 
-Every reviewer must evaluate the test-plan against these seven items and report the status of each one explicitly in their response. Copy the items verbatim into the review prompt so findings are comparable across agents:
+Каждый рецензент должен оценить test-plan по этим семи элементам и явно сообщить статус каждого в ответе. Скопируйте элементы буквально в запрос на ревью, чтобы результаты можно было сопоставлять между агентами:
 
-- **(a) AC coverage** — every Acceptance Criterion from the linked spec has ≥1 Test Case that verifies it. Missing or weak mapping is a violation.
-- **(b) Negative balance** — every happy-path (positive) TC has ≥2 unhappy/negative TCs covering the same flow (invalid input, error states, boundary violations, concurrent or race conditions). A plan that is mostly happy paths violates this item.
-- **(c) Edge cases present** — at least one TC is explicitly tagged as an edge case (boundary value, empty/null, maximum size, timezone/locale boundaries, concurrency, resource exhaustion, etc.). If the plan has no edge-case TC at all, this item is violated.
-- **(d) Non-functional scenarios where applicable** — if the linked spec mentions any of {SLA, latency budget, throughput, a11y, auth, encryption, PII, resource limits, rate limits}, there must be ≥1 non-functional TC covering that concern (performance, accessibility, security). Applicability is driven by spec content — if the spec mentions none of these triggers, this item is trivially satisfied.
-- **(e) Priority-risk alignment** — priorities (P0–P3) are consistent with risk assessment: any high-risk flow (data loss, auth, payment, destructive actions) is at P0–P1; any user-facing critical path is at P0–P1; trivial/informational cases are at P2–P3. Mismatch between stated risk and assigned priority violates this item.
-- **(f) Type field present and valid** — every Test Case declares an explicit `Type` field with a value from {`unit`, `integration`, `ui-instrumentation`, `ui-scenario`, `screenshot`, `e2e`} and a non-empty one-line `Type rationale`. A missing `Type`, an unknown value, or an empty rationale violates this item. The selection heuristic in `generate-test-plan/SKILL.md#type` is the reference; reviewers do not re-classify TCs, only check that the field exists and the rationale is plausible.
-- **(g) Instrumentation declared** — when the spec / task is `user-facing` or `prod-bound`, or the feature touches an observability hot-path (network calls, payments, background jobs, auth, data migrations), the test plan ends with a `## Non-functional / Instrumentation` section that lists Log events / Metrics / Traces / Alerts / Dashboards (or sub-headings filled with concrete declarations). For internal / dev-only / pure-refactor work, an explicit `N/A: <reason>` (one line) is acceptable. A missing section, or one labelled simply `TBD` / `?` / blank, violates this item.
+- **(a) Покрытие AC** — для каждого Acceptance Criterion из связанного spec есть ≥1 Test Case, который его проверяет. Отсутствующее или слабое сопоставление — нарушение.
+- **(b) Негативный баланс** — для каждого happy-path (положительного) TC есть ≥2 unhappy/negative TC, покрывающих тот же поток (невалидный ввод, состояния ошибок, нарушения границ, конкуренция или гонки). План, состоящий в основном из happy path, нарушает этот пункт.
+- **(c) Присутствуют edge cases** — хотя бы один TC явно помечен как edge case (граничное значение, empty/null, максимальный размер, границы часового пояса/локали, конкуренция, исчерпание ресурсов и т. д.). Если в плане нет ни одного edge-case TC, пункт нарушен.
+- **(d) Нефункциональные сценарии, если применимо** — если связанный spec упоминает что-либо из {SLA, latency budget, throughput, a11y, auth, encryption, PII, resource limits, rate limits}, должен быть ≥1 нефункциональный TC для этой области (производительность, доступность, безопасность). Применимость определяется содержимым spec — если ни один триггер не упомянут, пункт считается выполненным.
+- **(e) Соответствие приоритета риску** — приоритеты (P0–P3) согласованы с оценкой риска: любой высокорисковый поток (потеря данных, auth, платёж, разрушительные действия) имеет P0–P1; критический пользовательский путь имеет P0–P1; тривиальные/информационные случаи имеют P2–P3. Несоответствие заявленного риска и приоритета нарушает пункт.
+- **(f) Поле Type присутствует и корректно** — каждый Test Case объявляет явное поле `Type` со значением из {`unit`, `integration`, `ui-instrumentation`, `ui-scenario`, `screenshot`, `e2e`} и непустым однострочным `Type rationale`. Отсутствующее `Type`, неизвестное значение или пустое обоснование нарушают пункт. Эталон — эвристика выбора в `generate-test-plan/SKILL.md#type`; рецензенты не переклассифицируют TC, а только проверяют наличие поля и правдоподобность обоснования.
+- **(g) Инструментирование объявлено** — если spec/задача имеют статус `user-facing` или `prod-bound`, либо функциональность затрагивает горячий путь наблюдаемости (сетевые вызовы, платежи, фоновые задания, auth, миграции данных), test plan завершается секцией `## Non-functional / Instrumentation`, содержащей Log events / Metrics / Traces / Alerts / Dashboards (или подзаголовки с конкретными объявлениями). Для внутренней/dev-only/чистой рефакторинговой работы допустима явная строка `N/A: <reason>`. Отсутствующая секция или секция только с `TBD` / `?` / пустым значением нарушает пункт.
 
-## Verdict policy
+## Политика вердикта
 
-| Verdict | Trigger | Exit condition |
+| Вердикт | Триггер | Условие выхода |
 |---------|---------|----------------|
-| **FAIL** (blocker) | Any of items **(a)**, **(b)**, **(c)**, **(f)** is violated | Plan MUST be revised. Engine drives the revise-loop up to 3 cycles. After 3 cycles still FAIL → escalate to user. Pipeline is blocked. |
-| **WARN** (non-blocking) | Items (a), (b), (c), (f) all satisfied, but **(d)**, **(e)**, or **(g)** is violated | Pipeline continues. Engine records `review_verdict: WARN` in the receipt with the explicit list of violated items. No revise-loop required. |
-| **PASS** (clean) | All seven items satisfied | Pipeline continues unconditionally. Engine records `review_verdict: PASS` in the receipt. |
+| **FAIL** (blocker) | Нарушен любой из элементов **(a)**, **(b)**, **(c)**, **(f)** | План ОБЯЗАТЕЛЬНО нужно пересмотреть. Движок запускает revise-loop максимум на 3 цикла. После 3 циклов с FAIL → эскалация пользователю. Pipeline заблокирован. |
+| **WARN** (non-blocking) | Элементы (a), (b), (c), (f) выполнены, но нарушен **(d)**, **(e)** или **(g)** | Pipeline продолжается. Движок записывает `review_verdict: WARN` в receipt с явным списком нарушенных элементов. Revise-loop не требуется. |
+| **PASS** (clean) | Все семь элементов выполнены | Pipeline продолжается безусловно. Движок записывает `review_verdict: PASS` в receipt. |
 
-A single critical from any agent with medium-or-higher confidence is enough to trigger FAIL, matching the engine's aggregation rules.
+Одного critical от любого агента со средней или высокой уверенностью достаточно для FAIL в соответствии с правилами агрегации движка.
 
-## Prompt augmentation
+## Дополнение запроса
 
-Every agent reviewing a test-plan receives the following 7-item checklist verbatim in their Step 3 prompt (the engine substitutes this section into `{PROFILE_PROMPT_AUGMENTATION}` literally — not by reference to the Rubric section above). Each agent must explicitly report the status of each item (satisfied / violated, with rationale). The engine parses these into the severity mapping.
+Каждый агент, проверяющий test-plan, получает следующий чек-лист из 7 элементов буквально в запросе шага 3 (движок подставляет эту секцию в `{PROFILE_PROMPT_AUGMENTATION}` буквально, а не ссылкой на расположенную выше секцию Rubric). Каждый агент должен явно сообщить статус каждого элемента (satisfied / violated с обоснованием). Движок разбирает эти статусы в сопоставление серьёзности.
 
 ---
 
-**Test-plan rubric — evaluate each item explicitly:**
+**Критерии test-plan — явно оцените каждый элемент:**
 
-- **(a) AC coverage** — every Acceptance Criterion from the linked spec has ≥1 Test Case that verifies it. Missing or weak mapping is a violation.
-- **(b) Negative balance** — every happy-path (positive) TC has ≥2 unhappy/negative TCs covering the same flow (invalid input, error states, boundary violations, concurrent or race conditions). A plan that is mostly happy paths violates this item.
-- **(c) Edge cases present** — at least one TC is explicitly tagged as an edge case (boundary value, empty/null, maximum size, timezone/locale boundaries, concurrency, resource exhaustion, etc.). If the plan has no edge-case TC at all, this item is violated.
-- **(d) Non-functional scenarios where applicable** — if the linked spec mentions any of {SLA, latency budget, throughput, a11y, auth, encryption, PII, resource limits, rate limits}, there must be ≥1 non-functional TC covering that concern (performance, accessibility, security). Applicability is driven by spec content — if the spec mentions none of these triggers, this item is trivially satisfied.
-- **(e) Priority-risk alignment** — priorities (P0–P3) are consistent with risk assessment: any high-risk flow (data loss, auth, payment, destructive actions) is at P0–P1; any user-facing critical path is at P0–P1; trivial/informational cases are at P2–P3. Mismatch between stated risk and assigned priority violates this item.
-- **(f) Type field present and valid** — every Test Case declares an explicit `Type` field with a value from {`unit`, `integration`, `ui-instrumentation`, `ui-scenario`, `screenshot`, `e2e`} and a non-empty one-line `Type rationale`. A missing `Type`, an unknown value, or an empty rationale violates this item.
-- **(g) Instrumentation declared** — when the spec / task is `user-facing` or `prod-bound`, or the feature touches an observability hot-path (network calls, payments, background jobs, auth, data migrations), the test plan ends with a `## Non-functional / Instrumentation` section that lists Log events / Metrics / Traces / Alerts / Dashboards (or sub-headings filled with concrete declarations). For internal / dev-only / pure-refactor work, an explicit `N/A: <reason>` (one line) is acceptable. A missing section, or one labelled simply `TBD` / `?` / blank, violates this item.
+- **(a) Покрытие AC** — для каждого Acceptance Criterion из связанного spec есть ≥1 Test Case, который его проверяет. Отсутствующее или слабое сопоставление — нарушение.
+- **(b) Негативный баланс** — для каждого happy-path (положительного) TC есть ≥2 unhappy/negative TC, покрывающих тот же поток (невалидный ввод, состояния ошибок, нарушения границ, конкуренция или гонки). План, состоящий в основном из happy path, нарушает этот пункт.
+- **(c) Присутствуют edge cases** — хотя бы один TC явно помечен как edge case (граничное значение, empty/null, максимальный размер, границы часового пояса/локали, конкуренция, исчерпание ресурсов и т. д.). Если в плане нет ни одного edge-case TC, пункт нарушен.
+- **(d) Нефункциональные сценарии, если применимо** — если связанный spec упоминает что-либо из {SLA, latency budget, throughput, a11y, auth, encryption, PII, resource limits, rate limits}, должен быть ≥1 нефункциональный TC для этой области (производительность, доступность, безопасность). Применимость определяется содержимым spec — если ни один триггер не упомянут, пункт считается выполненным.
+- **(e) Соответствие приоритета риску** — приоритеты (P0–P3) согласованы с оценкой риска: любой высокорисковый поток (потеря данных, auth, платёж, разрушительные действия) имеет P0–P1; критический пользовательский путь имеет P0–P1; тривиальные/информационные случаи имеют P2–P3. Несоответствие заявленного риска и приоритета нарушает пункт.
+- **(f) Поле Type присутствует и корректно** — каждый Test Case объявляет явное поле `Type` со значением из {`unit`, `integration`, `ui-instrumentation`, `ui-scenario`, `screenshot`, `e2e`} и непустым однострочным `Type rationale`. Отсутствующее `Type`, неизвестное значение или пустое обоснование нарушают пункт.
+- **(g) Инструментирование объявлено** — если spec/задача имеют статус `user-facing` или `prod-bound`, либо функциональность затрагивает горячий путь наблюдаемости (сетевые вызовы, платежи, фоновые задания, auth, миграции данных), test plan завершается секцией `## Non-functional / Instrumentation`, содержащей Log events / Metrics / Traces / Alerts / Dashboards (или подзаголовки с конкретными объявлениями). Для внутренней/dev-only/чистой рефакторинговой работы допустима явная строка `N/A: <reason>`. Отсутствующая секция или секция только с `TBD` / `?` / пустым значением нарушает пункт.
 
-For every Issue you raise, use the item ID as the title stem — e.g. `(a) AC coverage: API X has no test case`. This keeps synthesizer aggregation greppable.
+Для каждого поднятого Issue используйте ID элемента в начале заголовка — например, `(a) AC coverage: API X has no test case`. Это сохраняет возможность поиска при агрегации синтезатором.
 
-## Receipt integration
+## Интеграция с receipt
 
-After Step 4 synthesis, the engine updates `swarm-report/<slug>-test-plan.md` (the receipt, not the permanent file at `docs/testplans/<slug>-test-plan.md`) with:
+После синтеза шага 4 движок обновляет `swarm-report/<slug>-test-plan.md` (receipt, а не постоянный файл `docs/testplans/<slug>-test-plan.md`), добавляя:
 
 - `review_verdict: PASS | WARN | FAIL`
-- On WARN: `review_warnings:` list enumerating violated items from `(d)`, `(e)`, `(g)` with one-line rationale each
-- On FAIL: `review_blockers:` list enumerating violated items from `(a)`, `(b)`, `(c)`, `(f)` with the blocking finding and suggested fix
+- При WARN: список `review_warnings:`, перечисляющий нарушенные элементы `(d)`, `(e)`, `(g)` с однострочным обоснованием каждого;
+- При FAIL: список `review_blockers:`, перечисляющий нарушенные элементы `(a)`, `(b)`, `(c)`, `(f)` с блокирующим замечанием и предложенным исправлением.
 
-The receipt format is owned by the `generate-test-plan` skill — this profile only writes the three fields listed in `receipt.fields_to_update`.
+Формат receipt принадлежит навыку `generate-test-plan` — этот профиль записывает только три поля, перечисленные в `receipt.fields_to_update`.
 
-## Revise-loop (FAIL only)
+## Revise-loop (только для FAIL)
 
-Same state machine as the engine default: Verdict:FAIL → Fix Plan → Re-review, max 3 cycles. The "Fix Plan" action edits the permanent test-plan file at `docs/testplans/<slug>-test-plan.md`. Each cycle appends to `Verdict History` in the state file with the new verdict and remaining blockers.
+Тот же конечный автомат, что и в движке по умолчанию: Verdict:FAIL → Fix Plan → Re-review, максимум 3 цикла. Действие «Fix Plan» редактирует постоянный файл test-plan в `docs/testplans/<slug>-test-plan.md`. Каждый цикл добавляет в `Verdict History` файла состояния новый вердикт и оставшиеся блокеры.

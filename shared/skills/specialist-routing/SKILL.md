@@ -1,55 +1,55 @@
 ---
 name: specialist-routing
-description: Route non-trivial feature work to the appropriate harness specialist profiles and produce a delegation receipt. Use when implementing, reviewing, testing, or validating a feature that benefits from a specialist.
+description: Направляйте нетривиальную работу над функциональностью к подходящим профилям специалистов harness и формируйте квитанцию делегирования. Используйте при реализации, ревью, тестировании или валидации функциональности, которой полезен специалист.
 metadata:
-  short-description: Route feature work to harness specialists
+  short-description: Направление работы над функциональностью специалистам harness
 ---
 
-# Specialist routing
+# Маршрутизация к специалистам
 
-Use this skill for non-trivial feature work. Do not invoke every specialist by default: select only the roles needed by the task, while preserving the mandatory gates from the shared workflow.
+Используйте этот навык для нетривиальной работы над функциональностью. Не вызывайте всех специалистов по умолчанию: выбирайте только нужные задаче роли, сохраняя обязательные контрольные этапы общего рабочего процесса.
 
-## Before delegation
+## Перед делегированием
 
-1. Identify the task phase and stack.
-2. Select the smallest sufficient specialist set from `~/dotfiles/ai/shared/agents/`:
+1. Определите фазу задачи и стек.
+2. Выберите минимальный достаточный набор специалистов из `~/dotfiles/ai/shared/agents/`:
    - implementation: `kotlin-engineer.md`, `compose-developer.md`, or the closest stack specialist;
    - investigation/debugging: `debugging-expert.md` or `source-researcher.md`;
    - architecture: `architecture-expert.md`;
    - review: `code-reviewer.md`, `security-expert.md`, `performance-expert.md`, or `ui-accessibility-reviewer.md`;
    - runtime/UI verification: `manual-tester.md`.
-3. Read each selected profile before preparing the delegation prompt. Do not claim a profile was applied if it was not read.
-4. Create a delegation packet containing:
-   - task and acceptance criteria;
-   - exact paths/modules in scope;
-   - selected profile path(s);
-   - constraints from the profile and applicable project rules;
-   - expected artifact and verdict format.
+3. Прочитайте каждый выбранный профиль до подготовки запроса на делегирование. Не утверждайте, что профиль применялся, если он не был прочитан.
+4. Создайте пакет делегирования, содержащий:
+   - задачу и критерии приёмки;
+   - точные пути/модули в области работ;
+   - пути выбранных профилей;
+   - ограничения из профиля и применимых правил проекта;
+   - ожидаемый артефакт и формат вердикта.
 
-## Delegation
+## Делегирование
 
-Pass the delegation packet to the Codex specialist/subagent through the current runtime adapter. The specialist must report:
+Передайте пакет делегирования специалисту/субагенту Codex через текущий адаптер среды выполнения. Специалист должен сообщить:
 
-- profile path(s) actually used;
-- files or surfaces inspected/changed;
-- checks performed;
-- verdict: `PASS`, `PASS_WITH_NOTES`, or `BLOCKED`;
-- unresolved risks or required follow-ups.
+- фактически использованные пути профилей;
+- просмотренные/изменённые файлы или поверхности;
+- выполненные проверки;
+- вердикт: `PASS`, `PASS_WITH_NOTES` или `BLOCKED`;
+- нерешённые риски или необходимые последующие действия.
 
-If the runtime cannot provide a specialist, record `ADAPTER_LIMITATION` and do not present the work as having used a specialist profile.
+Если среда выполнения не может предоставить специалиста, зафиксируйте `ADAPTER_LIMITATION` и не представляйте работу как выполненную с использованием профиля специалиста.
 
-## Feature completion receipt
+## Квитанция завершения функциональности
 
-Before declaring a non-trivial feature complete, include this receipt in the final synthesis (or in the task report when one exists):
+До объявления нетривиальной функциональности завершённой включите эту квитанцию в итоговый синтез (или в отчёт задачи, если он существует):
 
 ```text
 Specialist receipt
-- Required profiles: <paths or none, with reason>
-- Applied profiles: <paths actually read and used>
-- Delegation: <subagent/runtime or ADAPTER_LIMITATION>
+- Required profiles: <пути или none с указанием причины>
+- Applied profiles: <фактически прочитанные и использованные пути>
+- Delegation: <subagent/runtime или ADAPTER_LIMITATION>
 - Verdicts: <PASS | PASS_WITH_NOTES | BLOCKED>
-- Verification: <check/finalize/acceptance results>
-- Open risks: <none or explicit list>
+- Verification: <результаты check/finalize/acceptance>
+- Open risks: <none или явный список>
 ```
 
-An empty `Applied profiles` field is valid only when the task is trivial, documentation-only, or the runtime limitation is explicitly recorded.
+Пустое поле `Applied profiles` допустимо только для тривиальной задачи, задачи исключительно по документации или при явной фиксации ограничения среды выполнения.

@@ -1,8 +1,8 @@
 Referenced from: `plugins/developer-workflow/skills/generate-test-plan/SKILL.md` (§Test Plan Format).
 
-# Test Plan Format Templates
+# Шаблоны формата плана тестирования
 
-Every generated test plan must follow this exact structure:
+Каждый созданный test plan должен точно соответствовать этой структуре:
 
 ```markdown
 ---
@@ -11,197 +11,194 @@ slug: <feature-slug>
 generated: YYYY-MM-DD
 ---
 
-# Test Plan: [Feature Name]
+# План тестирования: [Название функциональности]
 
-| Field | Value |
+| Поле | Значение |
 |-------|-------|
-| **Source** | [spec link / Figma link / code path — whatever was provided] |
+| **Source** | [ссылка на spec / Figma / путь к коду — что предоставлено] |
 | **Generated** | [YYYY-MM-DD] |
-| **Scope** | [one-line summary of what is covered] |
+| **Scope** | [однострочное резюме покрытия] |
 | **Status** | Draft / Ready for Review / Approved |
 
-The `type: test-plan` frontmatter lets `multiexpert-review` and `acceptance` identify the
-artifact deterministically (Signal #1 of the classifier). `slug` matches the receipt and
-any decomposition artifact for the same feature.
+Frontmatter `type: test-plan` позволяет `multiexpert-review` и `acceptance` детерминированно
+идентифицировать артефакт (сигнал №1 классификатора). `slug` совпадает с receipt и любым артефактом
+декомпозиции той же функциональности.
 
 ---
 
-## Findings
+## Замечания
 
-Discrepancies, ambiguities, or assumptions discovered during analysis.
-Each finding has a short title and explanation.
+Расхождения, неоднозначности или допущения, обнаруженные при анализе.
+У каждого замечания есть короткий заголовок и объяснение.
 
 - **[Finding title]** — [explanation]
 
-> Omit this section entirely if there are no findings.
+> Полностью опустите эту секцию, если замечаний нет.
 
 ---
 
-## Risk Areas
+## Области риска
 
-| Area | Risk Level | Reason |
+| Область | Уровень риска | Причина |
 |------|-----------|--------|
 | [area name] | High / Medium / Low | [why this area is risky] |
 
 ---
 
-## Test Cases
+## Тестовые случаи
 
 ### [Group Name]
 
-Group related test cases by feature area, screen, or workflow
-(e.g., Authentication, Cart Checkout, Error Handling).
+Группируйте связанные тестовые случаи по области функциональности, экрану или workflow
+(например, Authentication, Cart Checkout, Error Handling).
 
 #### TC-[N]: [Short descriptive title]
 
-| Field | Value |
+| Поле | Значение |
 |-------|-------|
 | **Type** | unit / integration / ui-instrumentation / ui-scenario / screenshot / e2e |
-| **Type rationale** | One short line — why this type catches the AC failure with the smallest scope |
+| **Type rationale** | Одна короткая строка — почему этот тип ловит отказ AC с минимальной областью |
 | **Priority** | P0 Critical / P1 High / P2 Medium / P3 Low |
 | **Tier** | Smoke / Feature / Regression |
-| **Preconditions** | What must be true before starting |
-| **Steps** | 1. First step  2. Second step  3. Third step |
-| **Expected Result** | Observable outcome that means the test passed |
-| **Source** | Spec §section / Figma frame name / `path/to/file.kt:42` / [inferred from code] |
+| **Preconditions** | Что должно быть истинно до начала |
+| **Steps** | 1. Первый шаг  2. Второй шаг  3. Третий шаг |
+| **Expected Result** | Наблюдаемый результат, означающий успешное прохождение теста |
+| **Source** | Spec §section / имя frame Figma / `path/to/file.kt:42` / [выведено из кода] |
 
 ---
 
-## Edge Cases & Negative Scenarios
+## Граничные и негативные сценарии
 
-Same TC format as above. Grouped separately for visibility.
-Includes: boundary values, invalid inputs, error states, permission denials,
-network failures, empty/null data, concurrent operations.
+Тот же формат TC, что выше. Группируются отдельно для наглядности.
+Включают: граничные значения, невалидный ввод, состояния ошибок, отказы в разрешениях,
+сетевые сбои, пустые/null-данные, конкурентные операции.
 
 ---
 
-## Coverage Matrix
+## Матрица покрытия
 
-| Requirement / Screen / Flow | Test Cases | Risk |
+| Требование / экран / поток | Тестовые случаи | Риск |
 |-----------------------------|-----------|------|
 | [requirement or screen name] | TC-1, TC-3 | High |
 | [another requirement] | TC-2 | Low |
 
 ---
 
-## Suggested Automation Candidates
+## Кандидаты для автоматизации
 
-Test cases that are good candidates for automated testing.
+Тестовые случаи, хорошо подходящие для автоматизированного тестирования.
 
-| Test Case | Rationale |
+| Тестовый случай | Обоснование |
 |-----------|-----------|
 | TC-[N] | [why this is a good automation candidate] |
 
-> Omit this section if no test cases are suitable for automation.
+> Опустите эту секцию, если подходящих для автоматизации тестовых случаев нет.
 
 ---
 
-## Non-functional / Instrumentation
+## Нефункциональность / инструментирование
 
-> **Mandatory** when the spec / task is `user-facing` or `prod-bound`, or the
-> feature touches an observability hot-path (network calls, payments,
-> background jobs, auth, data migrations). Internal / dev-only / pure refactor
-> tasks may set the section to `N/A: <reason>` (one line) — never delete the
-> heading.
+> **Обязательно**, когда spec/задача имеют статус `user-facing` или `prod-bound`, либо
+> функциональность затрагивает горячий путь наблюдаемости (сетевые вызовы, платежи,
+> фоновые задания, auth, миграции данных). Для внутренней/dev-only/чистой рефакторинговой
+> задачи можно указать в секции `N/A: <reason>` (одной строкой) — никогда не удаляйте заголовок.
 
-### Log events
-- Event: `<namespace>.<action>` — when fired, key fields (NO PII)
+### События логов
+- Event: `<namespace>.<action>` — когда срабатывает, ключевые поля (БЕЗ PII)
 
-### Metrics
-- Counter: `<name>` — increments on ..., labels ...
-- Histogram: `<name>` — observes ..., bucket strategy ...
-- Gauge: `<name>` — tracks ...
+### Метрики
+- Counter: `<name>` — увеличивается при ..., labels ...
+- Histogram: `<name>` — наблюдает ..., стратегия bucket ...
+- Gauge: `<name>` — отслеживает ...
 
-### Traces
-- Span: `<operation>` — entry point, child spans, key attributes
-- Parent context: where the trace-id originates
+### Трейсы
+- Span: `<operation>` — точка входа, дочерние spans, ключевые атрибуты
+- Parent context: откуда происходит trace-id
 
-### Alerts
-- Alert: `<name>` — condition, severity, route (oncall / Slack / email)
-- Runbook: `runbooks/<slug>.md` (if the project follows that convention)
+### Алерты
+- Alert: `<name>` — условие, серьёзность, маршрут (oncall / Slack / email)
+- Runbook: `runbooks/<slug>.md` (если проект использует такое соглашение)
 
-### Dashboards
+### Дашборды
 - Existing to update: URL / id
 - New needed: yes / no, owner
 
-> Naming, namespacing, and stack (OTel, Prometheus, StatsD, vendor-specific) are
-> read from the project's runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent). The skill does not prescribe a stack —
-> it records what the project already uses, or asks one question if the
-> project has none.
+> Имена, пространства имён и стек (OTel, Prometheus, StatsD, vendor-specific) читаются
+> из файлов инструкций среды проекта (`AGENTS.md`, `CLAUDE.md` или эквивалента). Навык не предписывает стек —
+> он фиксирует уже используемый проектом или задаёт один вопрос, если у проекта его нет.
 ```
 
-## Phase Segmentation
+## Разбиение по фазам
 
-When the feature ships in phases (e.g. T-1..T-3 in Phase 1, T-4..T-6 in Phase 2), the
-permanent file splits the `## Test Cases` section by phase so each phase can ship and
-be re-verified independently. One permanent document per feature remains the rule —
-phases are sections inside it, not separate files.
+Когда функциональность поставляется по фазам (например, T-1..T-3 в фазе 1, T-4..T-6 в фазе 2),
+постоянный файл разделяет секцию `## Test Cases` по фазам, чтобы каждую фазу можно было выпустить
+и проверить повторно независимо. Для одной функциональности по-прежнему используется один постоянный
+документ — фазы являются секциями внутри него, а не отдельными файлами.
 
-Apply segmentation when the input plan / spec contains two or more phases **and** test
-cases can be grouped by which phase introduces the behavior they cover. Otherwise keep
-a single flat `## Test Cases` section.
+Применяйте разбиение, когда входной plan/spec содержит две или более фазы **и** тестовые случаи
+можно сгруппировать по фазе, вводящей проверяемое поведение. В противном случае оставляйте
+единую плоскую секцию `## Test Cases`.
 
 Example for a feature with two phases:
 
 ```markdown
 ## Test Cases
 
-### Phase 1 (T-1..T-3) — Core login flow
+### Фаза 1 (T-1..T-3) — основной поток входа
 
-#### TC-1: Successful login with valid credentials
-| Field | Value |
+#### TC-1: успешный вход с корректными учётными данными
+| Поле | Значение |
 |-------|-------|
 | **Type** | ui-instrumentation |
-| **Type rationale** | Single screen; assertions on visible state after a user action. Smaller scope (`unit`) cannot cover the screen-level state transition. |
+| **Type rationale** | Один экран; проверки видимого состояния после действия пользователя. Меньший scope (`unit`) не покрывает переход состояния на уровне экрана. |
 | **Priority** | P0 Critical |
 | **Tier** | Smoke |
-| **Preconditions** | User account exists, email is verified |
-| **Steps** | 1. Open login screen  2. Enter email  3. Enter password  4. Tap Login |
-| **Expected Result** | Home screen is shown, session token stored |
+| **Preconditions** | Учётная запись существует, email подтверждён |
+| **Steps** | 1. Открыть экран входа  2. Ввести email  3. Ввести пароль  4. Нажать Login |
+| **Expected Result** | Показан главный экран, session token сохранён |
 | **Source** | Spec §2.1 |
 
-#### TC-2: Invalid password shows inline error
+#### TC-2: неверный пароль показывает встроенную ошибку
 ...
 
-#### TC-3: Rate-limit after 5 failed attempts
+#### TC-3: rate-limit после 5 неудачных попыток
 ...
 
-### Phase 2 (T-4..T-6) — Password reset flow
+### Фаза 2 (T-4..T-6) — поток сброса пароля
 
-#### TC-4: Request reset email from login screen
-| Field | Value |
+#### TC-4: запросить письмо сброса с экрана входа
+| Поле | Значение |
 |-------|-------|
 | **Type** | ui-scenario |
-| **Type rationale** | Multi-screen journey (login → forgot → confirmation); cheaper to maintain as a re-runnable scripted scenario than a full e2e suite. |
+| **Type rationale** | Путь через несколько экранов (login → forgot → confirmation); поддерживать повторяемый сценарий дешевле, чем полный e2e suite. |
 | **Priority** | P0 Critical |
 | **Tier** | Feature |
-| **Preconditions** | User account exists |
-| **Steps** | 1. Tap "Forgot password?"  2. Enter email  3. Submit |
-| **Expected Result** | Confirmation screen shown, reset email dispatched |
+| **Preconditions** | Учётная запись существует |
+| **Steps** | 1. Нажать «Forgot password?»  2. Ввести email  3. Отправить |
+| **Expected Result** | Показан экран подтверждения, письмо сброса отправлено |
 | **Source** | Spec §3.2 |
 
-#### TC-5: Reset link expires after 15 minutes
+#### TC-5: ссылка сброса истекает через 15 минут
 ...
 
-#### TC-6: Reset flow rejects reused link
+#### TC-6: поток сброса отклоняет повторно использованную ссылку
 ...
 ```
 
-When segmentation is applied, the receipt's `phase_coverage` field lists the phase labels
-present (e.g. `[Phase 1, Phase 2]`), and the TC ranges covered by each phase appear in the
-receipt's Phase Coverage section.
+При разбиении поле `phase_coverage` receipt перечисляет присутствующие метки фаз
+(например, `[Phase 1, Phase 2]`), а диапазоны TC, покрытые каждой фазой, появляются в секции
+Phase Coverage receipt.
 
-## Lightweight template (non-UI features)
+## Упрощённый шаблон (non-UI-функциональность)
 
-When the non-UI detector triggers (see Input Discovery), use this reduced TC format in place
-of the standard one. The entire behavior of each TC is captured in Given/When/Then — no
-numbered Steps, no separate Expected Result field, since both collapse into the Then clause
-for non-interactive surfaces.
+Когда срабатывает non-UI-детектор (см. Input Discovery), используйте этот сокращённый формат TC
+вместо стандартного. Всё поведение каждого TC фиксируется в Given/When/Then — без нумерованных Steps
+и отдельного поля Expected Result, поскольку на неинтерактивных поверхностях оба объединяются в Then.
 
 ```markdown
 #### TC-[N]: [Short title]
 | **Type** | unit / integration |
-| **Type rationale** | Why this scope catches the AC failure with the smallest cost |
+| **Type rationale** | Почему этот scope ловит отказ AC с наименьшей стоимостью |
 | **Priority** | P0/P1/P2/P3 |
 | **Tier** | Smoke/Feature/Regression |
 | **Preconditions** | [state] |
@@ -209,21 +206,21 @@ for non-interactive surfaces.
 | **Source** | [Spec §section / inferred from code] |
 ```
 
-Non-UI features are typically `unit` or `integration`. UI types (`ui-instrumentation`, `ui-scenario`, `screenshot`, `e2e`) do not appear in the lightweight template — if a UI type is needed, switch back to the full TC template.
+Для non-UI-функциональности обычно используются `unit` или `integration`. UI-типы (`ui-instrumentation`, `ui-scenario`, `screenshot`, `e2e`) не появляются в упрощённом шаблоне — если нужен UI-тип, вернитесь к полному шаблону TC.
 
-Example:
+Пример:
 
 ```markdown
-#### TC-3: Token refresh succeeds before expiry
+#### TC-3: обновление токена успешно до истечения срока
 | **Type** | integration |
-| **Type rationale** | Real `TokenManager` + test HTTP server to assert end-to-end refresh + scope preservation; pure-unit scope cannot reach the network call |
+| **Type rationale** | Реальный `TokenManager` + тестовый HTTP-сервер для проверки end-to-end refresh и сохранения scope; pure-unit scope не достигает сетевого вызова |
 | **Priority** | P0 Critical |
 | **Tier** | Feature |
-| **Preconditions** | Valid refresh token stored, access token within 60s of expiry |
-| **Scenario (Given/When/Then)** | Given an access token with <60s TTL, When the client calls `refresh()`, Then a new access token is returned with the original refresh-token scope preserved |
+| **Preconditions** | Сохранён корректный refresh token, до истечения access token осталось менее 60 с |
+| **Scenario (Given/When/Then)** | Given access token с TTL <60 с, When клиент вызывает `refresh()`, Then возвращается новый access token с сохранённым исходным scope refresh-token |
 | **Source** | `src/auth/TokenManager.kt:142` |
 ```
 
-All other sections of the Test Plan Format (front-matter table, Findings, Risk Areas,
-Coverage Matrix, Suggested Automation Candidates, Phase Segmentation when applicable) are
-used unchanged — only the TC blocks switch to this reduced form.
+Все остальные секции формата Test Plan (таблица front-matter, Findings, Risk Areas,
+Coverage Matrix, Suggested Automation Candidates, Phase Segmentation, если применимо) используются
+без изменений — только блоки TC переключаются на этот сокращённый формат.

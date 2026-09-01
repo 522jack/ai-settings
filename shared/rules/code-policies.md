@@ -1,50 +1,49 @@
-# Code Policies
+# Правила работы с кодом
 
-## Code clarity and documentation
+## Ясность кода и документация
 
-When code is modified, update directly related docs — KDoc, inline comments, `.md` files. Never leave docs describing something the code no longer does.
+При изменении кода обновлять непосредственно связанные документы — KDoc, inline comments, `.md` files. Никогда не оставлять документацию, описывающую то, чего код больше не делает.
 
-### Mandatory inline comments
+### Обязательные inline comments
 
-Add a short comment whenever the code contains:
+Добавлять короткий комментарий, если код содержит:
 
-- **Preserved behavior from a migration** — old API used system default timezone, new API could use UTC but intentionally doesn't; old code had no null-check and callers rely on that. Comment: what the old code did and why the new matches it.
-- **Intentionally retained bug or quirk** — known incorrect/surprising behavior kept for compat, spec compliance, or because fixing it would break something else. Comment: what the bug is, why it's kept.
-- **Non-obvious constraint** — code looks wrong but is correct due to an external contract, hardware quirk, server format, third-party library, or platform limitation.
-- **Implicit semantic change** — logic appears equivalent but subtly differs in edge cases (overflow, timezone, locale, rounding, encoding). Comment: what differs and why it's acceptable.
+- **Сохранённое после миграции поведение** — старый API использовал системный часовой пояс, новый API мог бы использовать UTC, но намеренно этого не делает; в старом коде не было null-check, и вызывающий код на это рассчитывает. В комментарии указать, что делал старый код и почему новый ему соответствует.
+- **Намеренно сохранённая ошибка или особенность** — известное неправильное/неожиданное поведение, оставленное ради совместимости, соответствия спецификации или потому, что исправление что-то сломает. В комментарии указать, в чём ошибка и почему она сохранена.
+- **Неочевидное ограничение** — код выглядит неправильным, но корректен из-за внешнего контракта, особенности оборудования, формата сервера, сторонней библиотеки или ограничения платформы.
+- **Неявное изменение семантики** — логика выглядит эквивалентной, но слегка отличается в крайних случаях (переполнение, часовой пояс, локаль, округление, кодировка). В комментарии указать, что отличается и почему это приемлемо.
 
-Format: one or two lines, lead with the surprising fact, follow with the reason. No need to reference the task or PR.
+Формат: одна или две строки; сначала неожиданный факт, затем причина. Не нужно ссылаться на задачу или PR.
 
-## Logging
+## Логирование
 
-All logging policy lives in [[logging]] — single source. It covers permanent vs temporary diagnostic logs, the `// TEMP-LOG` convention, the mandatory logger system, per-level semantics, and redaction. Nothing about logging (incl. `// TEMP-LOG`) is duplicated here.
+Все правила логирования находятся в [[logging]] — это единый источник. Они охватывают постоянные и временные диагностические логи, соглашение `// TEMP-LOG`, обязательную систему logger, семантику уровней и redaction. Здесь ничего о логировании (включая `// TEMP-LOG`) не дублируется.
 
-## Feature flags and configuration
+## Feature flags и конфигурация
 
-- **Feature flags:** never add proactively — that's a product decision. If the task clearly implies a flag, ask first.
-- **Configuration:** follow the project's existing pattern. If none — put config in a dedicated config layer, no hardcoded values.
+- **Feature flags:** никогда не добавлять упреждающе — это решение о продукте. Если задача явно подразумевает flag, сначала спросить.
+- **Configuration:** следовать существующему паттерну проекта. Если его нет — помещать config в отдельный config layer, без hardcoded values.
 
-## Breaking changes
+## Ломающие изменения (breaking changes)
 
-Make the change directly. Backward compatibility and migration are the user's responsibility unless asked. For public API, DB schema, or CLI interface — notify the user before proceeding.
+Вносить изменение напрямую. Обратная совместимость и migration — ответственность пользователя, если не запрошено иное. Для public API, DB schema или CLI interface — уведомить пользователя до продолжения.
 
-## Architectural decisions
+## Архитектурные решения
 
-When a task allows multiple approaches:
-1. Check existing project patterns — match if clear.
-2. No clear pattern → present options with trade-offs, recommend with reasoning, then proceed.
-3. No signal at all → apply best practices and project settings as default.
+Если задача допускает несколько подходов:
+1. Проверить существующие паттерны проекта — следовать им, если они ясны.
+2. Нет ясного паттерна → представить варианты с компромиссами, порекомендовать один с обоснованием и продолжить.
+3. Нет никаких сигналов → использовать best practices и настройки проекта по умолчанию.
 
-Never silently pick an approach when alternatives exist.
+Никогда не выбирать подход молча, если существуют альтернативы.
 
-## Legacy code
+## Устаревший код (legacy code)
 
-Do not change code outside the scope of the current task unless it's a direct blocker.
+Не менять код вне области текущей задачи, если только он не является прямым blocker.
 
-When the task touches legacy code:
-- Legacy pattern works and doesn't conflict → keep it, note in one line.
-- Adding new code nearby → prefer current project standard, not legacy style.
-- Legacy pattern actively blocks the task or mixing styles creates inconsistency → refactor as part of the task and explain why.
+Если задача затрагивает legacy code:
+- Legacy pattern работает и не конфликтует → сохранить его, отметить одной строкой.
+- При добавлении нового кода рядом → предпочитать текущий стандарт проекта, а не legacy style.
+- Legacy pattern непосредственно блокирует задачу или смешение стилей создаёт непоследовательность → выполнить refactor в рамках задачи и объяснить почему.
 
-Threshold: does leaving it as-is make the result worse or harder to maintain?
-
+Критерий: делает ли сохранение как есть результат хуже или усложняет поддержку?

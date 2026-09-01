@@ -1,70 +1,68 @@
 Referenced from: `plugins/developer-workflow/skills/write-spec/SKILL.md` (§Phase 5 Save).
 
-# Output Location and Artifact Layout
+# Расположение вывода и структура артефактов
 
-Where the spec and the operational state file live, how they are named, and
-when they are retired.
+Где находятся spec и операционный файл состояния, как они называются и
+когда выводятся из эксплуатации.
 
 ---
 
-## Target Layout
+## Целевая структура
 
-| Artifact | Path | Lifetime |
+| Артефакт | Путь | Срок жизни |
 |----------|------|----------|
-| Spec | `docs/specs/YYYY-MM-DD-<slug>.md` | Permanent — version controlled |
-| State file | `./swarm-report/spec-<slug>-state.md` | Temporary — delete after save |
+| Spec | `docs/specs/YYYY-MM-DD-<slug>.md` | Постоянный — под контролем версий |
+| Файл состояния | `./swarm-report/spec-<slug>-state.md` | Временный — удалить после сохранения |
 
 ---
 
-## Path Conventions
+## Соглашения о путях
 
-- **Spec filename**: `YYYY-MM-DD-<slug>.md` at the project root under
+- **Имя файла spec**: `YYYY-MM-DD-<slug>.md` в корне проекта под
   `docs/specs/`. The date prefix is the day the spec was created (not merged,
   not approved). The `<slug>` is the same kebab-case slug generated in Phase 0.
-- **State filename**: `spec-<slug>-state.md` under `./swarm-report/`. The
-  state file is operational — it tracks round numbers, research progress, and
-  open gaps. It is not committed; `swarm-report/` must be in the project's
-  `.gitignore`.
+- **Имя файла состояния**: `spec-<slug>-state.md` под `./swarm-report/`. Файл
+  состояния операционный — отслеживает номера раундов, прогресс исследования и открытые
+  пробелы. Он не коммитится; `swarm-report/` должен быть в `.gitignore` проекта.
 
-Example: feature goal *"push notifications"* on 2026-04-20 →
+Пример: цель функциональности *«push notifications»* на 2026-04-20 →
 - `docs/specs/2026-04-20-push-notifications.md`
 - `./swarm-report/spec-push-notifications-state.md`
 
 ---
 
-## Save Procedure
+## Процедура сохранения
 
-### 1. Ensure `docs/specs/` exists
+### 1. Убедитесь, что `docs/specs/` существует
 
-Check if `docs/specs/` exists at the project root. Create it if not.
+Проверьте наличие `docs/specs/` в корне проекта. Если его нет, создайте.
 
-### 2. Save the spec
+### 2. Сохраните spec
 
-Write the approved draft to `docs/specs/YYYY-MM-DD-<slug>.md`. Update its
-frontmatter `status:` from `draft` to `approved` before writing.
+Запишите утверждённый черновик в `docs/specs/YYYY-MM-DD-<slug>.md`. Перед записью измените
+его frontmatter `status:` с `draft` на `approved`.
 
-### 3. Retire the state file
+### 3. Выведите файл состояния из эксплуатации
 
-Update state file status to `done`. The file may be deleted at the discretion
-of the caller — it is no longer needed once the spec is saved.
+Измените статус файла состояния на `done`. Вызывающий код может удалить файл по своему усмотрению —
+после сохранения spec он больше не нужен.
 
-### 4. Confirm to the user
+### 4. Подтвердите пользователю
 
 ```
-Spec saved: docs/specs/{filename}
+Spec сохранён: docs/specs/{filename}
 
-This document is self-sufficient for implementation. When you're ready,
-plan mode (or any structured implementation pass) can pick it up.
+Этот документ самодостаточен для реализации. Когда будете готовы, plan mode
+(или любой структурированный проход реализации) сможет его использовать.
 ```
 
-Do not auto-invoke any other skill. The spec is the deliverable. The user
-decides when and how to proceed.
+Не вызывайте автоматически другие навыки. Spec — конечный артефакт. Пользователь
+решает, когда и как продолжать.
 
 ---
 
-## Hand-off
+## Передача
 
-The saved spec is the sole deliverable of `write-spec`. It is designed to be
-picked up by plan-mode implementation or any downstream tooling at any future
-point, producing a complete implementation with user involvement only at
-genuine critical blockers.
+Сохранённый spec — единственный артефакт `write-spec`. Он предназначен для использования
+реализацией в plan-mode или любыми downstream-инструментами в будущем и должен привести к
+полной реализации при участии пользователя только в настоящих critical-блокерах.

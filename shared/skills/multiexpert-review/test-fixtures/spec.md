@@ -4,30 +4,30 @@ slug: smoke-test-spec-fixture
 status: draft
 ---
 
-# Spec: Minimal synthetic spec fixture
+# Spec: минимальная синтетическая фикстура spec
 
-## Context and Motivation
+## Контекст и мотивация
 
-A tiny synthetic spec used as a smoke-test fixture for the multiexpert-review spec profile. This document is deliberately minimal to make rubric violations easy to spot in the review output.
+Небольшой синтетический spec, используемый как smoke-test fixture для профиля spec навыка multiexpert-review. Документ намеренно минимален, чтобы нарушения критериев было легко заметить в выводе ревью.
 
-## Acceptance Criteria
+## Критерии приёмки
 
-- [ ] The feature works.
-- [ ] No regression.
-- [ ] Fast enough.
+- [ ] Функциональность работает.
+- [ ] Регрессий нет.
+- [ ] Работает достаточно быстро.
 
-## Affected Modules
+## Затронутые модули
 
-Some modules in the backend.
+Некоторые модули backend.
 
-## Technical Approach
+## Технический подход
 
-Use a good pattern. Add some code.
+Использовать хороший паттерн. Добавить немного кода.
 
-## Decisions Made
+## Принятые решения
 
-We decided to implement it this way.
+Мы решили реализовать это таким образом.
 
-## Out of Scope
+## Вне области работ
 
-Everything else.
+Всё остальное.

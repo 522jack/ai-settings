@@ -1,18 +1,16 @@
 Referenced from: `plugins/developer-workflow/skills/write-spec/SKILL.md` (§Phase 4.3 Run multiexpert-review).
 
-# Multiexpert-Review `spec` Profile Hint — Rationale
+# Подсказка профиля `spec` для Multiexpert-Review — обоснование
 
-Why the hint (defense-in-depth, not a single-cause fix): the `spec` profile's detector
-declares `frontmatter_type: [spec]` and `path_globs: ["docs/specs/**"]`. Either path would
-normally classify a draft that carries `type: spec` frontmatter and lives under `docs/specs/`.
-The explicit hint exists because:
+Зачем нужна подсказка (защита в глубину, а не исправление одной причины): детектор профиля `spec`
+объявляет `frontmatter_type: [spec]` и `path_globs: ["docs/specs/**"]`. Обычно любого из этих путей
+достаточно, чтобы классифицировать черновик с frontmatter `type: spec`, расположенный под `docs/specs/`.
+Явная подсказка существует потому, что:
 
-1. **Invocation-path robustness** — in some callsites the draft is passed as inline args
-   without the frontmatter block; the engine sees only body prose and can't rely on
-   frontmatter detection.
-2. **Cheapest deterministic route** — Step 1 hint-match short-circuits detection before
-   any YAML parse or path-glob evaluation; cost is a single-line prefix.
-3. **Detector-independence** — removes the orchestrator's dependency on detector internals.
-   Future detector refactors (reordering, different fallback) cannot silently re-open the
-   historical spec → implementation-plan misclassification drift that this profile exists
-   to close.
+1. **Надёжность пути вызова** — в некоторых местах вызова черновик передаётся inline-аргументами
+   без блока frontmatter; движок видит только прозу тела и не может полагаться на обнаружение frontmatter.
+2. **Самый дешёвый детерминированный путь** — совпадение подсказки на шаге 1 сокращает обнаружение до
+   любого разбора YAML или проверки маски пути; цена — префикс в одну строку.
+3. **Независимость от детектора** — устраняет зависимость оркестратора от внутреннего устройства детектора.
+   Будущие рефакторинги детектора (изменение порядка, другой fallback) не смогут молча вновь открыть
+   историческое расхождение классификации spec → implementation-plan, которое этот профиль призван устранить.

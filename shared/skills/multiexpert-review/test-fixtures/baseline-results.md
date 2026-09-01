@@ -1,89 +1,89 @@
-# Smoke-test baseline — captured 2026-04-19
+# Baseline smoke-теста — снят 2026-04-19
 
-Captured manually via direct agent invocation on the fixtures in this directory — the baseline bypasses the engine orchestration layer. Asserted **structural** properties only; content of individual issues is PoLL-stochastic and not part of the baseline.
+Снят вручную прямым вызовом агента для фикстур в этом каталоге — baseline обходит слой оркестрации движка. Проверены только **структурные** свойства; содержание отдельных issues стохастично для PoLL и не является частью baseline.
 
-**What this means for engine-level expectations.** Because the capture is agent-level, not engine-level:
-- No receipts are created. A real engine run with `profile.receipt` present and a `slug` in the fixture frontmatter WILL create/update the resolved file per the engine contract (`SKILL.md` → Receipt integration).
-- Panel enforcement is not exercised. A profile with `allow_single_reviewer: false` and multiple primary reviewers would, under engine orchestration, invoke the full primary panel (or fail loud with `NO_REVIEWERS_AVAILABLE`). This baseline captures one reviewer's perspective and records only that — do not read "only X invoked" as "panel policy honored".
+**Что это означает для ожиданий на уровне движка.** Поскольку фиксация выполнена на уровне агента, а не движка:
+- Receipt не создаются. Настоящий запуск движка при наличии `profile.receipt` и `slug` во frontmatter фикстуры СОЗДАСТ/ОБНОВИТ разрешённый файл согласно контракту движка (`SKILL.md` → интеграция Receipt).
+- Принудительное применение панели не проверяется. Профиль с `allow_single_reviewer: false` и несколькими primary-рецензентами при оркестрации движка вызвал бы всю primary-панель (или завершился громкой ошибкой `NO_REVIEWERS_AVAILABLE`). Этот baseline фиксирует точку зрения одного рецензента — не считайте «вызван только X» подтверждением соблюдения политики панели.
 
-Engine-level behavior (receipt writes, panel enforcement, verdict aggregation across reviewers) must be exercised via a real pipeline run; it is deliberately out of scope here.
+Поведение на уровне движка (запись receipt, принудительное применение панели, агрегация вердиктов рецензентов) нужно проверять настоящим запуском pipeline; здесь оно намеренно находится вне области.
 
 ## Fixture: `plan.md` (implementation-plan profile)
 
-**Profile detection:** `implementation-plan` via frontmatter `type: plan`
-**Reviewer invoked:** `architecture-expert` (tech-match on cache layer / modules)
-**Verdict alphabet used:** `PASS / CONDITIONAL / FAIL` (per profile `verdicts`)
-**Severity labels in output:** `critical | major | minor` (engine-standard)
-**Structural properties verified:**
-- Output follows engine template (Summary / Domain Relevance / Issues)
-- Issues include all required fields (severity, confidence, issue, suggestion)
-- No engine error prefix (normal review path)
-- No receipt written (profile has no `receipt:` section)
+**Обнаружение профиля:** `implementation-plan` через frontmatter `type: plan`
+**Вызванный рецензент:** `architecture-expert` (tech-match по слою кеша / модулям)
+**Использованный алфавит вердиктов:** `PASS / CONDITIONAL / FAIL` (согласно `verdicts` профиля)
+**Метки серьёзности в выводе:** `critical | major | minor` (стандарт движка)
+**Проверенные структурные свойства:**
+- вывод соответствует шаблону движка (Summary / Domain Relevance / Issues);
+- Issues содержат все обязательные поля (severity, confidence, issue, suggestion);
+- префикса ошибки движка нет (обычный путь ревью);
+- receipt не записан (в профиле нет секции `receipt:`).
 
-**Sample observed findings:** 6 issues total (3 major, 3 minor). Touched: cache invalidation coverage, multi-instance consistency contract, write ordering, domain/infra boundary, fallback contract specificity, latency-budget decomposition. All architecture-domain findings — consistent with invoked agent specialty.
+**Пример наблюдавшихся замечаний:** всего 6 issues (3 major, 3 minor). Затронуты: покрытие инвалидации кеша, контракт согласованности нескольких экземпляров, порядок записи, граница домена и инфраструктуры, конкретность fallback-контракта, декомпозиция бюджета задержки. Все замечания относятся к архитектуре — это соответствует специализации вызванного агента.
 
 ## Fixture: `test-plan.md` (test-plan profile)
 
-**Profile detection:** `test-plan` via frontmatter `type: test-plan` (frontmatter path takes precedence over structural signatures)
-**Reviewer invoked:** `business-analyst` (per profile `reviewer_roster.primary`)
-**Optional_if trigger activated:** `performance-expert` flagged as recommended (artifact mentions `latency`, `p99`, matching `SLA|latency|throughput|budget` regex) — the reviewer noted this in their output but the actual panel was kept to business-analyst for this lightweight smoke-test
-**Verdict alphabet used:** `PASS / WARN / FAIL` (per profile `verdicts`)
-**Severity mapping applied:**
+**Обнаружение профиля:** `test-plan` через frontmatter `type: test-plan` (frontmatter имеет приоритет над структурными сигнатурами)
+**Вызванный рецензент:** `business-analyst` (согласно `reviewer_roster.primary` профиля)
+**Активирован триггер Optional_if:** `performance-expert` отмечен как рекомендуемый (артефакт содержит `latency`, `p99`, совпадающие с regex `SLA|latency|throughput|budget`) — рецензент отметил это в выводе, но для этого лёгкого smoke-теста фактическая панель ограничена business-analyst
+**Использованный алфавит вердиктов:** `PASS / WARN / FAIL` (согласно `verdicts` профиля)
+**Применено сопоставление серьёзности:**
 - (a), (b), (c) items → `critical`
 - (d), (e) items → `major`
-**Structural properties verified:**
-- 5-item checklist evaluated explicitly (each item marked satisfied / violated)
-- Final verdict derived from profile verdict policy: `FAIL` because (b) and (c) violated (critical)
-- Output follows engine template
-- Receipt path resolved to `swarm-report/smoke-test-test-plan-fixture-test-plan.md`; the file is not created by this direct-agent baseline capture (engine was bypassed), but a real engine run on the same fixture would create or update it per the engine's Receipt integration contract
+**Проверенные структурные свойства:**
+- чек-лист из 5 элементов оценён явно (каждый элемент отмечен как satisfied / violated);
+- итоговый вердикт выведен из политики профиля: `FAIL`, поскольку нарушены (b) и (c) (critical);
+- вывод соответствует шаблону движка;
+- путь receipt разрешается в `swarm-report/smoke-test-test-plan-fixture-test-plan.md`; прямой baseline-вызов агента не создаёт этот файл (движок обойдён), но настоящий запуск движка для той же фикстуры создаст или обновит его по контракту интеграции Receipt.
 
-**Sample observed findings:** 6 issues total — items (b), (c) flagged critical; items (a), (d), (e) flagged with matching severities; verdict FAIL per profile policy. Reviewer also raised open questions about test infrastructure and PII handling — domain-appropriate.
+**Пример наблюдавшихся замечаний:** всего 6 issues — элементы (b), (c) отмечены как critical; элементы (a), (d), (e) — с соответствующей серьёзностью; вердикт FAIL согласно политике профиля. Рецензент также поднял открытые вопросы об инфраструктуре тестирования и обработке PII — это соответствует домену.
 
 ## Fixture: `spec.md` (spec profile)
 
-**Profile detection:** `spec` via frontmatter `type: spec`
-**Reviewer invoked in this capture:** `business-analyst` only. The spec profile declares `reviewer_roster.primary: [business-analyst, architecture-expert]` with `allow_single_reviewer: false`, so a real engine run would invoke both agents (or fail loud with `NO_REVIEWERS_AVAILABLE` if only one is available). This baseline intentionally captures the single-agent perspective and records that fact; panel-enforcement is engine-level and out of scope for this harness.
-**Verdict alphabet used:** `PASS / CONDITIONAL / FAIL` (per profile `verdicts`)
-**Severity mapping applied:**
+**Обнаружение профиля:** `spec` через frontmatter `type: spec`
+**Рецензент, вызванный при этой фиксации:** только `business-analyst`. Профиль spec объявляет `reviewer_roster.primary: [business-analyst, architecture-expert]` с `allow_single_reviewer: false`, поэтому настоящий запуск движка вызвал бы обоих агентов (или завершился громкой ошибкой `NO_REVIEWERS_AVAILABLE`, если доступен только один). Этот baseline намеренно фиксирует точку зрения одного агента и сообщает об этом; принудительное применение панели относится к уровню движка и выходит за рамки этого harness.
+**Использованный алфавит вердиктов:** `PASS / CONDITIONAL / FAIL` (согласно `verdicts` профиля)
+**Применено сопоставление серьёзности:**
 - items `acceptance_criteria`, `prerequisites` → `critical`
 - items `out_of_scope`, `decisions_made`, `affected_modules` → `major`
 - items `open_questions_tagged`, `technical_approach_detail` → `minor`
-**Structural properties verified:**
-- Issues titled with rubric-item keys (`acceptance_criteria violated`, `prerequisites violated`, etc.) per profile prompt augmentation contract
-- Severities assigned per `severity_mapping` of the profile
-- Final verdict FAIL — both critical items violated
-- No receipt written (profile has no `receipt:` section)
+**Проверенные структурные свойства:**
+- Issues озаглавлены ключами элементов критериев (`acceptance_criteria violated`, `prerequisites violated` и т. д.) согласно контракту дополнения запроса профиля;
+- серьёзность назначена согласно `severity_mapping` профиля;
+- итоговый вердикт FAIL — нарушены оба critical-элемента;
+- receipt не записан (в профиле нет секции `receipt:`).
 
-**Sample observed findings:** 7 issues — all rubric items evaluated, two critical (AC + prerequisites), three major (out_of_scope, decisions, modules), two minor (OQ, technical_approach). This is the **expected** output for a deliberately-skeletal spec fixture. Verdict FAIL is correct per profile policy.
+**Пример наблюдавшихся замечаний:** 7 issues — оценены все элементы критериев, два critical (AC + prerequisites), три major (out_of_scope, decisions, modules), два minor (OQ, technical_approach). Это **ожидаемый** результат для намеренно скелетной фикстуры spec. Вердикт FAIL корректен согласно политике профиля.
 
-## Fixture: `unknown-artifact.md` (no profile)
+## Фикстура: `unknown-artifact.md` (без профиля)
 
-**Profile detection:** none — all four detection stages fall through:
-1. No hint prefix in invocation args
-2. No YAML frontmatter at all → stage 2 falls through
-3. No path-glob in the inventory matches `test-fixtures/unknown-artifact.md`
-4. Structural signatures: test-plan signatures don't match (no `## Test Cases`, no TC-ID pattern); spec has no structural_signatures; implementation-plan has no structural_signatures
-5. → fallback: engine prompts user with `AskUserQuestion` listing `PROFILE_INVENTORY`
+**Обнаружение профиля:** нет — все четыре этапа обнаружения проходят без результата:
+1. В аргументах вызова нет префикса подсказки;
+2. YAML frontmatter отсутствует → этап 2 проходит без результата;
+3. Ни одна маска пути в перечне не совпадает с `test-fixtures/unknown-artifact.md`;
+4. Структурные сигнатуры: сигнатуры test-plan не совпадают (нет `## Test Cases` и шаблона TC-ID); у spec нет structural_signatures; у implementation-plan нет structural_signatures;
+5. → запасной вариант: движок запрашивает пользователя через `AskUserQuestion`, перечисляя `PROFILE_INVENTORY`.
 
-**Structural property verified:** engine does **not** silently default to implementation-plan. Operator must explicitly pick a profile.
+**Проверенное структурное свойство:** движок **не** выбирает implementation-plan молча. Оператор должен явно выбрать профиль.
 
-This path was not fully executed (would require interactive user prompt); behavior documented per `SKILL.md` Step 1 Detection precedence and spec AC-D3.
+Этот путь не выполнялся полностью (потребовал бы интерактивного запроса пользователю); поведение документировано согласно шагу 1 Detection precedence в `SKILL.md` и AC-D3 spec.
 
-## Summary table
+## Сводная таблица
 
-| Fixture | Profile detected | Detection source | Verdict alphabet | Verdict | Structural check |
+| Фикстура | Обнаруженный профиль | Источник обнаружения | Алфавит вердиктов | Вердикт | Структурная проверка |
 |---------|------------------|------------------|------------------|---------|------------------|
 | `plan.md` | implementation-plan | frontmatter | PASS/CONDITIONAL/FAIL | CONDITIONAL (implied by 3 major issues) | ✓ |
 | `test-plan.md` | test-plan | frontmatter | PASS/WARN/FAIL | FAIL | ✓ |
 | `spec.md` | spec | frontmatter | PASS/CONDITIONAL/FAIL | FAIL | ✓ |
-| `unknown-artifact.md` | (none — ask user) | fallback stage 5 | N/A | N/A | ✓ (documented) |
+| `unknown-artifact.md` | (нет — спросить пользователя) | запасной этап 5 | N/A | N/A | ✓ (документировано) |
 
-## What this baseline is NOT
+## Чем этот baseline НЕ является
 
-- Not a pre/post comparison — the pre-refactor baseline was not captured before the rename/refactor landed (see PR #101). For future regression testing, use this baseline as the post-reference and capture pre-baseline before the next structural change.
-- Not a multi-run modal average — PoLL stochasticity means content of individual findings will differ next run. Only the structural properties listed above should be stable across runs.
-- Not a full acceptance of AC-E2/E3 from `docs/specs/2026-04-19-multiexpert-review.md` — that spec required 3 runs per fixture; this is a single-run capture as a lightweight smoke-test. Full compliance would require a test harness not built here.
+- Не пред/пост-сравнение — baseline до рефакторинга не был снят до появления переименования/рефакторинга (см. PR #101). Для будущего регрессионного тестирования используйте этот baseline как пост-эталон и снимите пре-baseline до следующего структурного изменения.
+- Не среднее моды нескольких запусков — стохастичность PoLL означает, что содержание отдельных замечаний в следующем запуске изменится. Между запусками должны быть стабильны только перечисленные выше структурные свойства.
+- Не полная приёмка AC-E2/E3 из `docs/specs/2026-04-19-multiexpert-review.md` — тот spec требовал 3 запуска на фикстуру; здесь один запуск в качестве лёгкого smoke-теста. Для полного соответствия нужен harness тестов, который здесь не создан.
 
-## Re-running
+## Повторный запуск
 
-For future refactors of `multiexpert-review`, re-run each fixture after the change and compare **structural** properties (profile detected, reviewer roster, verdict alphabet, verdict label, engine error prefix presence) against this baseline. Any divergence is a behavioral regression signal.
+При будущих рефакторингах `multiexpert-review` повторно запустите каждую фикстуру после изменения и сравните с этим baseline **структурные** свойства (обнаруженный профиль, roster рецензентов, алфавит вердиктов, метка вердикта, наличие префикса ошибки движка). Любое расхождение — сигнал поведенческой регрессии.

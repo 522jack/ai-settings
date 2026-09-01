@@ -1,31 +1,31 @@
-# Recommended Workflow
+# Рекомендуемый рабочий процесс
 
-The `developer-workflow` plugin family is a toolbox of on-demand skills, not a forced pipeline. Pick what the task needs; let the current runtime adapter drive sequencing. Skill names below use slash syntax as shorthand; runtimes without slash commands must invoke the same `SKILL.md` workflow manually.
+Семейство plugins `developer-workflow` — это набор skills по запросу, а не принудительный pipeline. Выбирать нужное задаче; последовательность определяет текущий runtime adapter. Имена skills ниже используют синтаксис со слешем как сокращение; рантаймы без slash commands должны вручную вызывать тот же рабочий процесс из `SKILL.md`.
 
-## Mandatory gates
+## Обязательные ворота
 
-**Preparation gate — before any implementation.** Gather, autonomously and research-first, what's needed to build *and* verify — three outputs, actually collected, not just named:
-- **Sources of truth** (what "done" means): spec/AC, before-state baseline, screenshots/Figma, debug-repro. Actively *produce* them — capture screenshots, boot the emulator, snapshot the baseline before a migration. What you can't make yourself and is missing → ask the user, naming what verification degrades without it. Detail: [[qa-and-testing]] §6 + [[task-types]] § Before-state baseline. Starting implementation without the sources of truth needed to verify it is not allowed.
-- **Knowledge sources** (how to build it): trusted docs/source per tier T1–T4 — see [[external-sources]]. Agent memory and project code go stale; on a gap or doubt, verify against the official source, don't act from memory. Missing understanding or stuck → `research` skill first, not a question to the user.
-- **Testability + decomposition**: assess how hard the change is to verify and propose simplifications up front (sample/sandbox app, screenshot tests, several emulators) so a prototype is exercised fast before touching the real app; decompose a task too large for one plan. Detail: [[task-types]] § Test feasibility gate.
+**Preparation gate — до любой реализации.** Автономно и сначала через исследование собрать всё необходимое для создания *и* проверки — три реально собранных результата, а не просто названных:
+- **Sources of truth** (что означает «готово»): spec/AC, before-state baseline, screenshots/Figma, debug-repro. Активно *создавать* их — делать screenshots, запускать emulator, снимать baseline до migration. Если чего-то не хватает и это нельзя создать самостоятельно → спросить пользователя, указав, какая проверка без этого ухудшится. Подробности: [[qa-and-testing]] §6 + [[task-types]] § Before-state baseline. Начинать реализацию без необходимых для проверки sources of truth нельзя.
+- **Knowledge sources** (как это создать): доверенные docs/source по tier T1–T4 — см. [[external-sources]]. Память агента и код проекта устаревают; при пробеле или сомнении проверять по official source, а не действовать по памяти. Если понимания не хватает или возник тупик → сначала `research` skill, а не вопрос пользователю.
+- **Testability + decomposition**: оценить сложность проверки изменения и заранее предложить упрощения (sample/sandbox app, screenshot tests, несколько emulators), чтобы быстро проверить прототип до изменений в реальном приложении; декомпозировать задачу, слишком большую для одного плана. Подробности: [[task-types]] § Test feasibility gate.
 
-Autonomy: concentrate questions in this prep phase; once sources are gathered, proceed without round-tripping. A standard/obvious solution — apply it, don't ask. Skip prep only for the same trivial cases as the gates below.
+Автономность: сосредоточить вопросы на этом подготовительном этапе; после сбора источников продолжать без повторных обращений. Стандартное/очевидное решение — применять, не спрашивать. Пропускать подготовку только в тех же тривиальных случаях, что и указанные ниже ворота.
 
-**Quality gate — `finalize`.** Required after every implementation where code was written — before declaring the task done. Finalize owns *how the code is written*: it is a full review→fix→simplify loop that iterates until no findings above Minor severity remain, or exits with ESCALATE requiring a user decision. `code-reviewer` is one component the loop orchestrates — **a standalone run of code-reviewer does NOT close this gate**: review alone leaves the fix and simplify steps unperformed. «Код уже отревьюен» is not grounds to skip `finalize`. Exceptions: pure documentation edits, config-only changes with no logic, single-line mechanical changes with an obvious result.
+**Quality gate — `finalize`.** Обязателен после каждой реализации, в которой писался код, — до объявления задачи завершённой. Finalize отвечает за *то, как написан код*: это полный цикл review→fix→simplify, повторяемый до исчезновения замечаний выше Minor или завершения с ESCALATE, требующим решения пользователя. `code-reviewer` — один из компонентов, которыми управляет цикл; **отдельный запуск code-reviewer НЕ закрывает эти ворота**: после одного review шаги fix и simplify остаются невыполненными. «Код уже отревьюен» не является основанием пропустить `finalize`. Исключения: чистые изменения документации, изменения только конфигурации без логики, однострочные механические изменения с очевидным результатом.
 
-**Acceptance gate — `acceptance`.** Runs after `finalize` — before PR promotion. Verifies the implementation against the source of truth (spec, test plan, design, or behavioral baseline) and runs runtime checks including `manual-tester` or the runtime QA equivalent for UI surfaces. The two gates are orthogonal: `finalize` checks *how the code is written* (cleanliness), `acceptance` checks *what the code does* (it works as intended) — neither replaces the other, both are mandatory. Same exceptions as `finalize`.
+**Acceptance gate — `acceptance`.** Запускается после `finalize` — до PR promotion. Проверяет реализацию по source of truth (spec, test plan, design или behavioral baseline) и выполняет runtime checks, включая `manual-tester` или эквивалент runtime QA для UI surfaces. Эти ворота независимы: `finalize` проверяет *как написан код* (чистоту), `acceptance` — *что делает код* (работает ли он как задумано); один не заменяет другой, обязательны оба. Те же исключения, что и для `finalize`.
 
-**PR promotion gate — `create-pr --promote`** (draft → ready for review) requires explicit user confirmation. Opening a draft PR is routine; promotion signals the task is complete and makes it visible to reviewers — that is a shared-state action.
+**PR promotion gate — `create-pr --promote`** (draft → ready for review) требует явного подтверждения пользователя. Открытие draft PR — обычная операция; promotion сигнализирует о завершении задачи и делает её видимой reviewers — это действие над общим состоянием.
 
-## Flows
+## Процессы
 
-**Non-trivial features:**
-1. Plan mode → **preparation gate** (above): gather + collect sources of truth (spec, Figma, AC list, before-state baseline for migrations), confirm knowledge sources, assess testability and decompose. Research-first for unknowns. Optional `/multiexpert-review` for high-risk plans, optional `/write-spec` when the change is too big to hold in head, `/write-plan` to commit a reviewable plan.
-2. Implement on a feature branch in a worktree. Open draft PR early via `/create-pr --draft`.
-3. `check` → `finalize` → `acceptance` → `create-pr --promote` (user confirmation required) → `drive-to-merge`.
+**Нетривиальные features:**
+1. Plan mode → **preparation gate** (выше): собрать sources of truth (spec, Figma, AC list, before-state baseline для migrations), подтвердить knowledge sources, оценить testability и декомпозировать. Для неизвестного — сначала research. Опционально `/multiexpert-review` для планов с высоким риском, `/write-spec`, если изменение слишком велико, чтобы удержать его в голове, `/write-plan` для фиксации плана, пригодного для review.
+2. Реализовать в feature branch в worktree. Рано открыть draft PR через `/create-pr --draft`.
+3. `check` → `finalize` → `acceptance` → `create-pr --promote` (требуется подтверждение пользователя) → `drive-to-merge`.
 
-**Bug fixes:**
-1. Plan mode (debug + fix in the plan). Capture reproduction steps in `swarm-report/<slug>-debug.md` — this is the source of truth for `/acceptance`.
-2. Write a failing test that reproduces the bug first, then implement the fix (red-green) → `check` → `finalize` → `acceptance` → PR. The regression test is not optional unless the feasibility gate applies — then a tracked exception, never a silent skip (see [[task-types]] bug-fix row + [[qa-and-testing]] §4). `write-tests` can scaffold the test.
+**Исправления ошибок:**
+1. Plan mode (debug + fix в плане). Зафиксировать шаги воспроизведения в `swarm-report/<slug>-debug.md` — это source of truth для `/acceptance`.
+2. Сначала написать failing test, воспроизводящий ошибку, затем реализовать исправление (red-green) → `check` → `finalize` → `acceptance` → PR. Regression test необязателен только если применяется feasibility gate — тогда нужна отслеживаемая exception, никогда молчаливый skip (см. строку bug-fix в [[task-types]] + [[qa-and-testing]] §4). `write-tests` может создать каркас теста.
 
-**Exploratory QA without a spec:** call the `manual-tester` specialist, or the runtime QA equivalent, directly (no skill needed).
+**Exploratory QA без spec:** напрямую вызвать specialist `manual-tester` или эквивалент runtime QA (skill не нужен).

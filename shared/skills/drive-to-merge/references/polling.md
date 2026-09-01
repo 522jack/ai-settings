@@ -1,40 +1,40 @@
-# drive-to-merge — Phase 4 Polling (ScheduleWakeup)
+# drive-to-merge — опрос на фазе 4 (ScheduleWakeup)
 
-When the round ended with "wait" (CI running or review pending) — decide whether to use
-native auto-merge (exit immediately) or schedule the next round via ScheduleWakeup.
+Если раунд завершился состоянием «wait» (CI выполняется или ревью ожидается), решите, использовать ли
+нативный auto-merge (немедленно выйти) или запланировать следующий раунд через ScheduleWakeup.
 
-## Native auto-merge path (`--auto` mode, CI still running)
+## Нативный путь auto-merge (режим `--auto`, CI всё ещё выполняется)
 
-When mode is `--auto` **and** `Merge policy` is `auto` **and** CI is still in progress
-(no failures, only `IN_PROGRESS` / `PENDING` checks) — delegate the wait to the platform
-instead of polling. Procedure in [`references/merge.md`](merge.md) § "Native auto-merge path".
+Когда mode равен `--auto`, **и** `Merge policy` равен `auto`, **и** CI всё ещё выполняется
+(нет сбоев, только проверки `IN_PROGRESS` / `PENDING`), передайте ожидание платформе вместо опроса.
+Процедура описана в [`references/merge.md`](merge.md), § «Native auto-merge path».
 
-If native auto-merge succeeds: exit the loop (no ScheduleWakeup). If it fails (repo setting
-disabled), fall through to normal ScheduleWakeup below.
+Если нативный auto-merge успешен: выйдите из цикла (без ScheduleWakeup). Если он не сработал (настройка
+репозитория отключена), перейдите к обычному ScheduleWakeup ниже.
 
-For `team-strict` policy: skip native auto-merge entirely regardless of mode; proceed to
+При политике `team-strict` полностью пропускайте нативный auto-merge независимо от режима; переходите к
 ScheduleWakeup.
 
-## Proactive autonomy offer (default mode, long waits)
+## Проактивное предложение автономности (режим по умолчанию, долгое ожидание)
 
-Before scheduling ScheduleWakeup in **default mode**, when the wait will be long:
+Перед планированием ScheduleWakeup в **режиме по умолчанию**, если ожидание будет долгим:
 
-- **Slow CI** (pipeline ≥5 min, detected on first entry to this wait): show once —
+- **Медленный CI** (pipeline ≥5 минут, обнаружен при первом входе в это ожидание): показать один раз —
   > "CI is running (slow pipeline). Type `auto-merge` to set native auto-merge and exit now, or I'll keep polling."
-- **Human reviewer not responding** (two or more consecutive 1800s polls with no new review
-  activity): show once —
+- **Человек-рецензент не отвечает** (два или более последовательных опроса по 1800 секунд без новой активности
+  ревью): показать один раз —
   > "No reviewer activity after two rounds. Type `auto-merge` to set native auto-merge and exit, or I'll keep polling."
 
-If the user types `auto-merge`: execute the native auto-merge path from `references/merge.md`
-and exit. Do not offer again after the user declines (silently) — offer at most once per
-category per run.
+Если пользователь вводит `auto-merge`: выполните нативный путь auto-merge из `references/merge.md`
+и выйдите. После отказа пользователя больше не предлагайте (молча) — максимум одно предложение
+на категорию за запуск.
 
-In `--auto` mode this offer is unnecessary — native auto-merge is used automatically above.
+В режиме `--auto` это предложение не нужно — нативный auto-merge автоматически используется выше.
 
 ## ScheduleWakeup
 
-The wake-up prompt is built from the stored `Mode` in the state file (per "Mode precedence on
-resume" in `references/setup.md`) — never hardcoded.
+Запрос пробуждения строится из сохранённого `Mode` в файле состояния (согласно «Mode precedence on
+resume» в `references/setup.md`) — никогда не задаётся жёстко.
 
 ```
 WAKEUP_PROMPT="/drive-to-merge"
@@ -48,9 +48,9 @@ ScheduleWakeup(
 )
 ```
 
-## Pick `delaySeconds`
+## Выбор `delaySeconds`
 
-| Waiting on | delaySeconds |
+| Ожидается | delaySeconds |
 |---|---|
 | CI in progress, fast pipeline known (<5 min) | 270 (stay in cache window) |
 | CI in progress, slow pipeline (≥5 min) | 600–1200 |
@@ -58,8 +58,8 @@ ScheduleWakeup(
 | Human reviewer after re-request | 1800 (30 min) |
 | Approved but `mergeStateStatus == BLOCKED` on an unknown reason | 900 |
 
-Avoid the 280–550s range: past 270s the prompt cache TTL expires, but under ~600s the cache miss is not amortized. Pick either ≤270 (stay warm) or ≥600 (commit to a longer wait).
+Избегайте диапазона 280–550 с: после 270 с истекает TTL кеша запроса, но при ожидании менее ~600 с промах кеша не окупается. Выбирайте ≤270 (сохранить кеш прогретым) или ≥600 (зафиксировать более длительное ожидание).
 
-After 6 consecutive polls with no state change — stop, record in state file `Blockers raised`, surface to the user.
+После 6 последовательных опросов без изменения состояния остановитесь, запишите в файле состояния `Blockers raised` и покажите пользователю.
 
-On wake-up: re-read the state file, re-enter Phase 2.1.
+После пробуждения: повторно прочитайте файл состояния и вернитесь к фазе 2.1.

@@ -1,19 +1,19 @@
-# Compose Rules
+# Правила Compose
 
-Project-specific Compose conventions and non-obvious gotchas that go beyond what a modern model writes by default. Generic Compose idioms — `remember` for cached values, `rememberSaveable` for config changes, `LazyColumn` `key` for dynamic items, `derivedStateOf` for derived state, state hoisting, UDF, PascalCase, `on*` callbacks — are **not** documented here; trust the model and Compose Lint.
+Специфические для проекта соглашения по Compose и неочевидные подводные камни, выходящие за рамки того, что современная модель пишет по умолчанию. Общие идиомы Compose — `remember` для кэшируемых значений, `rememberSaveable` для изменений конфигурации, `key` у `LazyColumn` для динамических элементов, `derivedStateOf` для производного состояния, подъём состояния, UDF, PascalCase, колбэки `on*` — здесь **не документируются**; полагайтесь на модель и Compose Lint.
 
-This file lists only:
-- Genuinely non-obvious rules the model omits without a reminder
-- Project-config-dependent behavior (stability under strong skipping)
-- Strong opinions where the model's default differs
+В этом файле перечислены только:
+- Действительно неочевидные правила, которые модель пропускает без напоминания
+- Поведение, зависящее от конфигурации проекта (стабильность при strong skipping)
+- Жёсткие рекомендации в случаях, когда вариант модели по умолчанию отличается
 
-For coroutines inside composables (`LaunchedEffect`, `rememberCoroutineScope`, Flow collection), see `coroutines.md`. For Kotlin language style, see `kotlin-style.md`.
+О корутинах внутри composable-функций (`LaunchedEffect`, `rememberCoroutineScope`, сбор данных из Flow) см. `coroutines.md`. О стиле языка Kotlin см. `kotlin-style.md`.
 
 ---
 
-## Screen Pattern
+## Шаблон экрана
 
-The screen composable must be **stateless**:
+Композируемая функция экрана должна быть **без состояния**:
 
 ```kotlin
 @Composable
@@ -24,28 +24,28 @@ internal fun FooScreen(
 )
 ```
 
-- `viewModel()` / `hiltViewModel()` / `koinViewModel()` is resolved **once at the navigation entry point** (`FooRoute`), never inside `FooScreen` and never inside reusable shared components.
-- Never pass a `ViewModel` as a composable parameter — the model sometimes does this for convenience; it breaks reusability and previewability.
+- `viewModel()` / `hiltViewModel()` / `koinViewModel()` разрешается **один раз в точке входа навигации** (`FooRoute`), никогда внутри `FooScreen` и никогда внутри повторно используемых общих компонентов.
+- Никогда не передавайте `ViewModel` как параметр composable-функции — модель иногда делает это из соображений удобства; это нарушает повторное использование и возможность предварительного просмотра.
 
-## Forbidden Parameter Types
+## Запрещённые типы параметров
 
-Never accept these as composable parameters:
+Никогда не принимайте следующие типы в качестве параметров composable-функций:
 
-- `MutableState<T>` — hoist as `value: T` + `onValueChange: (T) -> Unit`
-- `State<T>` — pass the value directly
-- `ViewModel` — see Screen Pattern above
+- `MutableState<T>` — поднимайте как `value: T` + `onValueChange: (T) -> Unit`
+- `State<T>` — передавайте значение напрямую
+- `ViewModel` — см. раздел «Шаблон экрана» выше
 
-The model occasionally takes a `MutableState` shortcut. Don't.
+Модель иногда выбирает сокращённый вариант с `MutableState`. Не делайте так.
 
-## Custom Modifiers — Modifier.Node, never `composed {}`
+## Пользовательские модификаторы — Modifier.Node, никогда `composed {}`
 
-`Modifier.composed {}` is deprecated and ~80% slower (allocates per-composition, defeats modifier sharing). The model still emits `composed {}` from older training data — explicitly choose `Modifier.Node`:
+`Modifier.composed {}` устарел и примерно на 80% медленнее (выделяет память при каждой композиции и препятствует совместному использованию модификаторов). Модель всё ещё генерирует `composed {}` на основе более старых обучающих данных — явно выбирайте `Modifier.Node`:
 
-| Scenario | Approach |
+| Сценарий | Подход |
 |---|---|
-| Combination of existing modifiers | Plain extension chain |
-| Needs animation or `CompositionLocal` | `@Composable` Modifier factory |
-| Drawing, layout, input, semantics | `Modifier.Node` + `ModifierNodeElement` |
+| Комбинация существующих модификаторов | Обычная цепочка расширений |
+| Нужны анимация или `CompositionLocal` | Фабрика Modifier с `@Composable` |
+| Рисование, layout, ввод, семантика | `Modifier.Node` + `ModifierNodeElement` |
 
 ```kotlin
 private class FooNode(...) : Modifier.Node(), DrawModifierNode {
@@ -58,18 +58,18 @@ private data class FooElement(...) : ModifierNodeElement<FooNode>() {
 fun Modifier.foo(...): Modifier = this then FooElement(...)
 ```
 
-## Stability — Project-Config-Dependent
+## Стабильность — зависит от конфигурации проекта
 
-Whether `@Stable` / `@Immutable` matter depends on Compose Compiler config:
+Значимость `@Stable` / `@Immutable` зависит от конфигурации Compose Compiler:
 
-- **Strong skipping mode** (default in Compose Compiler 2.0+ / Kotlin 2.0+) → annotations are **less critical**; the compiler skips even unstable parameters. Plain `List` / `Map` work for skipping. Annotations remain useful as documentation of intent.
-- **Strong skipping disabled** (`composeCompiler { enableStrongSkippingMode.set(false) }` or older compiler) → annotations are important. Collections are unstable; use `kotlinx.collections.immutable` (`ImmutableList`) if the project does.
+- **Режим strong skipping** (по умолчанию в Compose Compiler 2.0+ / Kotlin 2.0+) → аннотации **менее критичны**; компилятор пропускает даже нестабильные параметры. Обычные `List` / `Map` подходят для пропуска. Аннотации по-прежнему полезны как документирование намерения.
+- **Strong skipping отключён** (`composeCompiler { enableStrongSkippingMode.set(false) }` или используется более старый компилятор) → аннотации важны. Коллекции нестабильны; используйте `kotlinx.collections.immutable` (`ImmutableList`), если это принято в проекте.
 
-**Always match the project's existing convention.** If existing state classes use `@Immutable`, add it to new ones for consistency. Check `stability_config.conf` for cross-module rules if it exists.
+**Всегда следуйте существующему соглашению проекта.** Если существующие классы состояния используют `@Immutable`, добавляйте её к новым классам для единообразия. Проверьте `stability_config.conf` на наличие правил для разных модулей, если этот файл существует.
 
-## Performance — Phase Deferral via Lambda Modifiers
+## Производительность — отложенное выполнение фаз через модификаторы-лямбды
 
-Compose runs in three phases: **Composition → Layout → Drawing**. Lambda-based modifier overloads let the runtime skip earlier phases when only later phases need to update. The model often picks the value-based overload by reflex.
+Compose выполняется в три фазы: **Composition → Layout → Drawing**. Перегрузки модификаторов на основе лямбд позволяют среде выполнения пропускать предыдущие фазы, когда обновлять нужно только последующие. Модель часто рефлекторно выбирает перегрузку на основе значения.
 
 ```kotlin
 // Good — skips composition, runs only in layout
@@ -85,13 +85,13 @@ Box(Modifier.fillMaxSize().drawBehind { drawRect(animatedColor) })
 Box(Modifier.fillMaxSize().background(animatedColor))
 ```
 
-When passing a frequently-changing `State` into a modifier, prefer the lambda overload (`offset { }`, `drawBehind { }`, `graphicsLayer { }`).
+При передаче часто изменяющегося `State` в модификатор предпочитайте перегрузку с лямбдой (`offset { }`, `drawBehind { }`, `graphicsLayer { }`).
 
-Also: pass `() -> T` instead of `T` to defer reads in custom composables when the value updates often.
+Также передавайте `() -> T` вместо `T`, чтобы отложить чтение в пользовательских composable-функциях, когда значение часто обновляется.
 
-## Side Effects — `rememberUpdatedState` for long-lived effects
+## Побочные эффекты — `rememberUpdatedState` для долгоживущих эффектов
 
-Inside `LaunchedEffect(Unit)` or `DisposableEffect`, lambda parameters captured directly will be the value from when the effect *started* — not the latest. Use `rememberUpdatedState` to keep the captured callback fresh without restarting the effect:
+Внутри `LaunchedEffect(Unit)` или `DisposableEffect` параметры-лямбды, захваченные напрямую, будут иметь значение на момент *запуска* эффекта, а не последнее значение. Используйте `rememberUpdatedState`, чтобы поддерживать захваченный колбэк актуальным без перезапуска эффекта:
 
 ```kotlin
 @Composable
@@ -104,11 +104,11 @@ fun FooScreen(onTimeout: () -> Unit) {
 }
 ```
 
-The model sometimes captures the original lambda directly and ships a stale callback bug.
+Модель иногда напрямую захватывает исходную лямбду и создаёт ошибку с устаревшим колбэком.
 
-## Exhaustive `when` Without `else`
+## Исчерпывающий `when` без `else`
 
-`when` over a sealed state / action type **must be exhaustive without an `else` branch**. The compiler must catch missing cases when a new subtype is added. The model occasionally writes `else -> {}` to silence the compiler — that silently swallows new subtypes.
+`when` для sealed-типа состояния или действия **должен быть исчерпывающим без ветки `else`**. Компилятор должен обнаруживать пропущенные варианты при добавлении нового подтипа. Модель иногда пишет `else -> {}`, чтобы подавить ошибку компилятора, — это незаметно скрывает новые подтипы.
 
 ```kotlin
 when (action) {
@@ -118,19 +118,19 @@ when (action) {
 }
 ```
 
-## Theme Tokens — No Raw `dp` / Hex
+## Токены темы — никаких необработанных `dp` / Hex
 
-If the project has a token system (`AppDimens.spacingM`, `AppColors.primary`, `AppTypography.titleMedium`) — never emit raw `dp` literals or hex color values in screen code. Use the tokens.
+Если в проекте есть система токенов (`AppDimens.spacingM`, `AppColors.primary`, `AppTypography.titleMedium`), никогда не используйте в коде экранов литералы `dp` или шестнадцатеричные значения цветов напрямую. Используйте токены.
 
-If the project does not have tokens and uses `MaterialTheme.colorScheme.x` directly — match that. Discovered in Step 1 of compose-developer.
+Если в проекте нет токенов и напрямую используется `MaterialTheme.colorScheme.x`, следуйте этому подходу. Обнаружено на шаге 1 в compose-developer.
 
-## Accessibility — Beyond `contentDescription`
+## Доступность — не только `contentDescription`
 
-The model writes `contentDescription` by default. Often missed:
+Модель добавляет `contentDescription` по умолчанию. Часто упускаются следующие моменты:
 
-- **`Modifier.semantics { role = Role.Button }`** on custom interactive composables (custom click handling without using `Button`/`IconButton`)
-- **`mergeDescendants = true`** on compound rows where the screen reader should read title + subtitle as a single unit
-- **`Modifier.minimumInteractiveComponentSize()`** when the visual element is smaller than 48×48 dp but is interactive
+- **`Modifier.semantics { role = Role.Button }`** для пользовательских интерактивных composable-функций (обработка нажатия без использования `Button`/`IconButton`)
+- **`mergeDescendants = true`** для составных строк, где средство чтения с экрана должно читать заголовок и подзаголовок как единое целое
+- **`Modifier.minimumInteractiveComponentSize()`**, когда визуальный элемент меньше 48×48 dp, но остаётся интерактивным
 
 ```kotlin
 Icon(
@@ -144,14 +144,14 @@ Icon(
 
 ## KMP / Compose Multiplatform
 
-- No `android.*` / `java.*` / `javax.*` / `dalvik.*` in `commonMain`
-- Resources via `org.jetbrains.compose.resources` API — **the API has changed multiple times across CMP versions**. Read project's existing resource usage; do not assume.
-- `expect`/`actual` only for platform-specific implementation; UI logic in `commonMain`
-- Verify every dep has KMP artifacts before using in common code
-- Platform-specific UI (iOS touch handling, SwiftUI / UIKit interop, desktop) — verify against current docs, do not assume API shapes
+- Никаких `android.*` / `java.*` / `javax.*` / `dalvik.*` в `commonMain`
+- Ресурсы через API `org.jetbrains.compose.resources` — **API неоднократно менялся в разных версиях CMP**. Изучите существующее использование ресурсов в проекте; не делайте предположений.
+- `expect`/`actual` только для платформенной реализации; логика UI — в `commonMain`
+- Перед использованием в общем коде убедитесь, что каждая зависимость имеет KMP-артефакты
+- Платформенный UI (обработка касаний на iOS, интеграция SwiftUI / UIKit, desktop) — проверяйте по актуальной документации, не предполагайте форму API
 
-## Previews — Never the ViewModel
+## Предпросмотры — никогда не `ViewModel`
 
-A preview receives **hardcoded state**, never `viewModel()` / a repository / real data. The model occasionally wires VMs into previews "for realism" — that breaks tooling and often makes previews uncompilable.
+Предпросмотр получает **жёстко заданное состояние**, но никогда не `viewModel()` / репозиторий / реальные данные. Модель иногда подключает VM к предпросмотрам «для реалистичности» — это ломает инструменты разработки и часто делает предпросмотры некомпилируемыми.
 
-Previews are always `private`, always wrapped in the project's theme composable. Multi-state coverage (loading / error / empty / populated) is the screen-preview convention.
+Предпросмотры всегда `private` и всегда обёрнуты в composable-функцию темы проекта. Покрытие нескольких состояний (loading / error / empty / populated) — соглашение проекта для предпросмотров экранов.

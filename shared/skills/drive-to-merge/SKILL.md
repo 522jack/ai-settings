@@ -1,51 +1,50 @@
 ---
 name: drive-to-merge
 description: >
-  Drive an existing PR/MR to merge — monitor CI, triage review comments, fix failures,
-  re-request review, loop until merged.
+  Доведите существующий PR/MR до слияния: отслеживайте CI, разбирайте комментарии ревью,
+  исправляйте ошибки, повторно запрашивайте ревью и повторяйте цикл до слияния.
   Triggers: "drive this PR to merge", "get this PR merged", "monitor CI and reviews",
   "ship this PR", "land this PR", "take this PR all the way", "merge this PR for me".
-  Do NOT use for creating new PRs (use create-pr) or code written from scratch (use implement).
+  Не используйте для создания новых PR (используйте create-pr) или написания кода с нуля (используйте implement).
 ---
 
-# Drive to Merge
+# Доведение до слияния
 
-Autonomous end-to-end PR driver. Takes the currently open PR/MR from its present state
-and loops — diagnose CI, categorize review comments against the full branch diff, propose
-fixes, delegate, push, re-request review, wait for new activity — until the PR is merged
-or a true blocker requires the user.
+Автономный сквозной обработчик PR. Берёт открытый PR/MR из текущего состояния и повторяет цикл:
+диагностирует CI, классифицирует комментарии ревью относительно полного diff ветки, предлагает
+исправления, делегирует, отправляет изменения, повторно запрашивает ревью и ждёт новой активности —
+до слияния PR или появления настоящего блокера, требующего участия пользователя.
 
-**Core principle:** keep the PR moving. Every obstacle (CI failure, review comment,
-stalled reviewer) is a loop iteration, not a stop. The skill stops only for: true
-disagreements with a reviewer that need a human judgement call, or mechanical dead-ends
-(permission denied, rebase conflict the skill cannot resolve). In default mode it also
-stops at the final merge step and waits for "merge"; in `--auto` mode it merges directly.
+**Основной принцип:** поддерживайте движение PR. Каждое препятствие (ошибка CI, комментарий ревью,
+застрявший reviewer) — итерация цикла, а не остановка. Навык останавливается только из-за настоящих
+разногласий с reviewer, требующих решения человека, или механического тупика (отказ в доступе,
+конфликт rebase, который навык не может разрешить). В режиме default он также останавливается перед
+итоговым слиянием и ждёт «merge»; в режиме `--auto` выполняет слияние напрямую.
 
-**In-session, not in files.** All analysis, categorization, and proposed actions are
-rendered in the conversation as tables. A state file exists only to survive context
-compaction — the user never edits it.
+**В сессии, не в файлах.** Анализ, классификация и предлагаемые действия отображаются в разговоре
+в виде таблиц. Файл состояния существует только для переживания сжатия контекста — пользователь его не редактирует.
 
 ---
 
-## Modes
+## Режимы
 
-| Mode | What it changes |
+| Режим | Что изменяет |
 |---|---|
-| default | Between rounds shows a decision table and waits for `approve` / `skip` / `stop`; merge step asks for confirmation |
-| `--auto` | Same table shown for visibility, then proceeds without waiting; merge gate also skipped — when all Phase 5 conditions are met the skill merges automatically |
-| `--dry-run` | Runs analysis and renders the decision table once; makes no edits, pushes, or posts; exits |
+| default | Между раундами показывает таблицу решений и ждёт `approve` / `skip` / `stop`; на шаге слияния запрашивает подтверждение |
+| `--auto` | Показывает ту же таблицу для наглядности, затем продолжает без ожидания; gate слияния также пропускается — при выполнении всех условий Phase 5 навык сливает автоматически |
+| `--dry-run` | Выполняет анализ и один раз отображает таблицу решений; не редактирует, не отправляет изменения и сообщения; завершает работу |
 
-Trigger words equivalent to `--auto`: "act autonomously", "without confirmations", "auto mode", "don't ask". The skill echoes which mode it is running in before Phase 2.
+Фразы-триггеры, эквивалентные `--auto`: "act autonomously", "without confirmations", "auto mode", "don't ask". Перед Phase 2 навык сообщает, в каком режиме работает.
 
 ---
 
-## Operational references
+## Операционные справочники
 
-Volatile procedural detail — CLI recipes, GraphQL mutations, sanitize pipeline, retry
-logic — lives in reference files loaded only when the relevant phase runs. SKILL.md
-stays the stable orchestration contract.
+Изменчивые процедурные детали — рецепты CLI, мутации GraphQL, pipeline санитизации, логика повторов —
+находятся в reference-файлах, загружаемых только при выполнении соответствующей фазы. SKILL.md
+остаётся стабильным контрактом оркестрации.
 
-| File | Covers |
+| Файл | Содержание |
 |---|---|
 | [`references/setup.md`](references/setup.md) | Phase 1: platform detect, metadata fetch, preconditions, state-file schema, mode precedence on resume |
 | [`references/ci.md`](references/ci.md) | Phase 2.2: run-id extraction from `statusCheckRollup`, log download, classification, CI failure table, infra-flake retry, failure-loop guard |

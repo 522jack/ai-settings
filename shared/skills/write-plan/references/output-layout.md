@@ -1,48 +1,47 @@
-# Output layout & hand-off
+# Структура вывода и передача
 
 ## Paths
 
-| File | Lifetime | Committed? | Purpose |
+| Файл | Срок жизни | Коммитится? | Назначение |
 |---|---|---|---|
-| `docs/plans/<slug>/plan.md` | Permanent | Yes — reviewed in the PR | Technical approach, affected files, decisions, risks. |
-| `docs/plans/<slug>/tasks.md` | Permanent | Yes | Ordered task checklist with dependencies + per-task acceptance. |
-| `docs/plans/<slug>/progress.md` | Permanent (volatile content) | Yes — the execution ledger / audit trail | Volatile status + learnings log. Split from the stable plan so execution churn never rewrites the design. |
-| `./swarm-report/plan-<slug>-state.md` | Operational | No (gitignored) — delete after | Investigation findings, review-cycle log. Deleted after. |
+| `docs/plans/<slug>/plan.md` | Постоянный | Да — проверяется в PR | Технический подход, затронутые файлы, решения, риски. |
+| `docs/plans/<slug>/tasks.md` | Постоянный | Да | Упорядоченный чек-лист задач с зависимостями и приёмкой каждой задачи. |
+| `docs/plans/<slug>/progress.md` | Постоянный (изменяемое содержимое) | Да — журнал выполнения / аудит | Изменяемый статус и журнал выводов. Отделён от стабильного плана, чтобы рабочие изменения не переписывали дизайн. |
+| `./swarm-report/plan-<slug>-state.md` | Операционный | Нет (gitignored) — удалить после | Результаты исследования, журнал циклов ревью. После работы удаляется. |
 
-`docs/plans/` is intentionally a sibling of `docs/specs/`: spec = *what* (requirements + AC), plan =
-*how* (design + tasks). Both live in git because their value is being reviewable in the PR and
-resumable later — the exact property built-in plan mode lacks.
+`docs/plans/` намеренно является соседом `docs/specs/`: spec = *что* (требования + AC), plan =
+*как* (дизайн + задачи). Оба находятся в git, потому что их ценность — возможность ревью в PR
+и возобновления позже; именно этого свойства не хватает встроенному plan mode.
 
 Slug derivation: see `SKILL.md` Phase 0.1.
 
-## Status lifecycle
+## Жизненный цикл статуса
 
 `plan.md` frontmatter `status`: `draft` → `approved` (Phase 4 on PASS/CONDITIONAL). On
 `review_verdict: escalate`, leave `status: draft` and stop with the blocking open questions
 surfaced.
 
-`review_verdict`: `pending` → `pass` | `conditional` | `escalate`, written by the Phase 3 loop (and
-by the profile receipt).
+`review_verdict`: `pending` → `pass` | `conditional` | `escalate`, записывается циклом фазы 3 (и
+receipt профиля).
 
-## Confirmation message (default, autonomous)
+## Сообщение подтверждения (по умолчанию, автономный режим)
 
-One sentence, e.g.:
+Одно предложение, например:
 
 > Plan saved to `docs/plans/offline-mode/plan.md` (review: PASS, 7 tasks). Starting with T-1 —
 > add the offline cache layer.
 
-No approval prompt. With `--interactive`, present the compact summary and ask one go/adjust question
-before flipping to `approved`.
+Без запроса подтверждения. С `--interactive` покажите краткое резюме и задайте один вопрос «запускать/изменить»
+до переключения в `approved`.
 
-## Hand-off rules
+## Правила передачи
 
-- Do **not** auto-invoke downstream skills. Suggest the next step (implement the tasks; then
+- **Не** вызывайте downstream-навыки автоматически. Предложите следующий шаг (реализовать задачи; затем
   `/write-tests`, `/check`, `/finalize`, `/acceptance`) and let the user/agent drive — toolbox
   model. (The mandatory Phase 3 inline `multiexpert-review` call and the Phase 3.5 adversarial
   red-team Agent call are the review gate built into this skill, not downstream chains — these are
   the sanctioned in-skill invocations.)
-- `progress.md` is the live ledger: as each `T-N` lands, check its box and append a one-line
-  learning. The implementer commits plan + code together so the PR shows the plan that produced the
-  change.
-- `create-pr` discovers `docs/plans/<slug>/plan.md` and references it in the PR body; `finalize`
-  anchors its `code-reviewer` pass on the same plan. No extra wiring needed beyond writing the file.
+- `progress.md` — текущий журнал: по мере завершения каждого `T-N` отметьте его и добавьте однострочный
+  вывод. Реализующий агент коммитит план и код вместе, чтобы в PR был виден план, создавший изменение.
+- `create-pr` обнаруживает `docs/plans/<slug>/plan.md` и ссылается на него в теле PR; `finalize`
+  привязывает проход `code-reviewer` к тому же плану. Кроме записи файла дополнительная связка не нужна.

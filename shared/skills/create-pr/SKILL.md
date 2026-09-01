@@ -1,36 +1,38 @@
 ---
 name: create-pr
 description: >
-  Manage the pull request (GitHub) / merge request (GitLab) for the current branch through its
-  lifecycle. Four modes: `--draft` creates or refreshes a draft PR early in the pipeline,
-  `--refresh` updates the body of an existing PR without touching its status, `--promote`
-  refreshes body and marks a draft PR ready for review, and default (no flag) creates a new PR
-  with a draft-or-ready prompt. Composes description from available swarm-report artifacts
-  (research, plan, test-plan, finalize, acceptance) and falls back to git log + diff. Invoke
-  when the user says "create PR", "open draft PR", "refresh PR description", "promote to ready",
+  Управляйте pull request (GitHub) / merge request (GitLab) текущей ветки на всём жизненном цикле.
+  Четыре режима: `--draft` создаёт или обновляет draft PR в начале конвейера, `--refresh`
+  обновляет тело существующего PR без изменения статуса, `--promote` обновляет тело и переводит
+  draft PR в состояние ready for review, а режим по умолчанию (без флага) создаёт новый PR после
+  вопроса draft-or-ready. Описание составляется из доступных артефактов swarm-report (research,
+  plan, test-plan, finalize, acceptance), а при их отсутствии используется git log + diff. Вызывайте
+  навык, когда пользователь говорит "create PR", "open draft PR", "refresh PR description", "promote to ready",
   "mark PR ready for review", "update the PR", "switch the PR to ready".
 ---
 
 # Create PR
 
-Manage a pull request (GitHub) or merge request (GitLab) across its lifecycle — draft creation, in-flight body refreshes, and final promotion to ready for review. Composes description dynamically from available artifacts.
+Управляйте pull request (GitHub) или merge request (GitLab) на всём жизненном цикле — создание draft,
+обновление тела в процессе работы и итоговый перевод в ready for review. Описание динамически
+составляется из доступных артефактов.
 
 ---
 
-## Modes overview
+## Обзор режимов
 
-| Mode | When | What it does | Fails if |
+| Режим | Когда | Действие | Ошибка, если |
 |---|---|---|---|
-| `--draft` | After the first commit on a feature branch | Creates draft PR if none exists; refreshes body if a draft already exists | PR exists and is already ready for review |
-| `--refresh` | After meaningful progress (finalize round complete, acceptance passed) | Updates body of existing PR (draft or ready) — no status change | No PR exists |
-| `--promote` | After all local quality passes (finalize + acceptance) | Refreshes body with final summary, then marks draft PR as ready for review | No PR exists, or PR is already ready |
-| default | Direct invocation | Asks draft-or-ready if unclear, then creates | PR already exists |
+| `--draft` | После первого коммита в feature-ветке | Создаёт draft PR, если его нет; обновляет тело существующего draft | PR существует и уже готов к ревью |
+| `--refresh` | После значимого прогресса (завершён раунд finalize, пройдена acceptance) | Обновляет тело существующего PR (draft или ready) без изменения статуса | PR не существует |
+| `--promote` | После всех локальных проверок качества (finalize + acceptance) | Обновляет тело итоговой сводкой, затем переводит draft PR в ready for review | PR не существует или уже готов |
+| default | Прямой вызов | При неясности спрашивает draft-or-ready, затем создаёт PR | PR уже существует |
 
 Mode is passed via arguments: `/create-pr --draft`, `/create-pr --refresh`, `/create-pr --promote`, or `/create-pr` for default.
 
 ---
 
-## Step 1: Setup (all modes)
+## Шаг 1: настройка (все режимы)
 
 ```bash
 git remote get-url origin                                        # github.com → gh; gitlab → glab
@@ -42,27 +44,27 @@ CURRENT_EMAIL=$(git config user.email)
 
 ---
 
-## Step 2: Check for existing PR (all modes)
+## Шаг 2: проверка существующего PR (все режимы)
 
-Do NOT use `2>/dev/null` here — it silently conflates "no PR exists" (expected) with
-"CLI unavailable / auth failed" (a real error). Capture stderr and branch on exit code:
+Не используйте здесь `2>/dev/null` — это молча смешивает ожидаемый случай «PR не существует» с
+реальной ошибкой «CLI недоступен / авторизация не удалась». Сохраните stderr и ветвитесь по коду выхода:
 
 ```bash
 # GitHub
 out=$(gh pr view --json url,isDraft,number,body 2>&1); rc=$?
-# Exit code:
-#   0              → PR exists; parse $out as JSON
-#   1 + stderr contains "no pull requests" / "no open pull requests" → no PR (expected)
-#   any other rc or unexpected stderr → real error (CLI missing, unauthenticated, API down)
+# Код выхода:
+#   0              → PR существует; разберите $out как JSON
+#   1 + stderr содержит "no pull requests" / "no open pull requests" → PR отсутствует (ожидаемо)
+#   любой другой rc или неожиданный stderr → реальная ошибка (CLI отсутствует, нет авторизации, API недоступен)
 
 # GitLab
 out=$(glab mr view --output json 2>&1); rc=$?
-# Same pattern: rc 0 → MR exists; stderr "no open merge request" → no MR; other → real error.
+# Та же схема: rc 0 → MR существует; stderr "no open merge request" → MR отсутствует; иначе → реальная ошибка.
 ```
 
-**On real error (non-zero rc that is not the "no PR" case):** abort with the captured
-stderr. Do not proceed as if no PR exists — that would create a duplicate. Typical causes:
-`gh` / `glab` not installed or not authenticated, API outage, missing token in sandbox.
+**При реальной ошибке (ненулевой rc, не являющемся случаем «PR отсутствует»):** остановитесь и
+выведите сохранённый stderr. Не продолжайте так, будто PR отсутствует — это создаст дубликат. Типичные
+причины: `gh` / `glab` не установлены или не авторизованы, сбой API, отсутствует токен в sandbox.
 
 Capture on success:
 - `PR_EXISTS` — true/false
@@ -70,9 +72,9 @@ Capture on success:
 - `PR_URL` — for output
 - `PR_BODY` — current body, used by refresh/promote to preserve manual edits (see Step 7.4)
 
-### Mode preconditions
+### Предусловия режимов
 
-| Mode | Precondition | On failure |
+| Режим | Предусловие | При ошибке |
 |---|---|---|
 | `--draft` | PR does not exist, or exists AND `isDraft: true` | If PR exists AND not draft: abort with "PR is already ready for review; use `--refresh` to update the body." |
 | `--refresh` | PR exists (draft or ready — `--refresh` does not change status) | If no PR: abort with "No PR found for this branch. Use `--draft` or default to create one first." |
@@ -81,28 +83,28 @@ Capture on success:
 
 ---
 
-## Step 3: Push branch (all modes — if local has new commits)
+## Шаг 3: отправка ветки (все режимы — если локально есть новые коммиты)
 
 ```bash
 git rev-parse --abbrev-ref @{u} 2>/dev/null || git push -u origin "$BRANCH"
 git push   # no-op if in sync; common for --refresh / --promote
 ```
 
-If push fails (non-fast-forward) — abort and ask the user. Force-push policy per globals.
+Если push завершается ошибкой (non-fast-forward), остановитесь и попросите пользователя вмешаться. Политика force-push определяется глобальными правилами.
 
 ---
 
-## Step 4: Analyse branch state (all modes — needed for body)
+## Шаг 4: анализ состояния ветки (все режимы — нужен для тела PR)
 
-Run in parallel: `git log $BASE..HEAD --oneline`, `git diff --name-only $BASE...HEAD`, `git diff $BASE...HEAD --stat`, `git diff $BASE...HEAD`.
+Параллельно выполните: `git log $BASE..HEAD --oneline`, `git diff --name-only $BASE...HEAD`, `git diff $BASE...HEAD --stat`, `git diff $BASE...HEAD`.
 
 ---
 
-## Step 5: Discover pipeline artifacts
+## Шаг 5: поиск артефактов конвейера
 
-Look for artifacts in `./swarm-report/` that match the current branch/task slug. Read those that exist:
+Ищите в `./swarm-report/` артефакты, соответствующие slug текущей ветки/задачи. Прочитайте существующие:
 
-| Artifact | Location | Purpose in body |
+| Артефакт | Расположение | Назначение в теле PR |
 |---|---|---|
 | research | `swarm-report/research/research-<slug>.md` | Link + 1-sentence abstract in "Context" section |
 | spec | `docs/specs/<YYYY-MM-DD>-<slug>.md` (written by `write-spec`) | Reference as "Specification" |
@@ -113,48 +115,48 @@ Look for artifacts in `./swarm-report/` that match the current branch/task slug.
 | finalize | `swarm-report/<slug>-finalize.md` | Round-by-round summary for status table |
 | acceptance | `swarm-report/<slug>-acceptance.md` | Pass/fail + verified scenarios for "Verification" section |
 
-Slug resolution:
-1. Prefer slug if the caller passed it as an argument.
-2. Fallback to branch name with common prefix stripped: `feature/`, `fix/`, `hotfix/`, `bug/`, `chore/`, `refactor/`, `docs/`.
+Разрешение slug:
+1. Предпочитайте slug, если вызывающий код передал его аргументом.
+2. Иначе используйте имя ветки после удаления распространённого префикса: `feature/`, `fix/`, `hotfix/`, `bug/`, `chore/`, `refactor/`, `docs/`.
 
-Working artifacts under `swarm-report/` are gitignored; committed ones live under `docs/` (`docs/specs/`, `docs/plans/`). Either way, include them as **references** in the body (e.g., "See `docs/plans/my-slug/plan.md`"), never inline content.
+Рабочие артефакты в `swarm-report/` исключены из Git; закоммиченные находятся в `docs/` (`docs/specs/`, `docs/plans/`). В любом случае включайте их в тело только как **ссылки** (например, «См. `docs/plans/my-slug/plan.md`»), никогда не вставляйте содержимое inline.
 
 ---
 
-## Step 6: Labels and reviewers (skip for `--refresh`)
+## Шаг 6: labels и reviewers (пропустить для `--refresh`)
 
-Only set labels/reviewers when **creating** (draft or default) or when **promoting**. `--refresh` does NOT touch labels/reviewers to avoid clobbering user edits.
+Устанавливайте labels/reviewers только при **создании** (draft или default) или **promote**. `--refresh` НЕ изменяет labels/reviewers, чтобы не затереть правки пользователя.
 
 ### 6.1 Labels
 
-Fetch available labels:
+Получите доступные labels:
 
 - **GitHub:** `gh label list --json name,description --limit 100`
 - **GitLab:** `glab label list` (resolves project from `git remote get-url origin`; do NOT use `glab api /projects/:fullpath/labels` — glab does not substitute `:fullpath` and the call will 404)
 
-Select from existing only, based on changed file paths, commit types, and scope. Do not invent labels.
+Выбирайте только существующие labels с учётом изменённых путей файлов, типов коммитов и области изменений. Не изобретайте labels.
 
-**Add, don't replace.** Only **add** missing labels computed from the diff; never remove labels set manually by humans. This preserves reviewer / triage / release labels applied between draft creation and promote.
+**Добавляйте, не заменяйте.** Только **добавляйте** labels, которых не хватает согласно diff; никогда не удаляйте labels, установленные людьми вручную. Это сохраняет reviewer / triage / release labels, добавленные между созданием draft и promote.
 
 ### 6.2 Reviewers
 
-Skip reviewer assignment for `--draft` and `--promote`. Reviewers go on only in default mode or when explicitly requested.
+Пропускайте назначение reviewers для `--draft` и `--promote`. Добавляйте reviewers только в режиме default или по явному запросу.
 
-For default mode: top 3 authors who touched the changed files recently, filtered to exclude `$CURRENT_EMAIL`, mapped to platform usernames, presented to the user before adding.
+Для режима default: выберите до 3 авторов, недавно изменявших затронутые файлы, исключите `$CURRENT_EMAIL`, сопоставьте их с именами пользователей платформы и покажите пользователю до добавления.
 
 ---
 
-## Step 7: Compose body
+## Шаг 7: составление тела PR
 
-Body composition is mode-aware.
+Составление тела зависит от режима.
 
-### 7.1 Section bank
+### 7.1 Банк разделов
 
-The body is composed from a catalog of optional sections: What changed, Why / motivation, Artifacts, How to test, **Release Notes** (when user-visible changes are detected), Status, Screenshots / demo, Checklist, and a trailing Claude Code footer. Include only the sections that apply for the current mode and available artifacts.
+Тело составляется из каталога необязательных разделов: What changed, Why / motivation, Artifacts, How to test, **Release Notes** (если обнаружены видимые пользователю изменения), Status, Screenshots / demo, Checklist и завершающий footer Claude Code. Включайте только разделы, применимые к текущему режиму и доступным артефактам.
 
 See [`references/body-sections.md`](references/body-sections.md) for the full section-bank templates with example content and status-table formatting.
 
-### 7.2 Section selection per mode
+### 7.2 Выбор разделов по режиму
 
 | Section | `--draft` | `--refresh` | `--promote` | default |
 |---|---|---|---|---|

@@ -1,70 +1,70 @@
-# create-pr — Body Section Bank
+# create-pr — набор секций тела PR
 
 Referenced from: `plugins/developer-workflow/skills/create-pr/SKILL.md` (§7.1).
 
-Available sections (include only those that apply):
+Доступные секции (включайте только применимые):
 
 ```markdown
-## What changed
-<!-- Technical description from commit log + diff -->
+## Что изменилось
+<!-- Техническое описание по журналу коммитов + diff -->
 
-## Why / motivation
-<!-- From task description or plan artifact; link ticket if URL in commits -->
+## Почему / мотивация
+<!-- Из описания задачи или артефакта плана; добавьте ссылку на тикет, если URL есть в коммитах -->
 
-## Artifacts
-<!-- Bullet list of swarm-report/ and docs/ paths that exist -->
-- Plan: docs/plans/<slug>/plan.md
-- Test plan: swarm-report/<slug>-test-plan.md
+## Артефакты
+<!-- Маркированный список существующих путей swarm-report/ и docs/ -->
+- План: docs/plans/<slug>/plan.md
+- План тестирования: swarm-report/<slug>-test-plan.md
 - ...
 
-## How to test
-<!-- From test-plan.md or plan/tasks.md task acceptance; checkbox list -->
-- [ ] Scenario 1
-- [ ] Scenario 2
+## Как тестировать
+<!-- Из приёмки задачи в test-plan.md или plan/tasks.md; список с флажками -->
+- [ ] Сценарий 1
+- [ ] Сценарий 2
 
-## Release Notes
+## Примечания к выпуску
 <!--
-  Emitted when the change is user-visible (see SKILL.md §7.2.1).
-  Format follows the project's existing changelog convention. PR body is text only —
-  do NOT modify CHANGELOG.md, .changeset/, RELEASE_NOTES.md, or docs/CHANGELOG.md.
-  Choose ONE form for the PR body:
+  Выводятся, когда изменение заметно пользователю (см. SKILL.md §7.2.1).
+  Формат соответствует существующему соглашению changelog проекта. Тело PR — только текст;
+  НЕ изменяйте CHANGELOG.md, .changeset/, RELEASE_NOTES.md или docs/CHANGELOG.md.
+  Выберите ОДНУ форму для тела PR:
 
   Keep-a-Changelog (CHANGELOG.md / RELEASE_NOTES.md / docs/CHANGELOG.md):
   ### Added
-  - Short user-facing description (#NNN)
+  - Краткое описание для пользователя (#NNN)
 
-  Changesets (.changeset/) — PR-body shorthand only, NOT the actual changeset format:
+  Changesets (.changeset/) — сокращённая форма только для тела PR, НЕ настоящий формат changeset:
   type: minor
-  Short user-facing description.
+  Краткое описание для пользователя.
 
-  (The real .changeset/*.md file uses --- frontmatter mapping packages to bump levels;
-  this PR-body snippet is just for review-time visibility.)
+  (Настоящий файл .changeset/*.md использует --- frontmatter для сопоставления пакетов и уровней повышения;
+  этот фрагмент тела PR нужен только для видимости во время ревью.)
 
-  No project changelog yet — plain bullet:
-  - **<Area>:** short user-facing description.
+  Changelog проекта пока нет — обычный пункт:
+  - **<Область>:** краткое описание для пользователя.
 
-  Breaking change marker (any format):
-  **Breaking:** describe what users must do to migrate.
+  Маркер ломающего изменения (любой формат):
+  **Breaking:** опишите, что должны сделать пользователи для миграции.
 
-  When the section is intentionally skipped:
+  Если секция намеренно пропущена:
   > Release notes: skipped (<reason>)
 -->
 
-## Status
-<!-- Table: Implement / Finalize / Acceptance stages, pass/fail/pending from artifacts -->
-| Stage | Result | Notes |
+## Статус
+<!-- Таблица: этапы Implement / Finalize / Acceptance, pass/fail/pending по артефактам -->
+| Этап | Результат | Примечания |
 |---|---|---|
 | Implement | ✅ PASS | all gates green |
 | Finalize  | ⏳ in progress | round 2/3 |
 | Acceptance | ⏸ pending | waits for finalize |
 
 ## Screenshots / demo
-<!-- For visual changes; prompt user -->
+<!-- Для визуальных изменений; попросите пользователя -->
 
-## Checklist
-- [ ] Tests added or updated
-- [ ] No breaking changes (or documented)
-- [ ] Relevant docs updated
+## Чек-лист
+- [ ] Тесты добавлены или обновлены
+- [ ] Нет ломающих изменений (или они задокументированы)
+- [ ] Актуальная документация обновлена
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
