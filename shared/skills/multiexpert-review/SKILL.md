@@ -1,51 +1,52 @@
 ---
 name: multiexpert-review
 description: >-
-  Use when the user wants a plan, spec, or test-plan reviewed by a panel of independent
-  expert agents (PoLL — Panel of LLM Evaluators — protocol) before committing.
-  Triggers: "review the plan", "review the spec", "review the test-plan",
+  Используй, когда пользователь хочет проверить план, спецификацию или test-plan
+  группой независимых экспертных агентов (протокол PoLL — Panel of LLM Evaluators)
+  до коммита.
+  Триггеры: "review the plan", "review the spec", "review the test-plan",
   "multi-expert review", "panel review", "validate the approach", "sanity check this",
   "what did I miss?", "review the spec", "review the test-plan",
-  "evaluate the plan". Do NOT use for code review (use code-reviewer).
+  "evaluate the plan". Не используй для code review (используй code-reviewer).
 ---
 
-# Multi-Expert Review
+# Мультиэкспертная проверка
 
-Engine for multi-agent independent review of a documentation artifact (plan, spec, test-plan, etc.) followed by consensus synthesis. Artifact-specific semantics live in **profiles** at `profiles/<name>.md`. The engine here is artifact-agnostic — it discovers and routes, but never encodes one artifact type's rubric in its own body.
+Механизм независимой проверки артефакта документации (плана, спецификации, test-plan и т. п.) несколькими агентами с последующим синтезом консенсуса. Семантика, специфичная для артефакта, находится в **profiles** в `profiles/<name>.md`. Этот механизм не зависит от типа артефакта: он обнаруживает и маршрутизирует, но никогда не встраивает критерии одного типа артефакта в собственное тело.
 
-Protocol is PoLL (Panel of LLM Evaluators): independent parallel review per agent, structured severity/confidence output, confidence-weighted synthesis, disagreements surfaced as "requires decision" rather than silently resolved.
+Протокол — PoLL (Panel of LLM Evaluators): независимая параллельная проверка каждым агентом, структурированный вывод с severity/confidence, синтез с учётом confidence, а разногласия явно помечаются как "requires decision", а не разрешаются молча.
 
-Each reviewing agent must check the artifact against the `## Non-negotiables` sections in applicable runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent: project root, global, plugin-specific) before forming their opinion. Any proposed approach that violates a non-negotiable is automatically a blocker — critical severity, confidence 100, not subject to the reporting filter or trade-off discussion.
+Перед формированием мнения каждый проверяющий агент должен сопоставить артефакт с разделами `## Non-negotiables` в применимых файлах инструкций рантайма (`AGENTS.md`, `CLAUDE.md` или эквивалентных: в корне проекта, глобальных и специфичных для плагина). Любой предлагаемый подход, нарушающий обязательное требование, автоматически считается blocker — critical severity, confidence 100; на него не распространяются фильтр отчётности и обсуждение компромиссов.
 
-## Engine invariants (not overridable by profiles)
+## Инварианты механизма (профили не могут их переопределить)
 
-Profiles MUST NOT declare these — they are engine constants:
+Профили MUST NOT объявлять следующие параметры — это константы механизма:
 
-- **Review output structure** — Summary / Domain Relevance / Issues with severity+confidence+issue+suggestion (fixed in Step 3 prompt)
-- **Aggregation rules** — convergence → escalate, contradictions → surface, confidence-weighting (fixed in Step 4)
-- **State machine transitions** — fixed in this file
-- **Revise-loop cap** — max 3 cycles (engine constant)
-- **Review prompt template skeleton** — profiles add via `## Prompt augmentation`, never replace
+- **Структура вывода проверки** — Summary / Domain Relevance / Issues с severity+confidence+issue+suggestion (зафиксирована в prompt шага 3)
+- **Правила агрегации** — convergence → escalate, contradictions → surface, confidence-weighting (зафиксированы на шаге 4)
+- **Переходы конечного автомата** — зафиксированы в этом файле
+- **Ограничение цикла пересмотра** — максимум 3 цикла (константа механизма)
+- **Каркас шаблона prompt проверки** — профили дополняют его через `## Prompt augmentation`, но не заменяют
 
-See `profiles/README.md` for the negative-list of forbidden frontmatter fields and the `FORBIDDEN_PROFILE_FIELD` error behavior.
+Список запрещённых полей frontmatter и поведение при ошибке `FORBIDDEN_PROFILE_FIELD` см. в `profiles/README.md`.
 
-## Workflow
+## Рабочий процесс
 
-Read artifact + detect profile → discover agents, pre-select per `profile.reviewer_roster` → spawn agents in parallel for independent review → collect reviews → synthesize verdict (engine aggregation + profile-supplied verdict alphabet) → present verdict + update receipt (if profile has one) → PASS done; CONDITIONAL / WARN per profile policy; FAIL → fix artifact at source → re-review (back to parallel review with same agents + locked profile).
+Прочитать артефакт и определить профиль → найти агентов, предварительно выбрать их по `profile.reviewer_roster` → параллельно запустить агентов для независимой проверки → собрать проверки → синтезировать вердикт (агрегация механизма + предоставленный профилем алфавит вердиктов) → представить вердикт и обновить receipt (если он есть у профиля) → PASS: завершить; CONDITIONAL / WARN: действовать по политике профиля; FAIL → исправить артефакт в источнике → повторить проверку (вернуться к параллельной проверке с теми же агентами и зафиксированным профилем).
 
-**Forbidden:** skipping Read+Detect → Review, or re-running detection in cycle ≥2 (profile is locked at cycle 1).
+**Запрещено:** пропускать Read+Detect → Review или повторно запускать определение профиля в цикле ≥2 (профиль фиксируется в цикле 1).
 
-**Cycle cap:** 3 total (initial + 2 re-reviews). Still FAIL after cycle 3 → escalate to user.
+**Ограничение циклов:** всего 3 (первичная проверка + 2 повторные). Если после цикла 3 всё ещё FAIL → передать вопрос пользователю.
 
-## Persistence (compaction resilience)
+## Сохранение состояния (устойчивость к compaction)
 
-Save state to `./swarm-report/multiexpert-review-<slug>-state.md` (or `multiexpert-review-<YYYYMMDD-HHMM>-state.md` if no slug known). Follow the persistent-state template conventions from the current runtime's project instructions.
+Сохраняй состояние в `./swarm-report/multiexpert-review-<slug>-state.md` (или в `multiexpert-review-<YYYYMMDD-HHMM>-state.md`, если slug неизвестен). Следуй соглашениям шаблона постоянного состояния из инструкций проекта текущего рантайма.
 
-**Slug source** (priority order): explicit caller args (`slug:`), artifact frontmatter `slug:`, artifact filename without extension, timestamp fallback.
+**Источник slug** (в порядке приоритета): явные аргументы вызывающей стороны (`slug:`), `slug:` во frontmatter артефакта, имя файла артефакта без расширения, запасной вариант с timestamp.
 
-**Legacy read:** if the slug-qualified file doesn't exist, try `./swarm-report/plan-review-state.md` (legacy from pre-rename era). If found, copy content into the new slug-qualified name and continue on it. Do not delete the legacy file — user decides. Always write to the new slug-qualified name.
+**Чтение legacy:** если файл с slug не существует, попробуй `./swarm-report/plan-review-state.md` (legacy-файл из периода до переименования). Если он найден, скопируй содержимое в новое имя со slug и продолжай работать с ним. Не удаляй legacy-файл — это решает пользователь. Всегда записывай данные в новое имя со slug.
 
-State file structure:
+Структура файла состояния:
 
 ```markdown
 # Multi-Expert Review State
@@ -72,47 +73,47 @@ Status: {detecting | reviewing | synthesizing | fixing | done}
 - Improvements: {list}
 ```
 
-Re-read the file before each action — skip completed steps.
+Перед каждым действием перечитывай файл — пропускай завершённые шаги.
 
-## Step 1 — Read artifact and detect profile
+## Шаг 1 — Прочитать артефакт и определить профиль
 
-Locate the artifact in this order: (1) active Plan Mode output in conversation, (2) file reference (user points to a `.md`), (3) inline description in conversation, (4) ask. Track the source — Step 5 needs it.
+Ищи артефакт в следующем порядке: (1) активный вывод Plan Mode в переписке, (2) ссылка на файл (пользователь указывает на `.md`), (3) встроенное описание в переписке, (4) спросить пользователя. Зафиксируй источник — он понадобится на шаге 5.
 
-**Detect profile** — follow the precedence chain in `profiles/README.md` §Detection precedence (canonical source). Engine enforces error semantics from that section: `UNKNOWN_PROFILE_HINT` on unknown caller hint, never silent fallback to a default profile. Cycle-locking, profile validation (negative-list), and inventory-mismatch checks also live in `profiles/README.md` — applied on every invocation before Step 2.
+**Определи профиль** — следуй цепочке приоритетов в `profiles/README.md` §Detection precedence (канонический источник). Механизм применяет семантику ошибок из этого раздела: `UNKNOWN_PROFILE_HINT` при неизвестной подсказке вызывающей стороны; никогда не выполняй молчаливый переход к профилю по умолчанию. Фиксация профиля на цикл, проверка профиля (negative-list) и проверка рассогласования инвентаря также описаны в `profiles/README.md` — применяй их при каждом вызове до шага 2.
 
-## Step 2 — Discover and select agents
+## Шаг 2 — Найти и выбрать агентов
 
-### Discovery
+### Поиск
 
-Find real agents via `Glob("**/agents/*.md")` + built-in subagents from system prompt. Read each agent's frontmatter to confirm. Never invent phantom agents.
+Находи реальных агентов через `Glob("**/agents/*.md")` и встроенных subagents из system prompt. Прочитай frontmatter каждого агента для подтверждения. Никогда не выдумывай phantom agents.
 
-**Short-name collision tie-break:** prefer first match in order: (1) same-plugin as caller, (2) sibling `developer-workflow-*` plugin, (3) any other source. Still ambiguous → fail loud with `[multiexpert-review ERROR] AMBIGUOUS_REVIEWER: short-name <name> resolves to <paths>`. Distinct from `NO_REVIEWERS_AVAILABLE`. The family guarantees unique short-names — this only triggers on non-family conflicts.
+**Разрешение коллизии short-name:** предпочитай первое совпадение в следующем порядке: (1) тот же плагин, что и у вызывающей стороны, (2) соседний плагин `developer-workflow-*`, (3) любой другой источник. Если неоднозначность сохраняется → заверши с явной ошибкой `[multiexpert-review ERROR] AMBIGUOUS_REVIEWER: short-name <name> resolves to <paths>`. Это отличается от `NO_REVIEWERS_AVAILABLE`. Семейство гарантирует уникальность short-name — это срабатывает только при конфликтах вне семейства.
 
-### Selection per profile
+### Выбор по профилю
 
-Use `profile.reviewer_roster`:
+Используй `profile.reviewer_roster`:
 
-- **`primary`** — mandatory roster. Include if installed, skip if missing.
-- **`optional_if`** — for each entry, include if `when` regex matches artifact content AND agent is installed.
-- **Empty primary + no optional match** — fall back to tech-match selection (implementation-plan profile relies on this): scan artifact for technology keywords, score agents by technology match / problem-specific value / gap coverage, recommend 2–3.
+- **`primary`** — обязательный состав. Включай установленных агентов, отсутствующих пропускай.
+- **`optional_if`** — для каждой записи включай агента, если regex `when` совпадает с содержимым артефакта И агент установлен.
+- **Пустой primary + нет совпадений optional** — перейди к выбору по tech-match (на это опирается implementation-plan profile): просканируй артефакт на ключевые слова технологий, оцени агентов по совпадению технологий / ценности для конкретной проблемы / покрытию пробелов и рекомендуй 2–3.
 
-### Single-reviewer guard
+### Защита от единственного проверяющего
 
-Exactly 1 agent selected:
-- `profile.allow_single_reviewer: true` → proceed. Verdict carries `## Review Mode: single-perspective` marker (output text only; receipt schemas are profile-declared and do not include `review_mode`).
-- `profile.allow_single_reviewer: false` → fail loud `[multiexpert-review ERROR] NO_REVIEWERS_AVAILABLE: profile <name> requires panel, only <agent> available`.
+Выбран ровно 1 агент:
+- `profile.allow_single_reviewer: true` → продолжай. Вердикт содержит маркер `## Review Mode: single-perspective` (только в тексте вывода; схемы receipt объявляются профилем и не включают `review_mode`).
+- `profile.allow_single_reviewer: false` → заверши с явной ошибкой `[multiexpert-review ERROR] NO_REVIEWERS_AVAILABLE: profile <name> requires panel, only <agent> available`.
 
-0 agents → same `NO_REVIEWERS_AVAILABLE` error regardless of flag.
+0 агентов → та же ошибка `NO_REVIEWERS_AVAILABLE` независимо от флага.
 
-### User confirmation
+### Подтверждение пользователя
 
-Use `AskUserQuestion` with `multiSelect: true`, recommended agents first with one-sentence reason. If the user's prompt named specific agents (e.g., "review with kotlin-engineer"), skip discovery confirmation and use those.
+Используй `AskUserQuestion` с `multiSelect: true`; сначала укажи рекомендуемых агентов и однопредложное обоснование. Если в prompt пользователя названы конкретные агенты (например, "review with kotlin-engineer"), пропусти подтверждение выбора и используй их.
 
-## Step 3 — Parallel independent review
+## Шаг 3 — Параллельная независимая проверка
 
-Spawn each selected agent in a **single message** (parallel) via the `Agent` tool.
+Запусти каждого выбранного агента в **одном сообщении** (параллельно) через tool `Agent`.
 
-### Review prompt (engine skeleton)
+### Prompt проверки (каркас механизма)
 
 ```
 You are reviewing a {artifact_type} as a {agent_role} expert.
@@ -148,17 +149,17 @@ Confidence: high = squarely in your domain; medium = relevant but could be wrong
 Respond in the same language the artifact is written in.
 ```
 
-`{PROFILE_PROMPT_AUGMENTATION}` is substituted from the profile's `## Prompt augmentation` section (empty when none defined).
+`{PROFILE_PROMPT_AUGMENTATION}` подставляется из раздела профиля `## Prompt augmentation` (пусто, если раздел не определён).
 
-### Invariant rules
+### Инвариантные правила
 
-- **Never share one agent's review with another** — independence is the whole point.
-- **All agents get the same artifact text** — no summaries or interpretations.
-- **Prompt skeleton is engine-fixed** — profiles only add via augmentation, never replace.
+- **Никогда не передавай проверку одного агента другому** — независимость является главным смыслом процесса.
+- **Все агенты получают одинаковый текст артефакта** — без саммари и интерпретаций.
+- **Каркас prompt зафиксирован механизмом** — профили только добавляют текст через augmentation, но не заменяют его.
 
-## Step 4 — Synthesize verdict
+## Шаг 4 — Синтезировать вердикт
 
-Read all reviews. Engine aggregation rules (non-overridable):
+Прочитай все проверки. Правила агрегации механизма (не переопределяются):
 
 | Signal | Action |
 |--------|--------|
@@ -169,9 +170,9 @@ Read all reviews. Engine aggregation rules (non-overridable):
 | Minor severity OR low confidence (single agent) | Suggestion |
 | Low domain_relevance flag | Note, weight lower |
 
-Profile contributes `verdicts` (alphabet, e.g. `[PASS, CONDITIONAL, FAIL]` or `[PASS, WARN, FAIL]`) and `severity_mapping` (for checklist-based profiles like test-plan items a-e).
+Профиль предоставляет `verdicts` (алфавит, например `[PASS, CONDITIONAL, FAIL]` или `[PASS, WARN, FAIL]`) и `severity_mapping` (для профилей на основе чеклиста, таких как пункты a-e в test-plan).
 
-### Verdict format
+### Формат вердикта
 
 ```
 ## Multi-Expert Review Verdict: {PASS | CONDITIONAL | WARN | FAIL}
@@ -194,55 +195,55 @@ Profile contributes `verdicts` (alphabet, e.g. `[PASS, CONDITIONAL, FAIL]` or `[
 ## Review Mode: single-perspective       # only when single-reviewer path was taken
 ```
 
-**Single-agent case:** skip cross-referencing sections. Present issues directly; add the `## Review Mode: single-perspective` marker.
+**Случай одного агента:** пропусти разделы перекрёстного сопоставления. Представь проблемы напрямую; добавь маркер `## Review Mode: single-perspective`.
 
-### Verdict criteria
+### Критерии вердикта
 
-- **PASS** — no blockers, no important improvements, only minor suggestions
-- **CONDITIONAL** (only in alphabets containing it) — no blockers, but important improvements would significantly affect quality
-- **WARN** (only in alphabets containing it) — blockers satisfied but secondary items (e.g., test-plan (d)/(e)) violated; pipeline continues
-- **FAIL** — has blockers
+- **PASS** — blocker отсутствуют, важных улучшений нет, есть только незначительные предложения
+- **CONDITIONAL** (только в алфавитах, содержащих его) — blocker отсутствуют, но важные улучшения существенно повлияли бы на качество
+- **WARN** (только в алфавитах, содержащих его) — blocker устранены, но нарушены вторичные пункты (например, test-plan (d)/(e)); pipeline продолжается
+- **FAIL** — есть blocker
 
-## Step 5 — Post-review action
+## Шаг 5 — Действия после проверки
 
-### Fix routing
+### Маршрутизация исправлений
 
-Per `profile.source_routing`:
+Согласно `profile.source_routing`:
 
-| Source | Action (default) |
+| Source | Действие (по умолчанию) |
 |--------|------------------|
-| **Plan Mode** | `EnterPlanMode` with issues list |
-| **File** | Edit the file directly (add `## Issues to Resolve` or restructure inline) |
-| **Conversation** | Surface highest-severity item first, ONE question per round, work through item by item. Never dump the full list. |
+| **Plan Mode** | `EnterPlanMode` со списком проблем |
+| **File** | Напрямую отредактируй файл (добавь `## Issues to Resolve` или перестрой текст на месте) |
+| **Conversation** | Сначала покажи проблему с самой высокой severity, задавай ОДИН вопрос за раунд и разбирай пункты по очереди. Никогда не выводи весь список сразу. |
 
-Profiles may override or mark actions as `N/A` for sources they don't support.
+Профили могут переопределять действия или помечать их как `N/A` для неподдерживаемых источников.
 
-### Receipt integration
+### Интеграция с receipt
 
-If `profile.receipt` is present, resolve `receipt.path_template` by substituting `<slug>`, then write each `receipt.fields_to_update` field with the derived value (e.g., `review_verdict: WARN`, `review_warnings: [...]`, `review_blockers: [...]`). For `swarm-report/...` paths — create if missing (respects generate-test-plan's receipt contract). If `profile.receipt` is absent, skip receipt writing.
+Если присутствует `profile.receipt`, разреши `receipt.path_template`, подставив `<slug>`, затем запиши каждое поле `receipt.fields_to_update` с выведенным значением (например, `review_verdict: WARN`, `review_warnings: [...]`, `review_blockers: [...]`). Для путей `swarm-report/...` — создай файл, если его нет (с соблюдением receipt-контракта generate-test-plan). Если `profile.receipt` отсутствует, пропусти запись receipt.
 
-### Verdict handling
+### Обработка вердикта
 
-- **PASS** — confirm artifact is ready; done.
-- **CONDITIONAL** — present improvements in chat as bullets (max 5; group by category if more). ONE question if a user decision is needed. Fix per `source_routing` once confirmed.
-- **WARN** — pipeline continues; engine records warnings in receipt; no revise-loop.
-- **FAIL** — fix per `source_routing` without asking; auto re-run review on same agents + same profile; update state file with cycle N and new verdict. After cycle 3 still FAIL → escalate to user.
+- **PASS** — подтверди готовность артефакта; заверши работу.
+- **CONDITIONAL** — представь улучшения в чате списком (максимум 5; если их больше, сгруппируй по категориям). Задай ОДИН вопрос, если требуется решение пользователя. После подтверждения исправь по `source_routing`.
+- **WARN** — pipeline продолжается; механизм записывает предупреждения в receipt; цикл пересмотра не запускается.
+- **FAIL** — без дополнительных вопросов исправь по `source_routing`; автоматически повтори проверку теми же агентами и профилем; обнови файл состояния, указав цикл N и новый вердикт. Если после цикла 3 всё ещё FAIL → передай вопрос пользователю.
 
-## Error semantics
+## Семантика ошибок
 
-All engine errors produce exactly this prefix on the first line of output:
+Все ошибки механизма выводятся с таким префиксом строго в первой строке:
 
 ```
 [multiexpert-review ERROR] <CATEGORY>: <details>
 ```
 
-Categories:
+Категории:
 
-- `UNKNOWN_PROFILE_HINT` — caller hint not in inventory
-- `FORBIDDEN_PROFILE_FIELD` — profile frontmatter contains forbidden field
-- `NO_REVIEWERS_AVAILABLE` — no agents remain after discovery/filtering, or panel required but single
-- `AMBIGUOUS_REVIEWER` — short-name resolves to multiple agent files after the family tie-break
-- `PROFILE_INVENTORY_MISMATCH` — README list vs. `profiles/*.md` presence disagree
-- `ROUTING_NOT_SUPPORTED` — engine reached Step 5 with a source the profile declared `N/A` in `source_routing`
+- `UNKNOWN_PROFILE_HINT` — подсказка вызывающей стороны отсутствует в инвентаре
+- `FORBIDDEN_PROFILE_FIELD` — frontmatter профиля содержит запрещённое поле
+- `NO_REVIEWERS_AVAILABLE` — после поиска/фильтрации не осталось агентов либо требуется панель, но доступен только один агент
+- `AMBIGUOUS_REVIEWER` — после разрешения коллизии семейства short-name соответствует нескольким файлам агентов
+- `PROFILE_INVENTORY_MISMATCH` — список в README и наличие `profiles/*.md` расходятся
+- `ROUTING_NOT_SUPPORTED` — механизм достиг шага 5 с источником, объявленным профилем как `N/A` в `source_routing`
 
-Consumers (e.g. `write-spec`) detect this prefix to distinguish engine errors from ordinary review FAIL verdicts.
+Потребители (например, `write-spec`) распознают этот префикс, чтобы отличать ошибки механизма от обычных вердиктов проверки FAIL.

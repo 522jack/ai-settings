@@ -1,160 +1,160 @@
 ---
 name: write-tests
-description: "Write retroactive tests for existing code — classes, modules, or directories lacking coverage — and write a focused regression test for a specific bug fix. Discovers test infrastructure, plans test cases, delegates generation to platform engineer agents (kotlin-engineer, compose-developer, swift-engineer, swiftui-developer), verifies tests pass. Use when: \"write tests for\", \"add tests to\", \"test this class\", \"increase coverage\", \"add unit tests\", \"this code has no tests\", \"cover with tests\", \"retroactive tests\", \"add regression test for this fix\", \"write a test that catches this bug\", \"regression test after fixing\", \"test to verify the fix\". Do NOT use when: user wants a test plan document (use generate-test-plan), run tests on live app (use acceptance), exploratory QA (call manual-tester agent directly), or tests are part of a new feature (engineer agent handles inline)."
+description: "Пишите ретроактивные тесты для существующего кода — классов, модулей или каталогов без покрытия — и целевой регрессионный тест для конкретного исправления ошибки. Исследует тестовую инфраструктуру, планирует тестовые случаи, делегирует генерацию агентам платформенной разработки (kotlin-engineer, compose-developer, swift-engineer, swiftui-developer) и проверяет прохождение тестов. Используйте, когда: \"написать тесты для\", \"добавить тесты в\", \"протестировать этот класс\", \"увеличить покрытие\", \"добавить модульные тесты\", \"у этого кода нет тестов\", \"покрыть тестами\", \"ретроактивные тесты\", \"добавить регрессионный тест для этого исправления\", \"написать тест, который ловит эту ошибку\", \"регрессионный тест после исправления\", \"написать тест для проверки исправления\". НЕ используйте, когда: пользователь хочет документ с планом тестирования (используйте generate-test-plan), нужно запустить тесты на работающем приложении (используйте acceptance), требуется исследовательский QA (напрямую вызовите агента manual-tester) или тесты являются частью новой функции (агент-исполнитель создаёт их inline)."
 ---
 
-# Write Tests
+# Написание тестов
 
-Orchestrate retroactive test generation for existing code that lacks coverage. The skill
-discovers what needs testing, understands the project's test infrastructure, plans test cases,
-delegates code generation to the appropriate agent, verifies the tests, and reports results.
+Организуйте создание ретроактивных тестов для существующего кода без покрытия. Skill
+определяет, что нужно тестировать, изучает тестовую инфраструктуру проекта, планирует тестовые случаи,
+делегирует написание кода подходящему агенту, проверяет тесты и сообщает результаты.
 
-**Key principle:** this skill is an orchestrator. It never writes test code directly — it
-delegates to a platform engineer agent: `kotlin-engineer` / `compose-developer` for
-Kotlin/Android targets, or `swift-engineer` / `swiftui-developer` for Swift/iOS targets.
-The skill's job is discovery, planning, delegation, and verification.
+**Ключевой принцип:** этот skill — оркестратор. Он никогда не пишет код тестов напрямую — он
+делегирует работу агенту платформенной разработки: `kotlin-engineer` / `compose-developer` для
+целей Kotlin/Android или `swift-engineer` / `swiftui-developer` для целей Swift/iOS.
+Задача skill — исследование, планирование, делегирование и проверка.
 
-**Author-fixes-broken-tests rule** — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 4. Skipping or `@Ignore`-ing without a tracked follow-up issue is not allowed.
+**Правило исправления сломанных тестов автором** — см. `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 4. Пропуск теста или добавление `@Ignore` без отслеживаемой follow-up issue запрещены.
 
-**Disambiguation:**
-- *Intentional behaviour change* — your new test asserts a different (intentional) outcome from a pre-existing test → update the older test in the same run, with a one-line comment explaining the new contract.
-- *Unintentional break* — a previously green test fails after your change and the change shouldn't have affected that behaviour → the change is wrong; revise it.
-- *Pre-existing failure on main* — a test was already red before this run → out of scope; report it and continue.
-
----
-
-## Phase 1: Scope Target
-
-### 1.1 Accept target
-
-Target may be a file path, class/type name, module or directory, or a vague reference ("the auth module"). Resolve vague references via a code-index tool when available; fall back to `Grep` / `Glob` + `Read`. If still ambiguous, ask **one clarifying question** before proceeding.
-
-**Regression Mode:** the caller may pass a `regression-scenario` — root cause, reproduction steps, expected vs actual behaviour (typically from `swarm-report/<slug>-debug.md`). When present, the skill skips the broad coverage sweep (1.4), uses the scenario as the sole test case (3.1), and skips prioritization (3.2). Output is one focused test that fails on the original buggy code and passes with the fix.
-
-### 1.1.1 Generate slug
-
-Short kebab-case slug from the target name (e.g. `user-repository`, `auth-module`). Used in `swarm-report/<slug>-test-findings.md`.
-
-### 1.2 Read target code
-
-For each file in scope identify: public API surface, dependencies (constructor params, injected services), complexity indicators (branching, state, error handling), and whether the code is UI (Compose / SwiftUI) or non-UI (business logic / data layer / services / models / repositories).
-
-### 1.3 Find existing tests
-
-Check standard test locations — Kotlin: `src/test/`, `src/androidTest/`, `src/commonTest/`; Swift: `Tests/<TargetName>Tests/` (SwiftPM) or the Xcode test target. Prefer a code-index tool to locate test classes by symbol; fall back to `Grep`. Look for `@Test` (JUnit / Swift Testing) or `XCTestCase` subclasses that exercise the target.
-
-### 1.4 Identify untested code
-
-**Skip in Regression Mode.** Compare the public API surface against existing test coverage: no references → fully untested; partial references missing edge cases → partially tested; comprehensive coverage → skip.
-
-Public-API coverage gate — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 1.
-
-### 1.5 Check for existing test plan
-
-Look for a test plan in `docs/testplans/` covering the target. If found, read it and feed its test cases into Phase 3. If not found, proceed without one — a test plan is helpful but not required.
+**Разграничение случаев:**
+- *Intentional behaviour change* — новый тест проверяет другой (намеренно изменённый) результат по сравнению с существующим тестом → обновите старый тест в том же запуске и добавьте однострочный комментарий, объясняющий новый контракт.
+- *Unintentional break* — ранее зелёный тест падает после вашего изменения, которое не должно было повлиять на это поведение → изменение ошибочно; пересмотрите его.
+- *Pre-existing failure on main* — тест уже был красным до этого запуска → это не входит в охват; сообщите об этом и продолжайте.
 
 ---
 
-## Phase 2: Discover Test Infrastructure
+## Фаза 1: Определение цели
 
-Testing infra detection — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 5 for project-marker files. Inspect 3-5 existing test files plus the relevant build configuration to discover the framework, assertion library, mocking / test-double approach, async-testing helpers, UI-testing stack, and naming / file-placement conventions. Compile results into a structured **Test Infrastructure Summary** that the Phase 4 engineer specialist consumes verbatim.
+### 1.1 Примите цель
 
-The goal is simple: generated tests must look hand-written. Never introduce a new framework or style that isn't already present in the project.
+Целью может быть путь к файлу, имя класса/типа, модуль или каталог либо расплывчатая ссылка («модуль auth»). Если доступен инструмент индексации кода, разрешите расплывчатые ссылки с его помощью; в противном случае используйте `Grep` / `Glob` + `Read`. Если неоднозначность сохраняется, задайте **один уточняющий вопрос** перед продолжением.
 
-See [`references/test-infrastructure-discovery.md`](references/test-infrastructure-discovery.md) for the detection tables (frameworks, assertions, mocking, async, UI, DI, naming, placement, setup, assertion style) and the exact Test Infrastructure Summary template.
+**Regression Mode:** вызывающая сторона может передать `regression-scenario` — корневую причину, шаги воспроизведения, ожидаемое и фактическое поведение (обычно из `swarm-report/<slug>-debug.md`). В этом случае skill пропускает широкий поиск покрытия (1.4), использует сценарий как единственный тестовый случай (3.1) и пропускает приоритизацию (3.2). Результатом должен быть один целевой тест, который падает на исходном ошибочном коде и проходит после исправления.
 
-### Framework detection
+### 1.1.1 Сгенерируйте slug
 
-Engineer agents follow the canonical algorithm from [`references/test-infrastructure-discovery.md`](references/test-infrastructure-discovery.md): existing test files in the module under change → build-file dependencies → match the project's existing framework → platform default (Android/Kotlin JVM: JUnit 5 + MockK; KMP: `kotlin.test`; Compose UI: `ui-test-junit4`; iOS ≥ 5.9: `swift-testing`; iOS < 5.9: XCTest; SwiftUI: ask one question). Stop at the first step that yields a definite answer; never introduce a new framework without explicit user approval.
+Создайте короткий slug в kebab-case из имени цели (например, `user-repository`, `auth-module`). Он используется в `swarm-report/<slug>-test-findings.md`.
 
-Other ecosystems (Java-only, JS/TS, Rust, etc.) are out of scope for `write-tests` delegation in this plugin; surface them to the user.
+### 1.2 Прочитайте код цели
 
-#### Escalation rules
+Для каждого файла в охвате определите: поверхность public API, зависимости (параметры конструктора, внедрённые сервисы), признаки сложности (ветвления, состояние, обработка ошибок), а также относится ли код к UI (Compose / SwiftUI) или не к UI (бизнес-логика / слой данных / сервисы / модели / репозитории).
 
-- **More than one framework in existing tests** → engineer picks by majority of files in the affected module; if the split is even, asks one clarifying question before generating.
-- **Detected framework is unavailable in the toolchain** (e.g. `swift-testing` on toolchain < 5.9) → fall back to the older platform default; record the fallback in the Test Infrastructure Summary and in a header comment of the generated test.
-- **Required framework dependency is missing entirely** → engineer stops and asks the user before adding the dependency. `write-tests` does not auto-add dependencies.
+### 1.3 Найдите существующие тесты
+
+Проверьте стандартные расположения тестов — Kotlin: `src/test/`, `src/androidTest/`, `src/commonTest/`; Swift: `Tests/<TargetName>Tests/` (SwiftPM) или тестовая target в Xcode. Для поиска тестовых классов по символу предпочтительно используйте инструмент индексации кода; в противном случае — `Grep`. Ищите `@Test` (JUnit / Swift Testing) или подклассы `XCTestCase`, проверяющие цель.
+
+### 1.4 Определите непокрытый код
+
+**Пропустите в Regression Mode.** Сопоставьте поверхность public API с существующим покрытием тестами: нет ссылок → полностью не протестировано; есть частичные ссылки, но отсутствуют крайние случаи → протестировано частично; покрытие полное → пропустите.
+
+Порог покрытия public API — см. `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 1.
+
+### 1.5 Проверьте наличие существующего плана тестирования
+
+Поищите план тестирования, охватывающий цель, в `docs/testplans/`. Если найдёте его, прочитайте и передайте его тестовые случаи в Фазу 3. Если плана нет, продолжайте без него — план тестирования полезен, но не обязателен.
 
 ---
 
-## Phase 3: Plan Test Cases
+## Фаза 2: Исследование тестовой инфраструктуры
 
-### 3.1 Generate test cases
+Определение тестовой инфраструктуры — см. `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 5, где перечислены файлы-маркеры проекта. Изучите 3–5 существующих файлов тестов и соответствующую конфигурацию сборки, чтобы определить фреймворк, библиотеку утверждений, подход к mocking / test doubles, помощники для асинхронного тестирования, стек UI-тестирования, а также соглашения об именовании и размещении файлов. Сведите результаты в структурированный **Test Infrastructure Summary**, который специалист Фазы 4 будет использовать без изменений.
 
-**Regression Mode:** use the `regression-scenario` as the single test case. Derive:
-- **What to test:** the exact reproduction scenario — no broader sweep
-- **Test type:** unit (preferred); integration only if the reproduction requires real
-  collaborators (e.g., database + service interaction)
-- **Dependencies to mock/fake:** only those required for the specific scenario
-- **Pass/fail contract:** the test must fail on the original buggy code and pass with
-  the fix applied; document this expectation as a comment in the test body
+Цель проста: сгенерированные тесты должны выглядеть написанными вручную. Никогда не вводите новый фреймворк или стиль, которых уже нет в проекте.
+
+Таблицы определения (фреймворки, assertions, mocking, async, UI, DI, именование, размещение, настройка, стиль assertions) и точный шаблон Test Infrastructure Summary приведены в [`references/test-infrastructure-discovery.md`](references/test-infrastructure-discovery.md).
+
+### Определение фреймворка
+
+Агенты-инженеры следуют каноническому алгоритму из [`references/test-infrastructure-discovery.md`](references/test-infrastructure-discovery.md): существующие файлы тестов в изменяемом модуле → зависимости в build-файлах → соответствие существующему фреймворку проекта → платформенное значение по умолчанию (Android/Kotlin JVM: JUnit 5 + MockK; KMP: `kotlin.test`; Compose UI: `ui-test-junit4`; iOS ≥ 5.9: `swift-testing`; iOS < 5.9: XCTest; SwiftUI: задать один вопрос). Остановитесь на первом шаге, дающем однозначный ответ; никогда не вводите новый фреймворк без явного разрешения пользователя.
+
+Другие экосистемы (только Java, JS/TS, Rust и т. п.) не входят в охват делегирования `write-tests` в этом plugin; сообщите о них пользователю.
+
+#### Правила эскалации
+
+- **В существующих тестах используется более одного фреймворка** → инженер выбирает фреймворк по большинству файлов в затронутом модуле; при равном разделении задаёт один уточняющий вопрос перед генерацией.
+- **Определённый фреймворк недоступен в toolchain** (например, `swift-testing` при toolchain < 5.9) → используйте более старое платформенное значение по умолчанию; зафиксируйте fallback в Test Infrastructure Summary и в комментарии в начале сгенерированного теста.
+- **Требуемая зависимость фреймворка полностью отсутствует** → инженер останавливается и спрашивает пользователя до добавления зависимости. `write-tests` не добавляет зависимости автоматически.
+
+---
+
+## Фаза 3: Планирование тестовых случаев
+
+### 3.1 Сгенерируйте тестовые случаи
+
+**Regression Mode:** используйте `regression-scenario` как единственный тестовый случай. Определите:
+- **Что тестировать:** точный сценарий воспроизведения — без более широкого поиска;
+- **Тип теста:** unit (предпочтительно); integration — только если воспроизведение требует реальных
+  collaborators (например, взаимодействия базы данных и сервиса);
+- **Зависимости для mock/fake:** только необходимые для конкретного сценария;
+- **Контракт прохождения/падения:** тест должен падать на исходном ошибочном коде и проходить
+  после применения исправления; задокументируйте это ожидание комментарием в теле теста.
 
 **Normal Mode:**
 
-For each untested or partially tested class/function, determine:
+Для каждого непротестированного или частично протестированного класса/функции определите:
 
-- **What to test:** public API, edge cases, error paths, state transitions
-- **Test type:** unit (isolated, mocked dependencies) or integration (real collaborators)
-- **Dependencies to mock/fake:** which collaborators need test doubles
-- **Input scenarios:** happy path, boundary values, null/empty, error conditions
+- **Что тестировать:** public API, edge cases, error paths, state transitions;
+- **Тип теста:** unit (изолированный, с замоканными зависимостями) или integration (реальные collaborators);
+- **Зависимости для mock/fake:** каким collaborators нужны test doubles;
+- **Сценарии входных данных:** happy path, граничные значения, null/empty, условия ошибок.
 
-### 3.2 Prioritize
+### 3.2 Расставьте приоритеты
 
-**Skip this phase in Regression Mode** — a regression scenario is always a single focused test case; no prioritization is needed.
+**Пропустите эту фазу в Regression Mode** — регрессионный сценарий всегда является одним целевым тестовым случаем; приоритизация не требуется.
 
-Test priority — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 2. If the target is large (more than 5 classes to test), present the list with a one-line note on each (complexity, risk surface) and ask the user which to prioritize; recommend starting with the highest-complexity / highest-risk subset. If the target is small (5 or fewer classes), proceed without asking.
+Приоритет тестирования — см. `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 2. Если цель большая (более 5 классов для тестирования), представьте список с однострочной заметкой о каждом классе (сложность, поверхность риска) и спросите пользователя, что приоритизировать; рекомендуйте начать с подмножества с наибольшей сложностью / наибольшим риском. Если цель небольшая (5 или менее классов), продолжайте без вопроса.
 
-### 3.3 Lightweight plan
+### 3.3 Краткий план
 
-Create an internal (not saved to file) plan listing:
-- Target class/function
-- Test cases with one-line descriptions
-- Dependencies to mock/fake
-- Any special setup needed (coroutine dispatcher, test database, etc.)
+Создайте внутренний (не сохраняемый в файл) план, включающий:
+- целевой класс/функцию;
+- тестовые случаи с однострочными описаниями;
+- зависимости для mock/fake;
+- особую настройку, если она нужна (coroutine dispatcher, test database и т. п.).
 
 ---
 
-## Phase 4: Generate Tests
+## Фаза 4: Генерация тестов
 
-Delegate test code generation to the appropriate agent. The skill provides all context;
-the agent writes the code.
+Делегируйте написание кода тестов подходящему агенту. Skill предоставляет весь контекст;
+агент пишет код.
 
-### 4.1 Select agent
+### 4.1 Выберите агента
 
-| Target code type | Agent |
+| Тип целевого кода | Агент |
 |-----------------|-------|
 | Kotlin business logic, data layer, domain, ViewModel | `kotlin-engineer` |
 | Compose UI composables | `compose-developer` |
 | Swift business logic, data layer, services, models, repositories | `swift-engineer` |
 | SwiftUI views, screens, modifiers, navigation | `swiftui-developer` |
 
-Route by both language and layer: Kotlin/Android targets go to `kotlin-engineer` or
-`compose-developer`; Swift/iOS/macOS targets go to `swift-engineer` or `swiftui-developer`.
-If the target includes both UI and non-UI code, launch separate agents for each. If the
-required platform plugin is not installed, the Task call will fail with a clear message —
-report it and ask the user to install the matching platform plugin.
+Маршрутизируйте по языку и слою: цели Kotlin/Android направляйте к `kotlin-engineer` или
+`compose-developer`; цели Swift/iOS/macOS — к `swift-engineer` или `swiftui-developer`.
+Если цель включает и UI-, и не-UI-код, запустите для них отдельных агентов. Если требуемый
+платформенный plugin не установлен, вызов Task завершится с понятным сообщением об ошибке —
+сообщите о ней и попросите пользователя установить соответствующий платформенный plugin.
 
-### 4.2 Agent prompt
+### 4.2 Запрос для агента
 
-Every delegation prompt must include: target code paths, the Phase 2 Test Infrastructure
-Summary, the Phase 3 test cases, a style-reference test file, and the Phase 1.5 test plan
-if one exists.
+Каждый запрос для делегирования должен включать: пути к целевому коду, Test Infrastructure
+Summary из Фазы 2, тестовые случаи из Фазы 3, тестовый файл-образец стиля и план тестирования
+из Фазы 1.5, если он существует.
 
-See [`references/agent-prompts.md`](references/agent-prompts.md) for the full prompt templates for `kotlin-engineer`,
-`compose-developer`, `swift-engineer`, and `swiftui-developer`. Fill in the `{…}`
-placeholders and keep the section headings intact.
+Полные шаблоны запросов для `kotlin-engineer`, `compose-developer`, `swift-engineer` и
+`swiftui-developer` находятся в [`references/agent-prompts.md`](references/agent-prompts.md).
+Заполните placeholders `{…}` и сохраните заголовки разделов без изменений.
 
 ---
 
-## Phase 5: Verify
+## Фаза 5: Проверка
 
-### 5.0 Regression Mode: verify pass/fail contract
+### 5.0 Regression Mode: проверьте контракт прохождения/падения
 
-**Regression Mode only — skip in Normal Mode.**
+**Только для Regression Mode — пропустите в Normal Mode.**
 
-A regression test written after the fix is green "by construction" and may assert something
-that would have been green even before the fix. Before running the full test suite, verify
-the contract: the test MUST fail on the original buggy code.
+Регрессионный тест, написанный после исправления, «по конструкции» зелёный и может проверять
+то, что было бы зелёным даже до исправления. Перед запуском полного набора тестов проверьте
+контракт: тест ОБЯЗАТЕЛЬНО должен падать на исходном ошибочном коде.
 
 Steps:
 1. **Identify fix commits.** Primary source: `git log origin/main..HEAD --pretty=format:"%H" -- <fixed-files>`
@@ -182,81 +182,82 @@ Steps:
    # Swift — run single test
    swift test --filter Suite/testMethod
    ```
-4. **If RED** (test fails) → contract verified. Restore tracked files to pre-revert state
-   while keeping the untracked test file intact (it has not been committed yet):
+4. **If RED** (тест падает) → контракт подтверждён. Восстановите отслеживаемые файлы в состояние
+   до revert, сохранив неотслеживаемый файл теста (он ещё не был закоммичен):
    ```bash
    git reset --hard HEAD
    ```
-   Record the verification in the write-tests receipt (`swarm-report/<slug>-write-tests.md`,
-   append one line):
+   Запишите результат проверки в receipt write-tests (`swarm-report/<slug>-write-tests.md`,
+   добавьте одну строку):
    `Regression contract: VERIFIED — test RED on revert of fix commits (<hash-1>…<hash-N>), GREEN with fix.`
    Proceed to Phase 5.1 (full test suite).
-5. **If GREEN on buggy code** → the test does NOT capture the regression. It is ineffective.
-   Discard both the revert changes AND the test file — the test is structurally wrong and
-   should not be salvaged; the next implementation pass needs a different approach:
+5. **If GREEN on buggy code** → тест НЕ фиксирует регрессию. Он неэффективен.
+   Отбросьте и изменения после revert, И файл теста — тест структурно неверен и
+   не должен быть спасён; на следующем проходе реализации нужен другой подход:
    ```bash
    git reset HEAD -- . && git checkout -- . && git clean -fd
    ```
-   (`git clean -fd` intentionally removes the untracked test file here.)
-   Before returning to the caller, produce a Coverage Diagnosis (see Phase 6.5) that explains:
-   - What the test asserts and why that assertion passes even without the fix
-   - What aspect of the bug the test missed (wrong entry point, wrong layer, assertion
-     on a side effect rather than the cause, etc.)
-   - What would need to change for the test to actually catch the regression
-   Report this to the caller as an **Ineffective Test** (not a Production Bug — see Phase 6.5
-   status `INEFFECTIVE`), attaching the Coverage Diagnosis so the next implementation pass
-   has a concrete direction for addressing the test design, not just the fix.
-   Do NOT continue to Phase 5.1.
+   (`git clean -fd` намеренно удаляет здесь неотслеживаемый файл теста.)
+   Перед возвратом к вызывающей стороне подготовьте Coverage Diagnosis (см. Фазу 6.5), объясняющий:
+   - что проверяет тест и почему это утверждение проходит даже без исправления;
+   - какой аспект ошибки тест пропустил (неверная точка входа, неверный слой, утверждение
+     о побочном эффекте вместо причины и т. п.);
+   - что нужно изменить, чтобы тест действительно выявлял регрессию.
+   Сообщите об этом вызывающей стороне как о **Ineffective Test** (не Production Bug — см. статус
+   Фазы 6.5 `INEFFECTIVE`), приложив Coverage Diagnosis, чтобы следующий проход реализации
+   получил конкретное направление для исправления дизайна теста, а не только исправления кода.
+   НЕ продолжайте к Фазе 5.1.
 
-**Conflict handling:** if `git revert` produces a merge conflict, accept the buggy side
-(`--theirs`) to ensure the working tree contains the original broken code:
+**Обработка конфликтов:** если `git revert` создаёт конфликт слияния, примите ошибочную сторону
+(`--theirs`), чтобы рабочее дерево содержало исходный сломанный код:
 ```bash
 git checkout --theirs <conflicting-file>
 git add <conflicting-file>
 ```
-Then run step 3. Do NOT resolve toward the fix side — that would produce a false GREEN.
+Затем выполните шаг 3. НЕ разрешайте конфликт в пользу исправления — это даст ложный GREEN.
 
-### 5.1 Run tests
+### 5.1 Запустите тесты
 
-Run the test suite for the target module using the build system already in the project — Gradle (`./gradlew :module:test` or `:module:connectedAndroidTest` for instrumentation / Compose UI tests in `src/androidTest/`), SwiftPM (`swift test`, optionally `--filter <Suite>/<method>`), or Xcode (`xcodebuild test -scheme <Scheme> -destination ... -only-testing:<TestTarget>/<TestClass>/<testMethod>`). If both unit and UI / instrumentation tests were created, run both.
+Запустите набор тестов целевого модуля с использованием уже имеющейся в проекте системы сборки — Gradle (`./gradlew :module:test` или `:module:connectedAndroidTest` для instrumentation / Compose UI tests в `src/androidTest/`), SwiftPM (`swift test`, при необходимости `--filter <Suite>/<method>`) или Xcode (`xcodebuild test -scheme <Scheme> -destination ... -only-testing:<TestTarget>/<TestClass>/<testMethod>`). Если созданы и unit-, и UI- / instrumentation-тесты, запустите оба набора.
 
-### 5.2 Handle failures
+### 5.2 Обработайте сбои
 
-If tests fail, classify each failure:
+Если тесты падают, классифицируйте каждый сбой:
 
-| Failure type | Action |
+| Тип сбоя | Действие |
 |-------------|--------|
 | **Test bug** — incorrect assertion, wrong setup, missing mock | Fix via the same engineer agent that wrote the test (max 3 attempts) |
 | **Production bug** — test correctly exposes a real bug in the target code | Do NOT fix. Record as a finding. |
 
-**How to distinguish:**
-- Read the stack trace and the failing assertion
-- If the test expectation contradicts the actual code behavior and the code behavior
-  looks intentional → test bug (fix the test)
-- If the test expectation matches the documented/expected contract but the code violates
-  it → production bug (report it)
-- If unclear → err on the side of reporting as a finding rather than silently fixing
+**Как различать:**
+- прочитайте stack trace и упавшее утверждение;
+- если ожидание теста противоречит фактическому поведению кода, а поведение кода выглядит
+  намеренным → ошибка теста (исправьте тест);
+- если ожидание теста соответствует задокументированному/ожидаемому контракту, но код его
+  нарушает → ошибка production-кода (сообщите о находке);
+- если неясно → лучше сообщить о находке, чем молча исправлять.
 
-### 5.3 Fix cycle
+### 5.3 Цикл исправления
 
-For test bugs:
-1. Delegate the fix to the engineer agent that wrote the test (`kotlin-engineer` /
-   `compose-developer` / `swift-engineer` / `swiftui-developer`) with the failure output and
-   the test file path
-2. Re-run the tests
-3. Repeat up to 3 times total
+Для ошибок тестов:
+1. Делегируйте исправление агенту-инженеру, который написал тест (`kotlin-engineer` /
+   `compose-developer` / `swift-engineer` / `swiftui-developer`), передав вывод ошибки и
+   путь к файлу теста.
+2. Повторно запустите тесты.
+3. Повторите не более 3 раз всего.
 
-If tests still fail after 3 attempts — produce a Coverage Diagnosis (see Phase 6.5)
-that summarises what was attempted in each round and what the specific technical obstacle is.
-Stop and include the diagnosis in the final report.
+Если после 3 попыток тесты всё ещё падают — подготовьте Coverage Diagnosis (см. Фазу 6.5),
+содержащий краткое описание попыток в каждом раунде и конкретного технического препятствия.
+Остановитесь и включите диагноз в итоговый отчёт.
 
-### 5.4 Commit and push (Regression Mode only)
+### 5.4 Commit и push (только Regression Mode)
 
-**Regression Mode only — skip in Normal Mode.**
+**Только Regression Mode — пропустите в Normal Mode.**
 
-After all tests pass (Phase 5.1 green), commit the generated test file(s) and push to the
-current branch. Normal Mode leaves file management to the user; Regression Mode commits and
-pushes so the test lands on the PR branch automatically as part of the bugfix work.
+После прохождения всех тестов (зелёная Фаза 5.1) закоммитьте сгенерированные файлы тестов и
+отправьте их в текущую ветку. В Normal Mode управление файлами остаётся за пользователем;
+Regression Mode выполняет commit и push, чтобы тест автоматически попал в PR-ветку как часть
+работы по исправлению ошибки.
 
 ```bash
 git add <test-file-paths>
@@ -264,19 +265,19 @@ git commit -m "Add regression test: <scenario — subject line ≤72 chars total
 git push
 ```
 
-The commit message should name the bug scenario, not just say "add test" — it becomes part
-of the permanent history explaining why this test exists.
+В сообщении commit следует назвать сценарий ошибки, а не просто написать «add test» — оно станет
+частью постоянной истории, объясняющей, зачем существует этот тест.
 
 ---
 
-## Phase 6: Report
+## Фаза 6: Отчёт
 
-Present a concise report covering:
+Представьте краткий отчёт, охватывающий:
 
-- **6.1 Files created** — list of new test files with their paths and per-file test counts.
-- **6.2 Coverage summary** — what is now tested that wasn't before; for partial coverage, list what was skipped and why.
-- **6.3 Test results** — pass/fail counts; for failures after 3 fix attempts, name each failing test with a one-line reason.
-- **6.4 Findings (production bugs)** — list real bugs the tests exposed (do NOT fix). Save to `swarm-report/<slug>-test-findings.md` only when production bugs are discovered. Schema:
+- **6.1 Созданные файлы** — список новых файлов тестов с путями и числом тестов в каждом файле;
+- **6.2 Сводка покрытия** — что теперь протестировано, хотя раньше не было; при частичном покрытии перечислите пропущенное и причины;
+- **6.3 Результаты тестов** — число прошедших/упавших тестов; для сбоев после 3 попыток исправления назовите каждый упавший тест и укажите причину в одной строке;
+- **6.4 Находки (ошибки production-кода)** — список реальных ошибок, выявленных тестами (НЕ исправляйте их). Сохраняйте в `swarm-report/<slug>-test-findings.md` только при обнаружении ошибок production-кода. Схема:
 
 ```markdown
 # Test Findings: {target description}
@@ -294,22 +295,22 @@ Target: {file/module path}
 - **Severity:** Critical / Major / Minor
 ```
 
-### 6.5 Coverage Diagnosis (Regression Mode — when test could not be completed)
+### 6.5 Coverage Diagnosis (Regression Mode — когда тест не удалось завершить)
 
-**Regression Mode only.** Produce this section when the regression test failed for any
-reason: ineffective test (GREEN on buggy code in Phase 5.0), tests still failing after
-3 fix attempts (Phase 5.3), or test could not be written at all.
+**Только для Regression Mode.** Подготовьте этот раздел, если регрессионный тест не удалось
+завершить по любой причине: неэффективный тест (GREEN на ошибочном коде в Фазе 5.0), тесты
+продолжают падать после 3 попыток исправления (Фаза 5.3) или тест вообще не удалось написать.
 
-The diagnosis must answer three questions concisely:
-1. **What was tried** — what assertion / test approach was used
-2. **What blocked it** — the specific technical obstacle (not just "test failed"); e.g.:
-   - "The assertion targets the return value, but the bug is in a side effect on a
-     non-injectable static field"
-   - "The reproduction requires two threads interleaving; TestCoroutineDispatcher
-     serialises all work on one thread, preventing the race"
-   - "The affected code path is guarded by a native method with no test double"
-3. **What would make it testable** — what change to the code or test setup would
-   allow a reliable regression test in the future
+Диагноз должен кратко ответить на три вопроса:
+1. **Что было предпринято** — какое утверждение / подход к тестированию использовался;
+2. **Что стало препятствием** — конкретное техническое препятствие (не просто «тест упал»), например:
+   - «Утверждение проверяет возвращаемое значение, но ошибка находится в побочном эффекте
+     в статическом поле, которое нельзя внедрить»;
+   - «Для воспроизведения требуется чередование двух потоков; TestCoroutineDispatcher
+     сериализует всю работу в одном потоке и не даёт возникнуть гонке»;
+   - «Затронутый путь кода защищён native-методом, для которого нет test double»;
+3. **Что сделает это тестируемым** — какое изменение кода или настройки теста позволит
+   надёжно проверять регрессию в будущем.
 
 Save to `swarm-report/<slug>-regression-coverage.md`:
 
@@ -333,9 +334,9 @@ Reference this file in the PR body.
 
 ---
 
-## Constraints
+## Ограничения
 
-- **Test plans are optional input** — this skill consumes test plans from
-  `generate-test-plan` when they exist, but works independently without one.
-- **No swarm-report artifact for tests** — the test files themselves are the artifact.
-  Only create `swarm-report/<slug>-test-findings.md` if production bugs are found.
+- **Планы тестирования — необязательные входные данные** — этот skill использует планы тестирования
+  от `generate-test-plan`, если они существуют, но работает независимо и без них.
+- **Не создавайте артефакт swarm-report для тестов** — артефактами являются сами файлы тестов.
+  Создавайте `swarm-report/<slug>-test-findings.md` только при обнаружении ошибок production-кода.

@@ -1,46 +1,47 @@
 ---
 name: finalize
 description: >
-  Run a code-quality pass over the current branch — multi-round review-and-fix loop that
-  polishes how the code is written, not what it does. Runs a one-shot built-in /code-review
-  deep scan, then code-reviewer, /simplify, optional pr-review-toolkit quartet, and conditional
-  expert reviews with check between rounds; exits PASS when no BLOCK findings remain or ESCALATE after max rounds.
-  Triggers: "finalize", "run code quality pass", "clean up the code", "prepare for review",
+  Выполните проверку качества кода текущей ветки — многораундовый цикл ревью и исправлений,
+  улучшающий способ написания кода, а не его поведение. Запускает однократное встроенное глубокое
+  сканирование /code-review, затем code-reviewer, /simplify, необязательный квартет
+  pr-review-toolkit и условные экспертные ревью с check между раундами; завершается PASS, когда
+  не остаётся находок BLOCK, или ESCALATE после максимального числа раундов.
+  Триггеры: "finalize", "run code quality pass", "clean up the code", "prepare for review",
   "polish the code", "tidy up", "harden the implementation".
 ---
 
-# Finalize
+# Финализация
 
-Code-quality pass over the current branch. Multi-round review-and-fix loop focused on **how** the code is written (quality, clarity, robustness), not **what** it does (functional acceptance, owned by `acceptance`) or **whether it works** (build/lint/tests, owned by `/check`).
+Проверка качества кода текущей ветки. Многораундовый цикл ревью и исправлений, сфокусированный на **том, как** написан код (качество, ясность, устойчивость), а не на **том, что** он делает (функциональная приёмка, которой владеет `acceptance`) или **работает ли** он (build/lint/tests, которыми владеет `/check`).
 
-`finalize` orchestrates a one-shot deep code review + `code-reviewer` + simplification pass + the optional `pr-review-toolkit` quartet + conditional expert reviews. In Claude Code those map to `/code-review` and `/simplify`; other runtimes must use the closest available equivalent and record any adapter limitation. None of those alone catches the full set of recurring patterns (removed-behavior regressions, cross-file breakage, wrong-altitude bandaids, over-engineered abstractions, silent failures, fragile types, weak coverage).
+`finalize` оркестрирует однократное глубокое ревью кода + `code-reviewer` + проход упрощения + необязательный квартет `pr-review-toolkit` + условные экспертные ревью. В Claude Code им соответствуют `/code-review` и `/simplify`; другие runtime должны использовать ближайший доступный эквивалент и фиксировать ограничения адаптера. Ни один из этих этапов по отдельности не обнаруживает весь набор типичных проблем (регрессии удалённого поведения, поломки между файлами, заплатки не того уровня абстракции, переусложнённые абстракции, тихие ошибки, хрупкие типы, слабое покрытие).
 
-**Author fixes broken tests** is enforced per `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 4. A `check` run between phases that surfaces test failures triggers an inline fix in the same round — owned by the engineer specialist that produced the change. Round-end exit is impossible while tests remain red.
-
----
-
-## Inputs
-
-- **`slug`** — task slug for artifact naming.
-- **Branch state** — reads the current branch; never switches.
-- **Context artifact (optional)** — Phase A `code-reviewer` anchor: feature plan (`docs/plans/<slug>/plan.md`, written by `write-plan`; falls back to legacy `swarm-report/<slug>-plan.md`) or, for bug fixes, debug artifact (`swarm-report/<slug>-debug.md`).
-- **Diff artifact (derived)** — before invoking `code-reviewer`, materialize the diff to `swarm-report/<slug>-diff.txt`. Do not hardcode `origin/main`: derive the remote's default branch (same as `create-pr` — `git remote show origin | grep "HEAD branch" | awk '{print $NF}'`, fallbacks `main` / `master` / `develop`), then `git merge-base origin/<base> HEAD`.
-
-**Tolerance flags (optional):**
-
-- `--allow-warn` — stop after 1 round on WARN-only (default: PASS on WARN-only, keep iterating BLOCKs).
-- `--deep-scan-effort <auto|low|medium|high|xhigh|max>` — effort for the Phase 0 deep scan (default `auto`: scaled from the diff's risk signals — see Phase 0 § Effort selection). Pin an explicit level to override the auto choice in either direction.
-- `--skip-deep-scan` — omit Phase 0 entirely (recorded verbatim in `acknowledged risks`). Phase 0 also auto-skips on trivial diffs.
-- `--skip-experts` — omit Phase D (rarely useful; experts auto-skip when no triggers match).
-- `--max-rounds N` (≥ 1) — override the default 3. Use after an ESCALATE for one more round without restarting.
-- `--coverage-audit` / `--skip-coverage-audit` — force-on / force-off Phase D `test-coverage-expert`. Skip is discouraged; recorded verbatim in `acknowledged risks`.
-- `--skip-security-review "<reason>"` — disable both `risk_areas` and pattern triggers for this round. Reason captured verbatim. Discouraged; other Phase D experts still fire.
+Правило **Author fixes broken tests** применяется согласно `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 4. Если `check` между фазами выявляет падение тестов, в том же раунде запускается inline-исправление — его выполняет инженерный специалист, создавший изменение. Завершить раунд нельзя, пока тесты остаются красными.
 
 ---
 
-## Round structure
+## Входные данные
 
-Phase 0 runs **once**, before the loop. Then each round runs phases A → B → C → D sequentially. Between phases and after any auto-fix, invoke `check`. Accumulate findings; at round end, exit or continue.
+- **`slug`** — slug задачи для именования артефактов.
+- **Состояние ветки** — читает текущую ветку; никогда не переключает её.
+- **Артефакт контекста (необязательно)** — якорь `code-reviewer` фазы A: план функции (`docs/plans/<slug>/plan.md`, создаётся `write-plan`; запасной вариант — устаревший `swarm-report/<slug>-plan.md`) или, для исправлений багов, отладочный артефакт (`swarm-report/<slug>-debug.md`).
+- **Артефакт diff (производный)** — перед вызовом `code-reviewer` материализуйте diff в `swarm-report/<slug>-diff.txt`. Не зашивайте `origin/main`: определите ветку remote по умолчанию (как в `create-pr` — `git remote show origin | grep "HEAD branch" | awk '{print $NF}'`, запасные варианты `main` / `master` / `develop`), затем выполните `git merge-base origin/<base> HEAD`.
+
+**Флаги допуска (необязательно):**
+
+- `--allow-warn` — остановиться после 1 раунда только с WARN (по умолчанию: PASS при одном WARN, продолжать итерации для BLOCK).
+- `--deep-scan-effort <auto|low|medium|high|xhigh|max>` — усилие для глубокого сканирования Phase 0 (по умолчанию `auto`: масштабируется по сигналам риска diff — см. Phase 0 § Effort selection). Явный уровень переопределяет выбор auto в любую сторону.
+- `--skip-deep-scan` — полностью пропустить Phase 0 (дословно записывается в `acknowledged risks`). Phase 0 также автоматически пропускается для тривиальных diff.
+- `--skip-experts` — пропустить Phase D (редко полезно; эксперты автоматически пропускаются, если ни один триггер не сработал).
+- `--max-rounds N` (≥ 1) — переопределить значение по умолчанию 3. Используйте после ESCALATE, чтобы выполнить ещё один раунд без перезапуска.
+- `--coverage-audit` / `--skip-coverage-audit` — принудительно включить / выключить `test-coverage-expert` в Phase D. Пропуск не рекомендуется; он дословно записывается в `acknowledged risks`.
+- `--skip-security-review "<reason>"` — отключить для этого раунда и `risk_areas`, и триггеры шаблонов. Причина сохраняется дословно. Не рекомендуется; другие эксперты Phase D всё равно запускаются.
+
+---
+
+## Структура раунда
+
+Phase 0 выполняется **один раз** перед циклом. Затем в каждом раунде последовательно выполняются фазы A → B → C → D. Между фазами и после любого auto-fix вызывайте `check`. Накапливайте находки; в конце раунда завершите работу или продолжите.
 
 ```
 Phase 0 (once, pre-loop) → deep scan → dedup vs Phase A → feed Round 1
@@ -52,105 +53,105 @@ Round N:
   Any unfixed BLOCK → round N+1 (up to max_rounds, default 3); else PASS
 ```
 
-**Exit criteria.** PASS — no BLOCK findings; WARN / NIT listed in report, never block. ESCALATE — after `max_rounds`, BLOCKs remain; dump unresolved findings, caller decides override or return to implementation.
+**Критерии выхода.** PASS — находок BLOCK нет; WARN / NIT перечислены в отчёте и никогда не блокируют. ESCALATE — после `max_rounds` остаются BLOCK; выведите неразрешённые находки, а вызывающая сторона решает, переопределить их или вернуться к реализации.
 
-**Max round budget.** Default 3, overridable via `--max-rounds N` (≥ 1). Regularly hitting the cap means Phase A's `code-reviewer` confidence threshold should be tuned (`developer-workflow-experts/agents/code-reviewer.md`), not `max_rounds` silently raised.
+**Бюджет раундов.** По умолчанию 3, переопределяется через `--max-rounds N` (≥ 1). Регулярное достижение лимита означает, что нужно настроить порог уверенности `code-reviewer` фазы A (`developer-workflow-experts/agents/code-reviewer.md`), а не молча увеличивать `max_rounds`.
 
 ---
 
-## Phase 0 — Deep scan (one-shot)
+## Phase 0 — глубокое сканирование (однократное)
 
-Runs **once per finalize run, before Round 1** — not per round. Captures the **correctness recall** the runtime's strongest available code-review harness provides: line-by-line bug scan, removed-behavior auditing, and cross-file tracing, ideally backed by an independent verify step. In Claude Code this is the built-in `/code-review`; in other runtimes use the closest equivalent and record `adapter limitation: no deep-scan equivalent` if unavailable. Its cleanup/altitude/conventions findings overlap Phases B and A and are discarded at ingestion (see Feed into the loop) — Phase 0 is a correctness layer, not a cleanup one.
+Выполняется **один раз за запуск finalize, перед раундом 1**, а не в каждом раунде. Даёт **полноту обнаружения ошибок** с помощью самого сильного доступного runtime инструмента code-review: построчного поиска багов, аудита удалённого поведения и трассировки между файлами, по возможности с независимым шагом проверки. В Claude Code это встроенный `/code-review`; в других runtime используйте ближайший эквивалент и при его отсутствии запишите `adapter limitation: no deep-scan equivalent`. Его находки по очистке/уровню абстракции/соглашениям пересекаются с Phase B и A и отбрасываются при загрузке (см. Feed into the loop): Phase 0 — слой корректности, а не очистки.
 
-**Skip when the diff is trivial** (same bar as `test-coverage-expert`): single file, < 50 LOC, refactor-only, no new public API. Log `phase: 0, status: skipped, reason: trivial diff`. Also skipped by `--skip-deep-scan` (logged in `acknowledged risks`).
+**Пропускайте при тривиальном diff** (тот же порог, что у `test-coverage-expert`): один файл, < 50 LOC, только рефакторинг, без нового public API. Запишите `phase: 0, status: skipped, reason: trivial diff`. Также пропускается по `--skip-deep-scan` (записывается в `acknowledged risks`).
 
-**Invocation.** Invoke the runtime's deep-scan tool in **report mode** against the branch diff. Claude Code mapping: use the **built-in** `/code-review` — the core skill, unqualified name `code-review`, NOT the `code-review:code-review` marketplace plugin (which needs a PR number and cannot review a working tree):
+**Вызов.** Вызовите инструмент глубокого сканирования runtime в режиме **report** для diff ветки. В Claude Code используйте **встроенный** `/code-review` — основной навык с неквалифицированным именем `code-review`, а НЕ marketplace-плагин `code-review:code-review` (ему нужен номер PR, и он не умеет проверять рабочее дерево):
 
-- effort from `--deep-scan-effort` (default `auto`, resolved below); **no `--fix`** (severity triage is owned by finalize's fix loop, not the harness), **no `--comment`** (this gate runs pre-PR on a working tree).
-- The harness reviews the current-branch diff + uncommitted changes and returns a JSON array of findings (`file`, `line`, `summary`, `failure_scenario`), most-severe first.
+- усилие берётся из `--deep-scan-effort` (по умолчанию `auto`, разрешается ниже); **без `--fix`** (triage по severity выполняет цикл исправлений finalize, а не harness), **без `--comment`** (этот gate выполняется до PR в рабочем дереве).
+- Harness проверяет diff текущей ветки и незакоммиченные изменения и возвращает JSON-массив находок (`file`, `line`, `summary`, `failure_scenario`), от самых серьёзных к менее серьёзным.
 
-### Effort selection (`auto`)
+### Выбор усилия (`auto`)
 
-Scale recall to blast radius using signals finalize already materializes pre-loop — the diff (`swarm-report/<slug>-diff.txt`), the context artifact's `risk_areas`, and a cheap pass of the [Security-expert pattern triggers](#security-expert-pattern-triggers) table over the diff. No new computation, no extra agents. An explicit `--deep-scan-effort` always wins over `auto`. Evaluate top-down, **first match wins**; the floor is `medium` (anything below it is a trivial diff, already skipped above):
+Масштабируйте полноту обнаружения по радиусу воздействия, используя сигналы, которые finalize уже материализовал до цикла: diff (`swarm-report/<slug>-diff.txt`), `risk_areas` артефакта контекста и быстрый проход по diff с таблицей [триггеров security-expert](#security-expert-pattern-triggers). Новых вычислений и агентов не требуется. Явный `--deep-scan-effort` всегда имеет приоритет над `auto`. Проверяйте сверху вниз, **срабатывает первое совпадение**; минимальный уровень — `medium` (всё ниже считается тривиальным diff и уже пропускается выше):
 
-| Tier | Fires when (any) |
+| Уровень | Срабатывает, если выполнено любое условие |
 |---|---|
 | **max** | ≥ 1 *narrow* security pattern in the diff, OR declared `risk_areas` ∈ {auth, payment, pii, data-migration}, OR a DB-migration path — same bar that triggers a full Phase D security review; a missed bug here is the most expensive. |
 | **xhigh** | tech / infra-layer change (network, storage, auth, DI per `$HOME/dotfiles/ai/shared/rules/task-types.md`), OR new public API spanning ≥ 2 modules, OR diff > 500 LOC or > 15 files. High blast radius. |
 | **high** | new public API symbol, OR cross-module dependency change, OR diff > 150 LOC or > 6 files. Default for substantive features. |
 | **medium** | everything else above the trivial-skip bar — localized change, no risk signal. |
 
-Record the resolved tier and the signal that picked it in the report (`Phase 0 (deep scan): effort=xhigh — reason: infra-layer (network)`), so a surprising cost is traceable to a concrete trigger and the thresholds can be tuned against real runs.
+Запишите выбранный уровень и определивший его сигнал в отчёте (`Phase 0 (deep scan): effort=xhigh — reason: infra-layer (network)`), чтобы неожиданные затраты можно было связать с конкретным триггером, а пороги — настроить по реальным запускам.
 
-**Binding check.** On Claude Code, the unqualified `/code-review` should bind the built-in recall harness (empirically confirmed on the maintainer's machine: its first step is a working-tree `git diff`, not a PR-number lookup). In a foreign / public install where the marketplace shadow could bind instead, detect it: if the invoked command demands a PR number rather than diffing the working tree, it bound the wrong instance → skip Phase 0, log `reason: /code-review bound marketplace shadow`, continue to Phase A. **Never pass a PR number to satisfy it.**
+**Проверка привязки.** В Claude Code неквалифицированный `/code-review` должен обращаться ко встроенному harness полноты обнаружения (эмпирически подтверждено на машине сопровождающего: первым шагом выполняется `git diff` рабочего дерева, а не поиск по номеру PR). В сторонней/публичной установке вместо него может привязаться marketplace shadow; обнаружьте это: если вызванная команда требует номер PR вместо проверки рабочего дерева, привязался неправильный экземпляр → пропустите Phase 0, запишите `reason: /code-review bound marketplace shadow` и продолжите с Phase A. **Никогда не передавайте номер PR, чтобы удовлетворить этот запрос.**
 
-**Feed into the loop — correctness only (avoid double work).** Phase 0 exists for the recall the other phases lack: real bugs, **removed-behavior regressions**, and **broken call sites**, backed by the harness's independent verify step. Ingest ONLY those — findings whose `failure_scenario` is a concrete crash / wrong-output / data-loss / dropped-guard / broken-caller.
+**Передача в цикл — только корректность (избегайте двойной работы).** Phase 0 нужен для того, чего не хватает другим фазам: реальных багов, **регрессий удалённого поведения** и **сломанных мест вызова**, подтверждённых независимым шагом проверки harness. Загружайте ТОЛЬКО такие находки — с `failure_scenario`, описывающим конкретный crash / неправильный результат / потерю данных / удалённую защиту / сломанный caller.
 
-**Discard the rest at ingestion**, because other phases own those lanes and *act* on them:
-- reuse / simplification / efficiency / altitude findings → **Phase B simplification** (Claude Code mapping: `/simplify`) because Phase B applies the fix, not just reports it. Re-acting here doubles the work.
-- conventions / project-instruction findings → **Phase A `code-reviewer`** (owns conformance + the Non-negotiables-always-BLOCK rule).
-- correctness findings that overlap Phase A → dedup (same defect + location → keep one; Phase A wins, it adds plan-conformance / Non-negotiables context).
+**Остальное отбрасывайте при загрузке**, поскольку этими направлениями владеют другие фазы и *действуют* по ним:
+- находки об использовании повторно / упрощении / эффективности / уровне абстракции → **упрощение Phase B** (в Claude Code это `/simplify`), поскольку Phase B применяет исправление, а не только сообщает о нём. Повторное действие здесь удваивает работу.
+- находки о соглашениях / инструкциях проекта → **`code-reviewer` Phase A** (владеет соответствием и правилом Non-negotiables-always-BLOCK).
+- находки по корректности, пересекающиеся с Phase A → устраните дубликаты (один дефект + одно расположение → оставить один; приоритет у Phase A, поскольку она добавляет контекст соответствия плану / Non-negotiables).
 
-Surviving correctness findings enter **Round 1**'s fix loop, graded by `failure_scenario` (crash / wrong-output / data-loss / dropped-guard → critical or major BLOCK). Fixes go through the normal fix → `check` cycle. Phase 0 is **not** re-run in later rounds.
+Оставшиеся находки по корректности входят в цикл исправлений **раунда 1** и оцениваются по `failure_scenario` (crash / wrong-output / data-loss / dropped-guard → critical или major BLOCK). Исправления проходят обычный цикл fix → `check`. Phase 0 **не** запускается повторно в следующих раундах.
 
-**Compute note.** Some deep-scan tools are monolithic and run cleanup angles whose output we discard. That wasted fan-out is the price of the verify step plus removed-behavior / cross-file recall; `auto` effort keeps it bounded. If profiling later shows duplicate cleanup fan-out dominates cost, the lever is to drop Phase 0's effort, not to also fix cleanup twice.
+**Примечание о вычислениях.** Некоторые инструменты глубокого сканирования монолитны и запускают направления очистки, вывод которых мы отбрасываем. Такой избыточный fan-out — цена шага проверки и полноты обнаружения удалённого поведения / проблем между файлами; усилие `auto` ограничивает его. Если профилирование позже покажет, что повторный fan-out очистки доминирует по стоимости, следует уменьшить усилие Phase 0, а не исправлять очистку дважды.
 
 ---
 
-## Phase A — Semantic review (code-reviewer)
+## Phase A — семантическое ревью (code-reviewer)
 
-Launch `code-reviewer` (from `developer-workflow-experts`) with task description verbatim, plan artifact path (`docs/plans/<slug>/plan.md`, else legacy `swarm-report/<slug>-plan.md`) if it exists, and `git diff` of all branch changes. Returns PASS / WARN / FAIL with findings on the 0/25/50/75/100 confidence rubric (only above-threshold findings surface).
+Запустите `code-reviewer` (из `developer-workflow-experts`) с дословным описанием задачи, путём к артефакту плана (`docs/plans/<slug>/plan.md`, иначе устаревший `swarm-report/<slug>-plan.md`), если он существует, и `git diff` всех изменений ветки. Он возвращает PASS / WARN / FAIL с находками по шкале уверенности 0/25/50/75/100 (показываются только находки выше порога).
 
-Non-negotiables violations from applicable runtime instruction files (`AGENTS.md`, `CLAUDE.md`, or equivalent) are always BLOCK regardless of confidence — never moved to "acknowledged risks".
+Нарушения Non-negotiables из применимых файлов инструкций runtime (`AGENTS.md`, `CLAUDE.md` или эквивалента) всегда являются BLOCK независимо от уверенности и никогда не переносятся в "acknowledged risks".
 
-| Severity × confidence | Action |
+| Severity × confidence | Действие |
 |---|---|
-| critical ≥ 75 | Fix immediately, re-run `check`. PASS + resolved → BLOCK cleared. Doesn't converge → stays BLOCK, round ends without PASS. Never silently downgrade to "acknowledged risk". |
-| major ≥ 75 | Fix if tractable. Refactor beyond diff → escalate; remains BLOCK until caller resolves or moves to "acknowledged risks" at ESCALATE. |
-| minor ≥ 50 | NIT in report. Don't auto-fix; never blocks PASS. |
+| critical ≥ 75 | Немедленно исправьте и повторно запустите `check`. PASS + resolved → BLOCK снят. Если сходимости нет → остаётся BLOCK, раунд завершается без PASS. Никогда молча не понижайте до "acknowledged risk". |
+| major ≥ 75 | Исправьте, если это выполнимо. Рефакторинг за пределами diff → escalate; остаётся BLOCK, пока вызывающая сторона не решит проблему или не перенесёт её в "acknowledged risks" при ESCALATE. |
+| minor ≥ 50 | NIT в отчёте. Не исправляйте автоматически; никогда не блокирует PASS. |
 
-FAIL verdict → this phase has BLOCKs to address before continuing.
+Вердикт FAIL → в этой фазе есть BLOCK, которые нужно устранить до продолжения.
 
-**Why Phase A keeps a dedicated `code-reviewer` alongside Phase 0.** Phase A's `code-reviewer` is **not** replaced by a generic deep scan: it owns plan-conformance anchoring and the rule "a project-instruction Non-negotiables violation is always BLOCK regardless of confidence" — neither of which generic code-review tools reliably perform. The recall the deep-scan harness adds (removed-behavior, cross-file, altitude, line-by-line correctness) is captured separately by **Phase 0**, deduped against Phase A, rather than by swapping Phase A's reviewer.
+**Почему Phase A сохраняет отдельный `code-reviewer` наряду с Phase 0.** `code-reviewer` Phase A **не** заменяется общим глубоким сканированием: он отвечает за привязку к плану и правило «нарушение Non-negotiables из инструкций проекта всегда является BLOCK независимо от уверенности», чего общие инструменты code-review надёжно не выполняют. Дополнительная полнота, которую даёт harness глубокого сканирования (удалённое поведение, проблемы между файлами, уровень абстракции, построчная корректность), собирается отдельно в **Phase 0**, устраняется по дубликатам с Phase A, а не заменой reviewer Phase A.
 
-An earlier version of this gate omitted deep scan entirely, on the theory that "a third generic reviewer stacked on Phase A + Phase C only raises duplication." That was contradicted empirically in Claude Code — `/code-review` surfaced real findings the dedicated reviewer and Phase C missed — so per `$HOME/dotfiles/ai/shared/AGENTS.md` (empirical claims beat armchair theory) the harness wires deep scan in as a **deduped one-shot (Phase 0)**, not stacked per round. The `code-review:code-review` marketplace plugin remains avoided by name in Claude Code (it needs a PR number and reviews no working tree); Phase 0 degrades gracefully when no correct deep-scan adapter exists.
-
----
-
-## Phase B — Simplification
-
-Invoke the runtime's simplification pass. Claude Code mapping: `/simplify`. It is a parallel reuse / quality / efficiency pass that **applies fixes directly**. Treated as a behavioural contract; internal structure may evolve. Coverage: reuse (duplicated logic), quality (redundant state, parameter sprawl, leaky abstractions, stringly-typed, unnecessary comments), efficiency (redundant work, missed concurrency, hot-path bloat, TOCTOU, leaks). Don't pre-review output — trust it, then run `check`.
-
-**On `check` FAIL after simplification:** revert the simplify commits (or the last commit if unambiguously from the simplification pass), log `phase: B, reason: revert`, continue to Phase C. Do not re-invoke simplification in the same round.
-
-**Round-budget semantic.** Phase B is transformative, not a finding-generator. A revert does NOT introduce an unresolved BLOCK and does NOT consume budget — the round continues through C and D. Distinct from `/check` failure after Phase A/C/D fix (§Mechanical verification), where the originating finding stays BLOCK.
+Предыдущая версия этого gate полностью исключала глубокое сканирование, исходя из теории, что «третий общий reviewer поверх Phase A + Phase C только увеличит дублирование». В Claude Code это было опровергнуто эмпирически: `/code-review` обнаружил реальные находки, пропущенные отдельным reviewer и Phase C. Поэтому согласно `$HOME/dotfiles/ai/shared/AGENTS.md` (эмпирические утверждения важнее теории без проверки) harness подключает глубокое сканирование как **однократное с устранением дубликатов (Phase 0)**, а не в каждом раунде. В Claude Code marketplace-плагин `code-review:code-review` по-прежнему намеренно не используется (ему нужен номер PR, и он не проверяет рабочее дерево); Phase 0 корректно деградирует при отсутствии подходящего адаптера глубокого сканирования.
 
 ---
 
-## Phase C — PR review toolkit (parallel, optional)
+## Phase B — упрощение
 
-Soft-reference to `pr-review-toolkit` (marketplace `claude-plugins-official`). Not a hard dep — that marketplace publishes plugin entries without `version` fields, breaking semver resolution.
+Вызовите проход упрощения runtime. В Claude Code это `/simplify`. Это параллельный проход по повторному использованию / качеству / эффективности, который **применяет исправления напрямую**. Рассматривайте его как поведенческий контракт; внутренняя структура может измениться. Области: повторное использование (дублированная логика), качество (избыточное состояние, разрастание параметров, протекающие абстракции, stringly-typed, ненужные комментарии), эффективность (повторная работа, неиспользованная конкурентность, раздувание hot path, TOCTOU, утечки). Не проводите предварительное ревью результата — доверьтесь ему, затем запустите `check`.
 
-Before invoking, check whether the `pr-review-toolkit` agents are available (e.g. Task agent registry). Any missing → skip Phase C, log `phase: C, status: skipped, reason: pr-review-toolkit not installed`, continue to Phase D. Otherwise invoke the applicable agents in **parallel**:
+**При FAIL команды `check` после упрощения:** отмените commit упрощения (или последний commit, если однозначно понятно, что он относится к проходу упрощения), запишите `phase: B, reason: revert` и продолжите с Phase C. Не вызывайте упрощение повторно в том же раунде.
 
-| Agent | Focus | Fires |
+**Смысл бюджета раунда.** Phase B преобразующая, а не генерирующая находки. Revert НЕ создаёт неразрешённый BLOCK и НЕ расходует бюджет — раунд продолжается через C и D. Это отличается от сбоя `/check` после исправления в Phase A/C/D (§Mechanical verification), когда исходная находка остаётся BLOCK.
+
+---
+
+## Phase C — набор инструментов ревью PR (параллельно, необязательно)
+
+Мягкая ссылка на `pr-review-toolkit` (marketplace `claude-plugins-official`). Это не жёсткая зависимость: этот marketplace публикует записи плагинов без полей `version`, из-за чего ломается разрешение semver.
+
+Перед вызовом проверьте доступность агентов `pr-review-toolkit` (например, в реестре Task-агентов). Если какого-либо не хватает → пропустите Phase C, запишите `phase: C, status: skipped, reason: pr-review-toolkit not installed` и продолжите с Phase D. Иначе вызовите применимых агентов **параллельно**:
+
+| Агент | Фокус | Когда запускается |
 |---|---|---|
 | `pr-review-toolkit:pr-test-analyzer` | Test quality in diff — edge cases, behavioral vs implementation testing | always |
 | `pr-review-toolkit:silent-failure-hunter` | Empty catch blocks, swallowed errors, overly broad catches, errors logged but not surfaced | always |
 | `pr-review-toolkit:type-design-analyzer` | Can invalid states be represented? Invariants in types? Missing nullability, unsafe unions | always |
 | `pr-review-toolkit:comment-analyzer` | Comment accuracy vs code, comment-rot, stale/misleading doc-comments | **only when the diff adds or modifies comments / doc-comments** — skip on pure-logic diffs to keep signal high |
 
-The three `always` agents cover dimensions no other phase owns; `comment-analyzer` is gated on comment/doc changes because comment-rot is lower-priority and noisier than the other three — it earns its slot only when there are comments to audit.
+Три агента `always` покрывают направления, которыми не владеет ни одна другая фаза; `comment-analyzer` запускается при изменениях комментариев/документации, поскольку устаревание комментариев менее приоритетно и шумнее остальных трёх направлений — его место оправдано только когда есть комментарии для аудита.
 
-Findings graded on the same 0–100 rubric as `code-reviewer` (inherited via prompt sharing). Apply Phase A fix-loop: BLOCK (critical/major ≥ 75) → fix → `/check`; WARN (minor ≥ 50) → report only; below threshold → drop. Test-quality fixes that need new test code → delegate to the matching engineer agent.
+Находки оцениваются по той же шкале 0–100, что и у `code-reviewer` (наследуется через общий prompt). Применяйте цикл исправлений Phase A: BLOCK (critical/major ≥ 75) → fix → `/check`; WARN (minor ≥ 50) → только отчёт; ниже порога → отбросить. Исправления качества тестов, требующие нового тестового кода, делегируйте подходящему инженерному агенту.
 
 ---
 
-## Phase D — Expert reviews (conditional, parallel)
+## Phase D — экспертные ревью (условно, параллельно)
 
-Trigger experts only when the diff matches their domain. Launch the matching ones in **parallel**.
+Запускайте экспертов только если diff соответствует их области. Подходящих экспертов запускайте **параллельно**.
 
-| Expert | Fires when |
+| Эксперт | Когда запускается |
 |---|---|
 | `architecture-expert` | new module, new public API surface, cross-module dependency change, or layered structure violation in diff |
 | `security-expert` | spec/plan declared `risk_areas` ∈ {auth, payment, pii, data-migration}, or any pattern in the [Security-expert pattern triggers](#security-expert-pattern-triggers) table below |
@@ -161,13 +162,13 @@ Trigger experts only when the diff matches their domain. Launch the matching one
 | `business-analyst` | spec / requirements / scope changes (rare in finalize — usually fires upstream) |
 | `test-coverage-expert` | see [`test-coverage-expert` (conditional)](#test-coverage-expert-conditional) below |
 
-No trigger matched → skip Phase D entirely for this round.
+Ни один триггер не сработал → полностью пропустите Phase D в этом раунде.
 
-### `security-expert` pattern triggers
+### Триггеры шаблонов `security-expert`
 
-The default `risk_areas`-based trigger requires an explicit declaration in spec/plan; bug fixes and unspec'd tasks slip through. Phase D additionally fires `security-expert` on diff patterns:
+Обычный триггер по `risk_areas` требует явного объявления в spec/plan; исправления багов и задачи без spec могут его пропустить. Поэтому Phase D дополнительно запускает `security-expert` по шаблонам в diff:
 
-| Category | Pattern (path or diff content) | Tier |
+| Категория | Шаблон (путь или содержимое diff) | Уровень |
 |---|---|---|
 | Network layer | path under `/network/`, `/api/`, `/http/`, `/rpc/`, `/graphql/` | broad |
 | Auth / Crypto | path under `/auth/`, `/crypto/`, `/token/`, `/session/` | narrow |
@@ -176,34 +177,34 @@ The default `risk_areas`-based trigger requires an explicit declaration in spec/
 | DB migrations | path under `migrations/`, `*.sql`, `Migration.kt`, `schema.prisma`, Flyway / Liquibase configs, `alembic/` | narrow |
 | Deserialization | Jackson / Gson / `kotlinx.serialization` config blocks; unsafe Python-pickle usage, `XMLDecoder`, `ObjectInputStream` in diff | narrow |
 
-**Threshold (false-positive control):**
+**Порог (контроль ложных срабатываний):**
 
-- ≥ 1 narrow pattern → full security review (same as `risk_areas` trigger).
-- ≥ 2 broad patterns → full security review.
-- Exactly 1 broad pattern, no narrow → **scoped review**: launch `security-expert` with a narrowed prompt that names the specific surface (e.g. "audit the network layer for regressions only"), not a full audit. Reduces false-positive cost on incidental touches.
-- No pattern + no `risk_areas` → security-expert does not fire. Other Phase D experts may still trigger.
+- ≥ 1 narrow pattern → полное security review (как при триггере `risk_areas`).
+- ≥ 2 broad patterns → полное security review.
+- Ровно 1 broad pattern без narrow → **scoped review**: запустите `security-expert` с узким prompt, называющим конкретную поверхность (например, "audit the network layer for regressions only"), а не с полным аудитом. Это снижает цену ложных срабатываний на случайных затрагиваниях.
+- Нет шаблона и нет `risk_areas` → security-expert не запускается. Другие эксперты Phase D всё ещё могут быть запущены.
 
-**Override.** `--skip-security-review` (Tolerance flags) turns off both `risk_areas` and pattern triggers for the round. Recorded verbatim in `<slug>-finalize.md` `acknowledged risks` with user reason. Discouraged.
+**Переопределение.** `--skip-security-review` (Tolerance flags) отключает на раунд и `risk_areas`, и триггеры шаблонов. Дословно записывается с причиной пользователя в `acknowledged risks` файла `<slug>-finalize.md`. Не рекомендуется.
 
-**Source.** Patterns evaluated against the unified diff between the remote default branch's merge-base and `HEAD` (same derivation as Phase A). Generate with rename detection (`git diff -M`). Path patterns match against the **new** path. Diff-content patterns match only added/modified hunks — a pure rename without content change cannot match content patterns but can match path patterns when the rename moves a file into a security-relevant directory.
+**Источник.** Шаблоны проверяются по единому diff между merge-base ветки remote по умолчанию и `HEAD` (определяется так же, как в Phase A). Формируйте diff с обнаружением переименований (`git diff -M`). Шаблоны путей сопоставляются с **новым** путём. Шаблоны содержимого diff сопоставляются только с добавленными/изменёнными hunk: чистое переименование без изменения содержимого не соответствует шаблонам содержимого, но может соответствовать шаблонам путей, если файл перемещён в каталог, связанный с безопасностью.
 
-### Handling expert findings
+### Обработка экспертных находок
 
-Same severity × confidence gate as Phase A. Specifics:
+Тот же gate severity × confidence, что и в Phase A. Особенности:
 
-- Security-critical at confidence 50 — rely on `code-reviewer`'s **Critical-risk exception** (`developer-workflow-experts/agents/code-reviewer.md` § Critical-risk exception): finding is included with a `[please verify]` marker prefixed to `issue`. Treat as BLOCK; fix or escalate.
-- Performance / architecture + critical ≥ 75: fix if local to the diff; escalate if broader rework needed.
-- No parallel "always fix at 50" rule — the rubric is defined once in `code-reviewer.md` and inherited.
+- Критичная для безопасности находка с confidence 50 — используйте **Critical-risk exception** `code-reviewer` (`developer-workflow-experts/agents/code-reviewer.md` § Critical-risk exception): находка включается с маркером `[please verify]` перед `issue`. Считайте её BLOCK; исправьте или escalate.
+- Performance / architecture + critical ≥ 75: исправьте, если проблема локальна для diff; escalate, если требуется более широкая переработка.
+- Отдельного правила «всегда исправлять при 50» нет: шкала один раз определена в `code-reviewer.md` и наследуется.
 
-### `test-coverage-expert` (conditional)
+### `test-coverage-expert` (условный)
 
-Late-stage coverage audit complementing the early `check` Phase 3.5 gate (#154). Catches declared TCs not implemented, data-layer changes without integration tests, and gaps the engineer specialist missed. Public-API rule is defined in `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 1; priority framework (P0–P3) in § 2.
+Поздний аудит покрытия, дополняющий ранний gate `check` Phase 3.5 (#154). Обнаруживает заявленные, но не реализованные TC, изменения data layer без integration-тестов и пробелы, пропущенные инженерным специалистом. Правило public API определено в `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 1; система приоритетов (P0–P3) — в § 2.
 
-**Trigger when ANY:** (1) diff adds a public API symbol with no matching test file (per § 1); (2) `docs/testplans/<slug>-test-plan.md` declares TCs without matching implementation in test sources for this slug — cross-reference by TC `Type` (#153) plus name / file mention, interpreted by the agent, not regex; (3) diff touches data-layer / repository / service / use-case files without introducing or updating tests; (4) `--coverage-audit`.
+**Запускайте, если выполнено ЛЮБОЕ условие:** (1) diff добавляет символ public API без соответствующего тестового файла (согласно § 1); (2) `docs/testplans/<slug>-test-plan.md` объявляет TC без соответствующей реализации в тестовых источниках этого slug — сопоставляйте по `Type` TC (#153), а также упоминанию имени / файла; это интерпретирует агент, а не regex; (3) diff затрагивает файлы data layer / repository / service / use-case без добавления или обновления тестов; (4) `--coverage-audit`.
 
-**Skip when ANY:** (1) trivial diff (single file, < 50 LOC, no new public API, refactor-only); (2) `--skip-coverage-audit` (recorded verbatim in finalize report); (3) no test infrastructure for the affected module — short-circuit with a follow-up issue ("add test harness for X"). Never silently skip.
+**Пропускайте, если выполнено ЛЮБОЕ условие:** (1) тривиальный diff (один файл, < 50 LOC, без нового public API, только рефакторинг); (2) `--skip-coverage-audit` (дословно записывается в отчёт finalize); (3) для затронутого модуля нет тестовой инфраструктуры — завершите этап с follow-up issue ("add test harness for X"). Никогда не пропускайте молча.
 
-Reuses existing engineer agents (`kotlin-engineer` / `swift-engineer` / `compose-developer` / `swiftui-developer`) with a coverage-audit prompt. The agent reads `docs/testplans/<slug>-test-plan.md`, the diff, and test files; writes `swarm-report/<slug>-coverage-audit.md`; on gaps, writes missing tests in the same Task call and re-runs `/check` (author-fixes-tests, qa-and-testing.md § 4).
+Переиспользует существующих инженерных агентов (`kotlin-engineer` / `swift-engineer` / `compose-developer` / `swiftui-developer`) с prompt для аудита покрытия. Агент читает `docs/testplans/<slug>-test-plan.md`, diff и тестовые файлы; записывает `swarm-report/<slug>-coverage-audit.md`; при пробелах в том же вызове Task пишет недостающие тесты и повторно запускает `/check` (author-fixes-tests, qa-and-testing.md § 4).
 
 **Schema for `swarm-report/<slug>-coverage-audit.md`:**
 
@@ -243,26 +244,26 @@ verdict: PASS
 passed: [build, lint, typecheck, tests, coverage]
 ```
 
-Verdict → Phase D outcome:
+Вердикт → результат Phase D:
 
-- `PASS` — all rows covered before audit; Phase D continues with other experts.
-- `GAPS_RESOLVED` — agent wrote missing tests, `/check` PASS. Treated as PASS; audit file lists fixes for the finalize report.
-- `ESCALATE` — agent could not produce a viable test in 3 attempts, OR a gap is structurally untestable. Treated as BLOCK; round budget applies.
+- `PASS` — все строки покрыты до аудита; Phase D продолжается с другими экспертами.
+- `GAPS_RESOLVED` — агент написал недостающие тесты, `/check` дал PASS. Считается PASS; файл аудита перечисляет исправления для отчёта finalize.
+- `ESCALATE` — агент не смог создать пригодный тест за 3 попытки ИЛИ пробел структурно нетестируем. Считается BLOCK; применяется бюджет раундов.
 
-`--skip-coverage-audit` is documented in §Inputs; when set, it records the skip reason in `acknowledged risks`.
+`--skip-coverage-audit` описан в §Inputs; при его установке причина пропуска записывается в `acknowledged risks`.
 
 ---
 
-## Mechanical verification between phases
+## Механическая проверка между фазами
 
-After **any** code modification within a round, re-invoke `/check`. On FAIL:
+После **любого** изменения кода в раунде повторно вызовите `/check`. При FAIL:
 
-1. Log which phase's fix introduced the failure.
-2. Narrow repair — **1 attempt max**. At finalize stage the code already passed `/check` once, so a regression signals the fix itself was wrong; retrying compounds rather than converges.
-3. Still failing → revert the fix and keep the originating finding **as BLOCK** for the round (not resolved, counts against budget). Continue remaining phases; never relabel a reverted BLOCK as "acknowledged risk".
-4. Round ends with unresolved BLOCKs → next round. Round 3 ends with unresolved BLOCKs → ESCALATE.
+1. Запишите, исправление какой фазы вызвало ошибку.
+2. Выполните узкую правку — **максимум 1 попытка**. На этапе finalize код уже один раз прошёл `/check`, поэтому регрессия означает, что сама правка была неверной; новые попытки усугубляют ситуацию, а не приближают сходимость.
+3. Ошибка сохраняется → отмените правку и оставьте исходную находку **как BLOCK** для раунда (не разрешена, учитывается в бюджете). Продолжите остальные фазы; никогда не переименовывайте отменённый BLOCK в "acknowledged risk".
+4. Раунд завершился с неразрешёнными BLOCK → следующий раунд. Третий раунд завершился с неразрешёнными BLOCK → ESCALATE.
 
-Do not let `/check` failures cascade, and do not use revert-and-continue to silently ship a BLOCK.
+Не допускайте каскада ошибок `/check` и не используйте revert-and-continue, чтобы молча отправить BLOCK.
 
 ---
 

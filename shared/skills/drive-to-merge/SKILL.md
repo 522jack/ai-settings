@@ -3,7 +3,7 @@ name: drive-to-merge
 description: >
   Доведите существующий PR/MR до слияния: отслеживайте CI, разбирайте комментарии ревью,
   исправляйте ошибки, повторно запрашивайте ревью и повторяйте цикл до слияния.
-  Triggers: "drive this PR to merge", "get this PR merged", "monitor CI and reviews",
+  Триггеры: "drive this PR to merge", "get this PR merged", "monitor CI and reviews",
   "ship this PR", "land this PR", "take this PR all the way", "merge this PR for me".
   Не используйте для создания новых PR (используйте create-pr) или написания кода с нуля (используйте implement).
 ---
@@ -46,31 +46,28 @@ description: >
 
 | Файл | Содержание |
 |---|---|
-| [`references/setup.md`](references/setup.md) | Phase 1: platform detect, metadata fetch, preconditions, state-file schema, mode precedence on resume |
-| [`references/ci.md`](references/ci.md) | Phase 2.2: run-id extraction from `statusCheckRollup`, log download, classification, CI failure table, infra-flake retry, failure-loop guard |
-| [`references/reviews.md`](references/reviews.md) | Phase 2.3 + 2.4: build/refresh the branch-change model (full diff, then delta), fetch, categorize against the whole branch, verify, pattern-match, group, propose; decision-table format (diff-grounded plan) and gate behaviour |
-| [`references/delegation.md`](references/delegation.md) | Phase 3: edit / delegate / ask-in-thread / dismiss; reply-delivery safety rules; commit + push; re-request review (humans + Copilot) |
-| [`references/polling.md`](references/polling.md) | Phase 4: ScheduleWakeup schedule, delaySeconds matrix, cache-window tuning, poll-cap blocker |
-| [`references/merge.md`](references/merge.md) | Phase 5: pre-merge checks, confirmation UX, final re-check, merge commands; Phase 2.6 rebase companion |
+| [`references/setup.md`](references/setup.md) | Phase 1: обнаружение платформы, получение метаданных, предусловия, схема файла состояния, приоритет режима при возобновлении |
+| [`references/ci.md`](references/ci.md) | Phase 2.2: извлечение run-id из `statusCheckRollup`, загрузка логов, классификация, таблица ошибок CI, повтор для инфраструктурных сбоев, защита от цикла ошибок |
+| [`references/reviews.md`](references/reviews.md) | Phase 2.3 + 2.4: построение/обновление модели изменений ветки (полный diff, затем delta), получение комментариев, классификация по всей ветке, проверка, поиск совпадений, группировка, предложения; формат таблицы решений (план на основе diff) и поведение gate |
+| [`references/delegation.md`](references/delegation.md) | Phase 3: редактирование / делегирование / вопрос в треде / отклонение; правила безопасной доставки ответов; commit + push; повторный запрос ревью (люди + Copilot) |
+| [`references/polling.md`](references/polling.md) | Phase 4: расписание ScheduleWakeup, матрица delaySeconds, настройка окна кэша, блокер при превышении лимита опросов |
+| [`references/merge.md`](references/merge.md) | Phase 5: проверки перед слиянием, UX подтверждения, финальная перепроверка, команды слияния; сопровождение rebase в Phase 2.6 |
 
 ---
 
-## Phase 1: Setup
+## Phase 1: настройка
 
-Detect platform, fetch PR/MR metadata, verify preconditions, load or initialise the state
-file. Full procedure in [`references/setup.md`](references/setup.md).
+Определите платформу, получите метаданные PR/MR, проверьте предусловия, загрузите или инициализируйте файл состояния. Полная процедура — в [`references/setup.md`](references/setup.md).
 
-If the PR/MR is already merged or closed — stop and report the final state.
+Если PR/MR уже слит или закрыт — остановитесь и сообщите итоговое состояние.
 
 ---
 
-## Phase 2: Round loop
+## Phase 2: цикл раундов
 
-One round = one full pass of Phases 2.1 → 2.5. After 2.5, either merge (Phase 5) or sleep
-(Phase 4) and start a new round.
+Один раунд = полный проход Phase 2.1 → 2.5. После 2.5 выполните слияние (Phase 5) либо перейдите в ожидание (Phase 4) и начните новый раунд.
 
-Each round begins by re-fetching PR state. Nothing is cached across rounds except the state
-file.
+Каждый раунд начинается с повторного получения состояния PR. Между раундами кэшируется только файл состояния.
 
 ### 2.1 Sync PR state
 
@@ -80,159 +77,137 @@ PR_STATE=$(gh pr view --json statusCheckRollup,reviewDecision,mergeable,mergeSta
 isDraft,state,reviews,reviewRequests)
 ```
 
-Classify:
+Классифицируйте:
 
-| PR attribute | Values that matter |
+| Атрибут PR | Важные значения |
 |---|---|
 | `state` | OPEN → continue; MERGED / CLOSED → Phase 5 terminal |
-| `isDraft` | `true` → handle review comments and CI, but do not enter Phase 5 until promoted. When everything else would be merge-ready: in `--auto` mode promote automatically (`gh pr ready` / `glab mr update --remove-draft`) and continue to Phase 5; in default mode surface to user with "PR is draft — promote to ready with `gh pr ready` or abort" |
-| `statusCheckRollup` | Any `FAILURE` / `CANCELLED` / `TIMED_OUT` → 2.2 CI handling; all `SUCCESS` → skip 2.2; mix of `IN_PROGRESS` + no failures → wait (Phase 4) |
-| `reviewDecision` | `CHANGES_REQUESTED` → 2.3 must run; `APPROVED` → candidate for merge; `REVIEW_REQUIRED` → 2.4 (request review) |
-| `mergeable` + `mergeStateStatus` | `CONFLICTING` → 2.6 rebase; `BLOCKED` (missing approval, failing required check) → identify and loop |
+| `isDraft` | `true` → обработайте комментарии ревью и CI, но не переходите к Phase 5 до promotion. Когда всё остальное готово к слиянию: в режиме `--auto` автоматически переведите PR в ready (`gh pr ready` / `glab mr update --remove-draft`) и продолжите с Phase 5; в режиме default сообщите пользователю: "PR is draft — promote to ready with `gh pr ready` or abort" |
+| `statusCheckRollup` | Любое `FAILURE` / `CANCELLED` / `TIMED_OUT` → обработка CI в 2.2; только `SUCCESS` → пропустите 2.2; сочетание `IN_PROGRESS` без ошибок → ожидайте (Phase 4) |
+| `reviewDecision` | `CHANGES_REQUESTED` → обязательно выполните 2.3; `APPROVED` → кандидат на слияние; `REVIEW_REQUIRED` → 2.4 (запросить ревью) |
+| `mergeable` + `mergeStateStatus` | `CONFLICTING` → rebase в 2.6; `BLOCKED` (нет approval, обязательная проверка не пройдена) → определите причину и продолжите цикл |
 
-### 2.2 CI handling
+### 2.2 Обработка CI
 
-Investigate failing checks, retry infra flakes, hand code-fix rows to Phase 3. Procedure
-(run-id extraction, classification, failure-loop guard) in [`references/ci.md`](references/ci.md).
+Исследуйте упавшие проверки, повторяйте инфраструктурные сбои, передавайте строки с исправлением кода в Phase 3. Процедура (извлечение run-id, классификация, защита от цикла ошибок) — в [`references/ci.md`](references/ci.md).
 
-### 2.3 Review handling
+### 2.3 Обработка ревью
 
-Build or refresh the branch-change model first (full branch diff on first entry, delta
-on later rounds), then fetch comments, filter already-owned threads, categorize (BLOCKING
-/ IMPORTANT / SUGGESTION / NIT / QUESTION / PRAISE / OUT_OF_SCOPE) crossed with
-actionability (FIXABLE / NEEDS_CLARIFICATION / DISCUSSION / NO_ACTION). Reason about each
-leftover comment against the whole branch diff — verify suggestions, pattern-match across
-all changed files, group, and generate a concrete proposal per item. Full procedure in
-[`references/reviews.md`](references/reviews.md).
+Сначала постройте или обновите модель изменений ветки (полный diff при первом входе, delta в последующих раундах), затем получите комментарии, отфильтруйте уже принадлежащие навыку треды, классифицируйте (BLOCKING / IMPORTANT / SUGGESTION / NIT / QUESTION / PRAISE / OUT_OF_SCOPE) вместе с применимостью действия (FIXABLE / NEEDS_CLARIFICATION / DISCUSSION / NO_ACTION). Рассуждайте по каждому оставшемуся комментарию с учётом полного diff ветки — проверяйте предложения, ищите совпадения во всех изменённых файлах, группируйте и формируйте конкретное предложение для каждого пункта. Полная процедура — в [`references/reviews.md`](references/reviews.md).
 
-### 2.4 Decision table (the gate)
+### 2.4 Таблица решений (gate)
 
-Render in session as a **prioritized list** — sections P0 → P1 → P2 → P3 → P4 with
-continuous numbering. Each item is one short paragraph: bold headline, author, location,
-action. `## Blockers` section always last. `## Summary` one line with action-type
-breakdown. Format and example in [`references/reviews.md`](references/reviews.md).
+Отображайте в сессии как **приоритизированный список** — разделы P0 → P1 → P2 → P3 → P4 со сквозной нумерацией. Каждый пункт — один короткий абзац: жирный заголовок, автор, расположение, действие. Раздел `## Blockers` всегда последний. `## Summary` — одна строка с разбивкой по типам действий. Формат и пример — в [`references/reviews.md`](references/reviews.md).
 
-Gate behaviour:
+Поведение gate:
 
-- **default** — stop, wait for `approve` / `skip N,M` / `stop`. Accept space- and
-  comma-separated number lists.
-- **`--auto`** — skip waiting, proceed to Phase 3.
-- **`--dry-run`** — print the list and stop for good.
+- **default** — остановитесь и ждите `approve` / `skip N,M` / `stop`. Принимайте списки номеров, разделённые пробелами или запятыми.
+- **`--auto`** — пропустите ожидание и перейдите к Phase 3.
+- **`--dry-run`** — выведите список и окончательно остановитесь.
 
-Blockers are always surfaced — `--auto` does not swallow them. If any P0 item is
-DISCUSSION, stop and ask regardless of mode.
+Блокеры всегда показываются — `--auto` их не скрывает. Если любой пункт P0 имеет статус DISCUSSION, остановитесь и спросите независимо от режима.
 
 ### 2.5 Round outcome
 
-After Phase 3 executes the approved rows: push, update state file (append a row to `Rounds`
-and to `Commitments`), decide next step:
+После выполнения одобренных строк в Phase 3 отправьте изменения, обновите файл состояния (добавьте строку в `Rounds` и в `Commitments`) и определите следующий шаг:
 
-| Situation | Next |
+| Ситуация | Далее |
 |---|---|
-| New fixes pushed → CI will run → wait for it | Phase 4 poll |
-| No code changes, only dismisses/replies posted, review still pending | Phase 4 poll (wait for reviewer) |
-| All threads closed, CI green, `reviewDecision == APPROVED`, mergeable | Phase 5 merge |
-| `mergeStateStatus == BEHIND` (base moved) | Phase 2.6 rebase, then poll |
-| Blocker raised | Stop, update state file, surface to user |
+| Отправлены новые исправления → запустится CI → дождитесь его | Опрос в Phase 4 |
+| Изменений кода нет, опубликованы только dismiss/reply, ревью ещё ожидается | Опрос в Phase 4 (ждать reviewer) |
+| Все треды закрыты, CI зелёный, `reviewDecision == APPROVED`, слияние возможно | Слияние в Phase 5 |
+| `mergeStateStatus == BEHIND` (base изменился) | Rebase в Phase 2.6, затем опрос |
+| Возник блокер | Остановитесь, обновите файл состояния и сообщите пользователю |
 
-### 2.6 Rebase when base has advanced
+### 2.6 Rebase после обновления base
 
-Procedure and "Dismiss stale approvals" side effect in [`references/merge.md`](references/merge.md).
+Процедура и побочный эффект "Dismiss stale approvals" описаны в [`references/merge.md`](references/merge.md).
 
 ---
 
-## Phase 3: Execute approved rows
+## Phase 3: выполнение одобренных строк
 
-Execute strictly in table order. Branches:
+Выполняйте строго в порядке таблицы. Варианты:
 
-- **Edit rows** — apply snippet, run `check`, stop on failure.
-- **Delegate rows** — invoke the named engineer agent (kotlin-engineer / compose-developer /
-  swift-engineer / swiftui-developer) sequentially; scope-guard diff after each returns.
-- **Ask-in-thread rows** — post verbatim question, do not resolve.
-- **Dismiss rows** — canned template + sanitized slot, resolve thread.
+- **Строки Edit** — примените snippet, запустите `check`, при ошибке остановитесь.
+- **Строки Delegate** — последовательно вызовите указанного инженерного агента (kotlin-engineer / compose-developer / swift-engineer / swiftui-developer); после каждого возврата проверьте diff на выход за область.
+- **Строки Ask-in-thread** — опубликуйте вопрос дословно, не разрешайте тред.
+- **Строки Dismiss** — используйте готовый шаблон и очищенный slot, разрешите тред.
 
-Commit with `Address review: …` and push (force-push policy per globals). Re-request review
-from any reviewer whose state was `CHANGES_REQUESTED` when code changed; Copilot via
-GraphQL mutation.
+Создайте commit с сообщением `Address review: …` и выполните push (политика force-push задаётся глобальными правилами). Если код изменился, повторно запросите ревью у каждого reviewer со статусом `CHANGES_REQUESTED`; для Copilot используйте мутацию GraphQL.
 
-Full procedure, safety rules (stdin-piped bodies, rate-limit handling, pre-POST
-thread-ownership verify), and Copilot node-id resolution in
+Полная процедура, правила безопасности (передача bodies через stdin, обработка rate limit, проверка владения тредом перед POST) и разрешение node-id Copilot описаны в
 [`references/delegation.md`](references/delegation.md).
 
 ---
 
-## Phase 4: Poll (ScheduleWakeup)
+## Phase 4: опрос (ScheduleWakeup)
 
-Schedule the next round when the round ended in "wait" (CI running or review pending).
-Delay is chosen by what we are waiting on; prompt is derived from the stored `Mode` in the
-state file, never hardcoded. Cache-window discipline (≤270 or ≥600, avoid 280–550s).
+Запланируйте следующий раунд, если текущий завершился состоянием "wait" (CI выполняется или ожидается ревью). Задержка выбирается по причине ожидания; prompt выводится из сохранённого `Mode` в файле состояния и никогда не зашивается в коде. Соблюдайте окно кэша (≤270 или ≥600, избегайте 280–550 с).
 
-Procedure and delaySeconds matrix in [`references/polling.md`](references/polling.md).
+Процедура и матрица delaySeconds — в [`references/polling.md`](references/polling.md).
 
 ---
 
-## Phase 5: Merge
+## Phase 5: слияние
 
-Pre-merge checks → summary message → final re-check → `gh pr merge` / `glab mr merge`.
+Проверки перед слиянием → итоговое сообщение → финальная перепроверка → `gh pr merge` / `glab mr merge`.
 
-In **default mode** the summary message blocks until the user replies "merge".
-In **`--auto` mode** the summary is shown for visibility and the merge executes immediately
-without waiting. If `isDraft == true` and everything else is merge-ready, promote the PR/MR
-first (`gh pr ready` / `glab mr update --remove-draft`) before running pre-merge checks.
+В **режиме default** итоговое сообщение блокирует выполнение, пока пользователь не ответит "merge". В **режиме `--auto`** итоговое сообщение показывается для наглядности, а слияние выполняется сразу без ожидания. Если `isDraft == true` и всё остальное готово к слиянию, сначала переведите PR/MR в ready (`gh pr ready` / `glab mr update --remove-draft`), а затем запускайте проверки перед слиянием.
 
-Procedure in [`references/merge.md`](references/merge.md).
+Процедура — в [`references/merge.md`](references/merge.md).
 
 ---
 
-## Terminal states
+## Конечные состояния
 
-| State | When | What the skill writes |
+| Состояние | Когда | Что записывает навык |
 |---|---|---|
-| `merged` | Phase 5 succeeded | state file marked merged, success summary in session |
-| `blocked` | A blocker was surfaced (failure-loop guard, integrity mismatch, unresolvable rebase, DISCUSSION requires user, polling exceeded cap, or user explicitly says "stop") | state file `Blockers raised` filled (including reason `"user stop"` when applicable), session message explains next action |
+| `merged` | Phase 5 выполнена успешно | файл состояния помечен как merged, в сессии показана сводка об успехе |
+| `blocked` | Обнаружен блокер (защита от цикла ошибок, несоответствие целостности, неразрешимый rebase, DISCUSSION требует пользователя, превышен лимит опросов или пользователь явно сказал "stop") | заполнен раздел `Blockers raised` файла состояния (при необходимости с причиной `"user stop"`), сообщение сессии объясняет следующий шаг |
 
 ---
 
-## Defaults for autonomous judgement
+## Правила автономных решений по умолчанию
 
-The skill decides these without asking, in any mode:
+В любом режиме навык принимает следующие решения без дополнительных вопросов:
 
-- **NEEDS_CLARIFICATION** — ask the clarifying question in the thread; record and move on. Do not stop the round.
-- **OUT_OF_SCOPE** — dismiss with reply. Offer (in the decision table row) to create a follow-up issue; create it only if the user types "create issues" during the approval step.
-- **NIT + FIXABLE** — include in the edits batch. Trivial renames and formatting are worth the round.
-- **DISCUSSION on P0/P1** — stop, surface as blocker. Never execute guesses on blocking-level disagreements.
-- **DISCUSSION on P2/P3** — include as a table row with proposal "ack-in-thread-without-code-change"; a short reply summarizing the skill's counter-view and leaving the thread open for the reviewer.
-
----
-
-## Principles
-
-**One skill, one loop.** CI, review, rebase, merge — all one loop with shared state. Never hand off mid-round to another skill for orchestration; delegate individual edits, but own the loop.
-
-**All output in the session.** The decision table, proposals, blockers, final merge summary — all rendered as chat messages. The state file is for resumption after compaction, not for user editing.
-
-**Proposals are concrete.** Every actionable row carries a snippet, a delegation instruction, or the exact question text. "BLOCKING / FIXABLE" alone is not a proposal.
-
-**Autonomous by default.** The user should only see decisions that require judgement: true disagreements, unresolvable rebases. Everything mechanical happens without asking. In default mode the final merge still waits for user confirmation; in `--auto` mode it executes automatically.
-
-**Approval gate and merge gate.** `--auto` removes both: the round-level approval gate and the final merge gate. In `--auto` mode the skill merges automatically once all Phase 5 conditions are met. Default mode retains explicit user confirmation at the merge step — the user types "merge" to execute. True blockers (DISCUSSION on P0/P1, unresolvable rebase, integrity mismatch) still stop the loop in any mode.
-
-**Safe by construction.** Replies go through the sanitize pipeline; thread ownership is re-verified before every POST; POST bodies go through stdin, never shell args. Force-push policy per globals.
-
-**Respect the reviewer.** Push back on wrong suggestions (record as DISCUSSION, draft a counter-reply); do not dress a broken suggestion up as FIXABLE and ship the broken fix.
-
-**Pattern completeness.** Fixing one reported instance while identical problems remain elsewhere in the diff gets the thread reopened. Pattern-match at analysis time, fix at apply time.
-
-**Plan grounded in the full branch diff.** Build a model of the whole change set before responding, and reason about every leftover comment against it — not just its line. A reviewer's comment is often a symptom whose cause or correct fix lives elsewhere in the branch. The decision table is that plan.
-
-**Fail loudly, not silently.** Three CI failures on the same signature, an integrity mismatch, a rebase with logic conflicts — stop and surface, do not retry forever.
+- **NEEDS_CLARIFICATION** — задайте уточняющий вопрос в треде, зафиксируйте его и продолжите. Не останавливайте раунд.
+- **OUT_OF_SCOPE** — отклоните с ответом. Предложите в строке таблицы решений создать follow-up issue; создавайте его только если пользователь введёт "create issues" на шаге подтверждения.
+- **NIT + FIXABLE** — включите в пакет правок. Ради раунда стоит выполнять простые переименования и исправления форматирования.
+- **DISCUSSION для P0/P1** — остановитесь и покажите как блокер. Никогда не делайте предположений при разногласиях блокирующего уровня.
+- **DISCUSSION для P2/P3** — включите как строку таблицы с предложением "ack-in-thread-without-code-change"; опубликуйте краткий ответ с контраргументом навыка и оставьте тред открытым для reviewer.
 
 ---
 
-## Tool priority
+## Принципы
+
+**Один навык — один цикл.** CI, ревью, rebase и merge образуют один цикл с общим состоянием. Не передавайте оркестрацию другому навыку в середине раунда; делегируйте отдельные правки, но управляйте циклом самостоятельно.
+
+**Весь вывод — в сессии.** Таблица решений, предложения, блокеры и итоговая сводка слияния отображаются как сообщения чата. Файл состояния нужен для возобновления после сжатия контекста, а не для редактирования пользователем.
+
+**Предложения конкретны.** Каждая строка, требующая действия, содержит snippet, инструкцию для делегирования или точный текст вопроса. Одних слов "BLOCKING / FIXABLE" недостаточно.
+
+**По умолчанию — автономность.** Пользователь должен видеть только решения, требующие суждения: настоящие разногласия и неразрешимые rebase. Всё механическое выполняется без вопросов. В режиме default итоговое слияние всё же ждёт подтверждения пользователя; в режиме `--auto` выполняется автоматически.
+
+**Gate подтверждения и gate слияния.** `--auto` убирает оба: gate подтверждения на уровне раунда и финальный gate слияния. В режиме `--auto` навык автоматически выполняет слияние после выполнения всех условий Phase 5. В режиме default на шаге слияния сохраняется явное подтверждение пользователя — для выполнения нужно ввести "merge". Настоящие блокеры (DISCUSSION для P0/P1, неразрешимый rebase, несоответствие целостности) всё равно останавливают цикл в любом режиме.
+
+**Безопасность заложена в конструкцию.** Ответы проходят pipeline санитизации; перед каждым POST повторно проверяется владение тредом; тела POST передаются через stdin, а не через аргументы shell. Политика force-push определяется глобальными правилами.
+
+**Уважайте reviewer.** Возражайте против неверных предложений (фиксируйте их как DISCUSSION и подготовьте контрответ); не выдавайте сломанное предложение за FIXABLE и не отправляйте сломанную правку.
+
+**Полнота шаблона.** Если исправить один указанный случай, а идентичные проблемы останутся в других местах diff, тред будет открыт снова. Ищите шаблон на этапе анализа, исправляйте все совпадения на этапе применения.
+
+**План опирается на полный diff ветки.** Перед ответом постройте модель всего набора изменений и рассматривайте каждый оставшийся комментарий в её контексте, а не только в контексте его строки. Комментарий reviewer часто указывает на симптом, а причина или правильная правка находятся в другой части ветки. Таблица решений и есть этот план.
+
+**Ошибайтесь явно, а не молча.** Три ошибки CI с одной сигнатурой, несоответствие целостности или rebase с логическими конфликтами — остановитесь и сообщите о проблеме, не повторяйте попытки бесконечно.
+
+---
+
+## Приоритет инструментов
 
 `gh` / `glab` CLI when available → REST via `gh api` / `glab api` → GraphQL via `gh api graphql` for review threads and node ids → `ScheduleWakeup` for Phase 4 polling → nothing else.
 
-If neither `gh` nor `glab` is installed or authenticated, stop with a clear message: this skill cannot degrade gracefully without a working CLI, because its value is autonomous push + reply + resolve. Ask the user to install and authenticate, then rerun.
+Если `gh` и `glab` не установлены или не авторизованы, остановитесь с понятным сообщением: без рабочего CLI этот навык не может корректно работать в ограниченном режиме, поскольку его ценность — автономные push + reply + resolve. Попросите пользователя установить CLI и пройти авторизацию, затем повторите запуск.
 
-`ScheduleWakeup` is required for autonomous polling. If the runtime does not expose it, fall back to a single-shot round: report state, record a "wake me manually" note in the state file, and exit. The user then re-invokes `/drive-to-merge` when they want the next round.
+Для автономного опроса требуется `ScheduleWakeup`. Если runtime его не предоставляет, перейдите к одиночному раунду: сообщите состояние, запишите в файл состояния заметку "wake me manually" и завершите работу. Пользователь повторно вызывает `/drive-to-merge`, когда нужен следующий раунд.

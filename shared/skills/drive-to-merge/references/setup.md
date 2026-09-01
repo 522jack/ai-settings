@@ -1,10 +1,10 @@
-# drive-to-merge — Phase 1 Setup
+# drive-to-merge — Phase 1: настройка
 
-Platform detection, metadata fetch, preconditions, and state file schema. Loaded on demand by SKILL.md.
+Обнаружение платформы, получение метаданных, предусловия и схема файла состояния. Загружается SKILL.md по мере необходимости.
 
-## 1.1 Detect platform
+## 1.1 Обнаружение платформы
 
-Extract hostname from the remote URL and probe the matching CLI — do not regex for `github.com` / `gitlab` literals, which miss GitHub Enterprise Server and self-hosted GitLab.
+Извлеките hostname из URL remote и проверьте соответствующий CLI — не ищите регулярным выражением литералы `github.com` / `gitlab`, поскольку это пропустит GitHub Enterprise Server и самостоятельно размещённый GitLab.
 
 ```bash
 REMOTE_URL=$(git remote get-url origin)
@@ -20,7 +20,7 @@ else
 fi
 ```
 
-## 1.2 Fetch PR/MR metadata
+## 1.2 Получение метаданных PR/MR
 
 ```bash
 # GitHub
@@ -49,48 +49,48 @@ BASE=$(jq -r .target_branch <<<"$MR_INFO")
 PROJECT=$(glab repo view --output json | jq -r '.path_with_namespace | @uri')
 ```
 
-If the PR/MR is already merged or closed — stop and report the final state.
+Если PR/MR уже слит или закрыт — остановитесь и сообщите итоговое состояние.
 
-### Merge policy detection
+### Определение политики слияния
 
-After fetching repo metadata, derive the merge policy for this run. Record in the state file as `Merge policy:`.
+После получения метаданных репозитория определите политику слияния для этого запуска. Запишите её в файл состояния как `Merge policy:`.
 
-1. **Explicit config in CLAUDE.md** — scan the repo's `CLAUDE.md` (if present) for a line matching:
+1. **Явная конфигурация в CLAUDE.md** — проверьте `CLAUDE.md` репозитория (если файл есть) на строку, соответствующую шаблону:
    ```
    Merge policy: auto
    Merge policy: team-strict
    ```
    Use the first match.
 
-2. **Explicit config in `.claude/settings.json`** — check key `driveToMerge.mergePolicy`; values `"auto"` or `"team-strict"`.
+2. **Явная конфигурация в `.claude/settings.json`** — проверьте ключ `driveToMerge.mergePolicy`; допустимые значения — `"auto"` или `"team-strict"`.
 
-3. **Fallback: org vs personal heuristic** (GitHub only):
+3. **Запасной вариант: эвристика org vs personal** (только GitHub):
    ```bash
    IS_ORG=$(gh repo view --json isInOrganization -q .isInOrganization)
    # true → team-strict; false → auto
    ```
    For GitLab, default to `team-strict` when the project namespace is a group, `auto` when it is a personal namespace.
 
-Policy semantics:
-- `auto` — `--auto` mode skips the merge gate and may use native platform auto-merge.
-- `team-strict` — merge gate always asks in any mode; GitLab `--when-pipeline-succeeds` disabled unless the user explicitly passes `--native-auto-merge` on invocation.
+Смысл политик:
+- `auto` — режим `--auto` пропускает gate слияния и может использовать нативное автоматическое слияние платформы.
+- `team-strict` — gate слияния всегда запрашивает подтверждение в любом режиме; для GitLab `--when-pipeline-succeeds` отключён, если пользователь явно не передал `--native-auto-merge` при запуске.
 
-## 1.3 Preconditions
+## 1.3 Предусловия
 
-Abort with a clear message if any of these fail:
+Остановитесь с понятным сообщением, если не выполнено любое из условий:
 
-- Current branch matches the PR head branch. If not — abort with `checkout <head> first; this skill does not auto-switch branches`.
-- Local branch is fetched and not behind the remote head (`git fetch origin && git status -sb`).
-- `gh auth status` / `glab auth status` — token valid.
-- The base branch still exists on the remote.
+- Текущая ветка совпадает с head-веткой PR. Если нет — остановитесь с сообщением `checkout <head> first; this skill does not auto-switch branches`.
+- Локальная ветка загружена и не отстаёт от remote head (`git fetch origin && git status -sb`).
+- `gh auth status` / `glab auth status` — токен действителен.
+- Ветка base всё ещё существует на remote.
 
-## 1.4 State file
+## 1.4 Файл состояния
 
 `swarm-report/<slug>-drive-state.md`. Slug = `<branch-with-prefix-stripped>-pr<PR_NUMBER>` (e.g. `fix/login` on PR 42 → `login-pr42`). The PR number disambiguates parallel branches that would otherwise produce the same slug (e.g. `feature/login` and `fix/login`, or two re-openings of the same branch).
 
-Verify `swarm-report/` is gitignored by running `git check-ignore -q swarm-report/`; exit 0 = ignored, non-zero = not ignored. On non-zero — abort with `swarm-report/ is not ignored by git; add swarm-report/ to .gitignore and rerun`. Do not auto-modify `.gitignore`: that creates an unrelated diff inside a PR-driving loop and surprises the user.
+Проверьте, что `swarm-report/` игнорируется Git, выполнив `git check-ignore -q swarm-report/`; код выхода 0 означает, что каталог игнорируется, ненулевой — что нет. При ненулевом коде остановитесь с сообщением `swarm-report/ is not ignored by git; add swarm-report/ to .gitignore and rerun`. Не изменяйте `.gitignore` автоматически: это создаёт посторонний diff внутри цикла сопровождения PR и может застать пользователя врасплох.
 
-### Schema (markdown, machine-parseable on resume)
+### Схема (Markdown, разбирается машиной при возобновлении)
 
 ```markdown
 # Drive to Merge — <PR title>
@@ -125,8 +125,8 @@ analyzed_through_sha: <abbreviated sha the model is current as of, or empty befo
 <empty | list of items the skill surfaced to the user>
 ```
 
-On every resume (new session after context compaction) — re-read this file first; do not re-run analysis that already lives in a "Commitments" row unless the reviewer posted new activity. Reuse the stored `Branch change model` rather than rebuilding it from the full diff: re-read only the delta since `analyzed_through_sha` — but only if `analyzed_through_sha` is non-empty **and** `git merge-base --is-ancestor "<analyzed_through_sha>" HEAD` succeeds (i.e. the sha is still an ancestor after any rebase). If the sha is empty or the ancestry check fails, rebuild from the full diff (`git diff "origin/$BASE"...HEAD`) and reset `analyzed_through_sha` to the current `HEAD`.
+При каждом возобновлении (новая сессия после сжатия контекста) сначала перечитайте этот файл; не повторяйте анализ, уже отражённый в строке `Commitments`, если reviewer не проявил новую активность. Используйте сохранённую `Branch change model`, а не перестраивайте её по полному diff: перечитайте только delta после `analyzed_through_sha`, но лишь если `analyzed_through_sha` не пуст и `git merge-base --is-ancestor "<analyzed_through_sha>" HEAD` завершается успешно (то есть sha всё ещё является предком после любого rebase). Если sha пуст или проверка предка не пройдена, перестройте модель по полному diff (`git diff "origin/$BASE"...HEAD`) и сбросьте `analyzed_through_sha` на текущий `HEAD`.
 
-### Mode precedence on resume
+### Приоритет режима при возобновлении
 
-The state file `Mode` is the authoritative source. A fresh invocation without a flag inherits the stored mode; a fresh invocation with an explicit flag **overrides** the stored mode and rewrites it. This lets the user downgrade an `auto` run to `default` by re-invoking the skill, but does not silently demote an autonomous run just because the wake-up prompt was edited.
+`Mode` в файле состояния — авторитетный источник. Новый запуск без флага наследует сохранённый режим; новый запуск с явным флагом **переопределяет** сохранённый режим и переписывает его. Это позволяет пользователю по повторному вызову перевести запуск из `auto` в `default`, но не понижает автономный запуск молча только потому, что был изменён wake-up prompt.

@@ -11,7 +11,7 @@ description: >
   "mark PR ready for review", "update the PR", "switch the PR to ready".
 ---
 
-# Create PR
+# Создание PR
 
 Управляйте pull request (GitHub) или merge request (GitLab) на всём жизненном цикле — создание draft,
 обновление тела в процессе работы и итоговый перевод в ready for review. Описание динамически
@@ -28,7 +28,7 @@ description: >
 | `--promote` | После всех локальных проверок качества (finalize + acceptance) | Обновляет тело итоговой сводкой, затем переводит draft PR в ready for review | PR не существует или уже готов |
 | default | Прямой вызов | При неясности спрашивает draft-or-ready, затем создаёт PR | PR уже существует |
 
-Mode is passed via arguments: `/create-pr --draft`, `/create-pr --refresh`, `/create-pr --promote`, or `/create-pr` for default.
+Режим передаётся аргументами: `/create-pr --draft`, `/create-pr --refresh`, `/create-pr --promote` или `/create-pr` для режима по умолчанию.
 
 ---
 
@@ -66,20 +66,20 @@ out=$(glab mr view --output json 2>&1); rc=$?
 выведите сохранённый stderr. Не продолжайте так, будто PR отсутствует — это создаст дубликат. Типичные
 причины: `gh` / `glab` не установлены или не авторизованы, сбой API, отсутствует токен в sandbox.
 
-Capture on success:
+При успехе сохраните:
 - `PR_EXISTS` — true/false
-- `PR_IS_DRAFT` — true/false (if exists)
-- `PR_URL` — for output
-- `PR_BODY` — current body, used by refresh/promote to preserve manual edits (see Step 7.4)
+- `PR_IS_DRAFT` — true/false (если существует)
+- `PR_URL` — для вывода
+- `PR_BODY` — текущее тело, используемое режимами refresh/promote для сохранения ручных правок (см. шаг 7.4)
 
 ### Предусловия режимов
 
 | Режим | Предусловие | При ошибке |
 |---|---|---|
-| `--draft` | PR does not exist, or exists AND `isDraft: true` | If PR exists AND not draft: abort with "PR is already ready for review; use `--refresh` to update the body." |
-| `--refresh` | PR exists (draft or ready — `--refresh` does not change status) | If no PR: abort with "No PR found for this branch. Use `--draft` or default to create one first." |
-| `--promote` | PR exists AND `isDraft: true` | If no PR: abort with "No PR to promote." If already ready: abort with "PR is already ready for review; use `--refresh` if you want to update the body." |
-| default | PR does not exist | If PR exists: print URL, abort. Suggest `--refresh` or `--promote`. |
+| `--draft` | PR не существует или существует, и `isDraft: true` | Если PR существует и не является draft: остановитесь с сообщением "PR is already ready for review; use `--refresh` to update the body." |
+| `--refresh` | PR существует (draft или ready — `--refresh` не меняет статус) | Если PR нет: остановитесь с сообщением "No PR found for this branch. Use `--draft` or default to create one first." |
+| `--promote` | PR существует, и `isDraft: true` | Если PR нет: остановитесь с сообщением "No PR to promote." Если он уже ready: остановитесь с сообщением "PR is already ready for review; use `--refresh` if you want to update the body." |
+| default | PR не существует | Если PR существует: выведите URL и остановитесь. Предложите `--refresh` или `--promote`. |
 
 ---
 
@@ -106,14 +106,14 @@ git push   # no-op if in sync; common for --refresh / --promote
 
 | Артефакт | Расположение | Назначение в теле PR |
 |---|---|---|
-| research | `swarm-report/research/research-<slug>.md` | Link + 1-sentence abstract in "Context" section |
-| spec | `docs/specs/<YYYY-MM-DD>-<slug>.md` (written by `write-spec`) | Reference as "Specification" |
-| plan | `docs/plans/<slug>/plan.md` (written by `write-plan`; falls back to legacy `swarm-report/<slug>-plan.md`) | Reference as "Plan"; task acceptance from `docs/plans/<slug>/tasks.md` feeds "How to test" |
-| debug | `swarm-report/<slug>-debug.md` | Root cause + reproduction steps — primary context for bug-fix PRs |
-| test plan | `swarm-report/<slug>-test-plan.md` | Reference; test cases become checklist in "How to test" |
-| quality | `swarm-report/<slug>-quality.md` | Gate pass/fail summary for status table |
-| finalize | `swarm-report/<slug>-finalize.md` | Round-by-round summary for status table |
-| acceptance | `swarm-report/<slug>-acceptance.md` | Pass/fail + verified scenarios for "Verification" section |
+| research | `swarm-report/research/research-<slug>.md` | Ссылка + краткое резюме в 1 предложении в разделе "Context" |
+| spec | `docs/specs/<YYYY-MM-DD>-<slug>.md` (создаётся `write-spec`) | Ссылка как "Specification" |
+| plan | `docs/plans/<slug>/plan.md` (создаётся `write-plan`; запасной вариант — устаревший `swarm-report/<slug>-plan.md`) | Ссылка как "Plan"; критерии приёмки из `docs/plans/<slug>/tasks.md` попадают в "How to test" |
+| debug | `swarm-report/<slug>-debug.md` | Корневая причина + шаги воспроизведения — основной контекст для PR с исправлением бага |
+| test plan | `swarm-report/<slug>-test-plan.md` | Ссылка; тестовые сценарии становятся чек-листом в "How to test" |
+| quality | `swarm-report/<slug>-quality.md` | Сводка прохождения/непрохождения gate для таблицы статуса |
+| finalize | `swarm-report/<slug>-finalize.md` | Сводка по раундам для таблицы статуса |
+| acceptance | `swarm-report/<slug>-acceptance.md` | Прохождение/непрохождение + проверенные сценарии для раздела "Verification" |
 
 Разрешение slug:
 1. Предпочитайте slug, если вызывающий код передал его аргументом.
@@ -132,7 +132,7 @@ git push   # no-op if in sync; common for --refresh / --promote
 Получите доступные labels:
 
 - **GitHub:** `gh label list --json name,description --limit 100`
-- **GitLab:** `glab label list` (resolves project from `git remote get-url origin`; do NOT use `glab api /projects/:fullpath/labels` — glab does not substitute `:fullpath` and the call will 404)
+- **GitLab:** `glab label list` (определяет проект по `git remote get-url origin`; НЕ используйте `glab api /projects/:fullpath/labels` — glab не подставляет `:fullpath`, и вызов завершится с 404)
 
 Выбирайте только существующие labels с учётом изменённых путей файлов, типов коммитов и области изменений. Не изобретайте labels.
 
@@ -154,78 +154,78 @@ git push   # no-op if in sync; common for --refresh / --promote
 
 Тело составляется из каталога необязательных разделов: What changed, Why / motivation, Artifacts, How to test, **Release Notes** (если обнаружены видимые пользователю изменения), Status, Screenshots / demo, Checklist и завершающий footer Claude Code. Включайте только разделы, применимые к текущему режиму и доступным артефактам.
 
-See [`references/body-sections.md`](references/body-sections.md) for the full section-bank templates with example content and status-table formatting.
+Полные шаблоны банка разделов с примерами содержимого и форматированием таблицы статуса см. в [`references/body-sections.md`](references/body-sections.md).
 
 ### 7.2 Выбор разделов по режиму
 
-| Section | `--draft` | `--refresh` | `--promote` | default |
+| Раздел | `--draft` | `--refresh` | `--promote` | default |
 |---|---|---|---|---|
-| What changed | short (plan/task-based, code may be incomplete) | updated from current diff | final, full | full |
-| Why / motivation | ✅ | ✅ | ✅ | ✅ |
-| Artifacts | ✅ (as they appear) | ✅ (keeps current) | ✅ | ✅ if exist |
-| How to test | from plan if exists | from test-plan if exists | full | ✅ |
-| Release Notes | placeholder + open question if user-facing | refresh from spec/test-plan if user-visible signals | final entry per detected changelog format | ✅ when user-visible |
-| Status | "Implement: in progress" | updated from latest artifacts | all PASS | optional |
-| Screenshots | placeholder + prompt user | keep as-is | verify filled | prompt |
-| Checklist | unchecked | keep user edits | verify items consistent | unchecked |
+| Что изменилось | кратко (по плану/задаче, код может быть незавершён) | обновляется по текущему diff | итоговый полный вариант | полный вариант |
+| Почему / мотивация | ✅ | ✅ | ✅ | ✅ |
+| Артефакты | ✅ (по мере появления) | ✅ (сохраняет текущие) | ✅ | ✅ при наличии |
+| Как проверить | из плана, если есть | из test-plan, если есть | полный вариант | ✅ |
+| Release Notes | заготовка + открытый вопрос при изменениях для пользователей | обновляются по spec/test-plan при наличии пользовательских сигналов | итоговая запись в обнаруженном формате changelog | ✅ при изменениях для пользователей |
+| Статус | "Implement: in progress" | обновлённый по последним артефактам | все PASS | необязательно |
+| Скриншоты | заготовка + запрос пользователю | сохраняются как есть | проверка заполнения | запрос |
+| Чек-лист | неотмеченный | сохраняет правки пользователя | проверяет согласованность пунктов | неотмеченный |
 
 ### 7.2.1 Release Notes section (user-visible changes)
 
-Captures what users of the plugin / library / app will see, ready to paste into the project's changelog at release time. Emit when any signal is true:
+Фиксирует то, что увидят пользователи плагина / библиотеки / приложения; текст можно вставить в changelog проекта при выпуске. Добавляйте раздел, если истинен любой сигнал:
 
-- Spec/clarify/plan frontmatter declares `user-facing: true`, `prod-bound: true`, `breaking: true`, or a `release_notes:` block (optional add-ons; not part of the canonical `write-spec` template).
-- Diff touches a public API surface (`/api/`, public functions, exported types in barrel files, plugin manifests, marketplace metadata) — default auto-detection.
-- User passed `--release-notes "..."` (always wins).
+- Frontmatter spec/clarify/plan содержит `user-facing: true`, `prod-bound: true`, `breaking: true` или блок `release_notes:` (необязательные расширения; не входят в канонический шаблон `write-spec`).
+- Diff затрагивает публичную поверхность API (`/api/`, публичные функции, экспортируемые типы в barrel-файлах, манифесты плагинов, метаданные marketplace) — автоматическое обнаружение по умолчанию.
+- Пользователь передал `--release-notes "..."` (всегда имеет приоритет).
 
-Format is detected by file presence in the repo:
+Формат определяется по наличию файлов в репозитории:
 
-| Repo file | Format used in PR body |
+| Файл репозитория | Формат в теле PR |
 |---|---|
-| `CHANGELOG.md` | Keep-a-Changelog bullet, classified `Added` / `Changed` / `Fixed` / `Deprecated` / `Removed` / `Security`. Breaking flagged with leading `**Breaking:**` |
-| `.changeset/` directory | PR-body shorthand: `type: patch \| minor \| major` + one-line summary. **PR-body representation only, not a valid `.changeset/` entry**; actual file is created at release time per the [Changesets format](https://github.com/changesets/changesets/blob/main/docs/intro-to-using-changesets.md). |
-| `RELEASE_NOTES.md` / `docs/CHANGELOG.md` | Same Keep-a-Changelog format as `CHANGELOG.md` |
-| None | Plain bullet list under `## Release Notes` |
+| `CHANGELOG.md` | Пункт Keep-a-Changelog с классификацией `Added` / `Changed` / `Fixed` / `Deprecated` / `Removed` / `Security`. Breaking отмечается префиксом `**Breaking:**` |
+| `.changeset/` directory | Сокращённая запись в теле PR: `type: patch \| minor \| major` + однострочное резюме. **Только представление в теле PR, не допустимая запись `.changeset`**; настоящий файл создаётся во время выпуска по [формату Changesets](https://github.com/changesets/changesets/blob/main/docs/intro-to-using-changesets.md). |
+| `RELEASE_NOTES.md` / `docs/CHANGELOG.md` | Тот же формат Keep-a-Changelog, что и для `CHANGELOG.md` |
+| Нет | Обычный список пунктов под `## Release Notes` |
 
-Text only — `create-pr` does NOT modify changelog files. `--skip-release-notes` opts out (`Release notes: skipped (<reason>)`). The PR receipt records `release_notes: emitted | skipped: <reason> | not-applicable`.
+Только текст — `create-pr` НЕ изменяет файлы changelog. `--skip-release-notes` отключает раздел (`Release notes: skipped (<reason>)`). Receipt PR фиксирует `release_notes: emitted | skipped: <reason> | not-applicable`.
 
 ### 7.3 Detect visual changes
 
-Scan changed file paths for platform-specific UI markers (Android/Compose, Compose Multiplatform, Web, iOS/SwiftUI). If any match, include the "Screenshots / demo" section and prompt the user for attachments in `--draft` and `--promote`; `--refresh` preserves existing Screenshots content verbatim.
+Проверьте пути изменённых файлов на маркеры UI конкретных платформ (Android/Compose, Compose Multiplatform, Web, iOS/SwiftUI). При совпадении добавьте раздел "Screenshots / demo" и запросите у пользователя вложения в режимах `--draft` и `--promote`; `--refresh` сохраняет существующее содержимое Screenshots дословно.
 
-See [`references/visual-change-patterns.md`](references/visual-change-patterns.md) for the full glob patterns per platform.
+Полные glob-шаблоны для каждой платформы см. в [`references/visual-change-patterns.md`](references/visual-change-patterns.md).
 
 ### 7.4 Preserve user edits on refresh/promote
 
-When `--refresh` or `--promote` runs and `PR_BODY` is non-empty:
+Когда выполняется `--refresh` или `--promote` и `PR_BODY` не пуст:
 
-1. Detect manual-edit markers — content between `<!-- user-edit-start -->` and `<!-- user-edit-end -->` is preserved verbatim.
-2. Content in Screenshots / demo section preserved verbatim (users paste images there).
-3. Checklist items that are **checked** are preserved as checked.
+1. Обнаружьте маркеры ручных правок — содержимое между `<!-- user-edit-start -->` и `<!-- user-edit-end -->` сохраняется дословно.
+2. Содержимое раздела Screenshots / demo сохраняется дословно (пользователи вставляют туда изображения).
+3. Отмеченные (**checked**) пункты чек-листа сохраняются отмеченными.
 
-Everything else is regenerated from artifacts + git state.
+Всё остальное генерируется заново по артефактам и состоянию git.
 
-**Edge case: empty `PR_BODY`** — skip the preserve-step entirely and generate from scratch. Do not fail.
-
----
-
-## Step 8: Generate title
-
-Mode-aware:
-
-- **`--draft`** — derive from branch + first commit message
-- **`--refresh`** — keep existing title unchanged
-- **`--promote`** — keep existing title unless user asks otherwise (then use task description or spec)
-- **default** — derive from branch + most meaningful commit
-
-Rules when creating/changing the title: strip `feature/` `fix/` `chore/` `refactor/` `docs/` prefixes, convert kebab-case to sentence case, keep under 70 chars, never add "WIP:" or "Draft:" (draft status conveys it).
+**Крайний случай: пустой `PR_BODY`** — полностью пропустите шаг сохранения и сгенерируйте тело с нуля. Не завершайте работу с ошибкой.
 
 ---
 
-## Step 9: Execute per mode
+## Шаг 8: генерация заголовка
+
+С учётом режима:
+
+- **`--draft`** — сформируйте по ветке и сообщению первого коммита
+- **`--refresh`** — сохраните существующий заголовок без изменений
+- **`--promote`** — сохраните существующий заголовок, если пользователь не попросил иного (тогда используйте описание задачи или spec)
+- **default** — сформируйте по ветке и наиболее содержательному коммиту
+
+Правила создания/изменения заголовка: удалите префиксы `feature/` `fix/` `chore/` `refactor/` `docs/`, преобразуйте kebab-case в sentence case, уложитесь в 70 символов, никогда не добавляйте "WIP:" или "Draft:" (это уже передаётся статусом draft).
+
+---
+
+## Шаг 9: выполнение по режиму
 
 ### 9a. Mode `--draft`
 
-If no PR exists:
+Если PR не существует:
 
 ```bash
 # GitHub
@@ -243,15 +243,15 @@ glab mr create --draft \
   --target-branch "$BASE"
 ```
 
-If draft already exists → edit body:
+Если draft уже существует → измените тело:
 
 ```bash
 gh pr edit --body "<body>"
 glab mr update --description "<body>"
 ```
 
-Output:
-> Draft PR created: `<url>`
+Вывод:
+> Draft PR создан: `<url>`
 
 ### 9b. Mode `--refresh`
 
@@ -262,14 +262,14 @@ gh pr edit --body "<new-body>"
 glab mr update --description "<new-body>"
 ```
 
-Labels, reviewers, title are **not** touched.
+Labels, reviewers и заголовок **не изменяются**.
 
-Output:
-> PR body refreshed: `<url>`
+Вывод:
+> Тело PR обновлено: `<url>`
 
 ### 9c. Mode `--promote`
 
-Two sequential operations:
+Две последовательные операции:
 
 ```bash
 # 1. Refresh body with final summary
@@ -292,38 +292,38 @@ if ! glab mr update --ready 2>"$GLAB_ERR"; then
 fi
 ```
 
-Output:
-> PR promoted to ready for review: `<url>`
+Вывод:
+> PR переведён в ready for review: `<url>`
 
 ### 9d. Default mode
 
-Ask draft-or-ready if not inferable from conversation, then create with full body + labels + reviewers.
+Если режим draft-or-ready нельзя вывести из разговора, спросите о нём, затем создайте PR с полным телом, labels и reviewers.
 
 ---
 
-## Output templates
+## Шаблоны вывода
 
-**Draft (`--draft` or default → draft):**
-> Draft PR created: `<url>`
-> Next: complete implementation → `/finalize` → `/acceptance` → `/create-pr --promote` to mark ready.
+**Draft (`--draft` или default → draft):**
+> Draft PR создан: `<url>`
+> Далее: завершите реализацию → `/finalize` → `/acceptance` → `/create-pr --promote`, чтобы перевести PR в ready.
 
-**Refreshed (`--refresh`):**
-> PR body refreshed: `<url>`
+**Обновлённый (`--refresh`):**
+> Тело PR обновлено: `<url>`
 
-**Promoted (`--promote`):**
-> PR promoted to ready for review: `<url>`
-> Next: invoke `/drive-to-merge` (or `/drive-to-merge --auto`) to autonomously monitor CI, handle review comments, and drive the PR to merge.
+**Переведённый (`--promote`):**
+> PR переведён в ready for review: `<url>`
+> Далее: вызовите `/drive-to-merge` (или `/drive-to-merge --auto`), чтобы автономно отслеживать CI, обрабатывать комментарии ревью и довести PR до слияния.
 
-**Default ready:**
-> PR created: `<url>`
-> Next: invoke `/drive-to-merge` to autonomously monitor CI, handle review comments, and drive the PR to merge.
+**Готовый по умолчанию:**
+> PR создан: `<url>`
+> Далее: вызовите `/drive-to-merge`, чтобы автономно отслеживать CI, обрабатывать комментарии ревью и довести PR до слияния.
 
 ---
 
 ## Scope rules
 
-- **In scope:** PR create/edit/ready status transitions; body composition; labels and reviewers on create/promote; title generation on create.
-- **Out of scope:** editing code, running tests, running `/check`, managing commits (caller pushes beforehand), merging.
-- **Do not** force-push or rewrite history. If push fails — report and let caller resolve.
-- **Do not** remove labels or reviewers set by humans. Only add missing ones on `--promote`.
-- **Do not** strip manually-added content when refreshing — respect `<!-- user-edit-start/end -->` markers and Screenshots section.
+- **Входит в область:** создание/редактирование PR и переходы статуса ready; составление тела; labels и reviewers при создании/promote; генерация заголовка при создании.
+- **Не входит в область:** редактирование кода, запуск тестов, запуск `/check`, управление коммитами (вызывающая сторона отправляет их заранее), слияние.
+- **Не** выполняйте force-push и не переписывайте историю. Если push завершается ошибкой — сообщите об этом и оставьте решение вызывающей стороне.
+- **Не** удаляйте labels или reviewers, установленные людьми. В режиме `--promote` только добавляйте недостающие.
+- **Не** удаляйте добавленное вручную содержимое при обновлении — соблюдайте маркеры `<!-- user-edit-start/end -->` и раздел Screenshots.

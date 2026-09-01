@@ -1,154 +1,155 @@
 ---
 name: write-spec
-description: "Specification-Driven Development — transforms a feature idea into an exhaustive spec that enables autonomous implementation without user interruptions downstream. Researches codebase, interviews user with pre-filled suggestions, produces structured spec with acceptance criteria, affected modules, constraints, and decisions. Spec is auto-reviewed (self-review + multiexpert-review), discussed with user, saved as permanent document. Use when: \"write a spec\", \"spec this out\", \"design doc\", \"spec-driven\", \"let's spec it before building\", \"write a specification for\", \"design the architecture for\", \"let's plan it properly\", \"I don't want to wing it\". Invoke proactively when a feature is complex enough that jumping straight to implementation would be risky. Do NOT use for: bug fixes (use plan mode), research-only questions (use research skill), single-file changes."
+description: "Разработка на основе спецификации — превращает идею функции в исчерпывающую спецификацию, которая позволяет автономно реализовать её без последующих обращений к пользователю. Исследует кодовую базу, проводит интервью с пользователем, предлагая готовые варианты ответов, создаёт структурированную спецификацию с критериями приёмки, затронутыми модулями, ограничениями и решениями. Спецификация автоматически проверяется (self-review + multiexpert-review), обсуждается с пользователем и сохраняется как постоянный документ. Используйте, когда: \"написать спецификацию\", \"проработать это в спецификации\", \"design doc\", \"на основе спецификации\", \"давайте сначала опишем это в спецификации\", \"написать спецификацию для\", \"спроектировать архитектуру для\", \"давайте нормально это спланируем\", \"не хочу делать на авось\". Вызывайте проактивно, когда функция достаточно сложна и переход сразу к реализации рискован. НЕ используйте для: исправления ошибок (используйте plan mode), вопросов только для исследования (используйте research skill), изменений в одном файле."
 ---
 
-# Write Spec
+# Написание спецификации
 
-Transform a feature idea into an exhaustive specification that serves as a contract for
-autonomous implementation. Once approved, the implementing agent can execute end-to-end,
-asking the user only at critical blockers.
+Превратите идею функции в исчерпывающую спецификацию, которая служит контрактом для
+автономной реализации. После утверждения агент-исполнитель может выполнить работу от
+начала до конца, обращаясь к пользователю только при критических блокерах.
 
-**Role:** BA + Tech Lead. Probes the real need behind the request, evaluates approaches,
-recommends the best one for the context.
+**Роль:** бизнес-аналитик + технический руководитель. Выясняет реальную потребность,
+стоящую за запросом, оценивает подходы и рекомендует лучший для данного контекста.
 
-**Core principles:**
+**Основные принципы:**
 
-1. **The user's request is input, not a mandate.** A proposed solution ("add retry with
-   backoff") is one candidate, not the answer. Research independently and recommend the
-   optimal approach — say whether the user's idea is right, partially right, or beaten
-   by an alternative.
-2. **Surface requests hide deep complexity.** "I want a withdrawal button" implies payment
-   infrastructure, compliance, bank integrations, fraud checks. Surface the iceberg
-   before writing the spec.
-3. **User attention is precious.** Research everything that can be answered without
-   asking. Every question to the user comes with a recommended answer to accept or override.
+1. **Запрос пользователя — это вводные данные, а не указание.** Предложенное решение
+   (например, «добавить повторную попытку с backoff») — один из вариантов, а не ответ.
+   Исследуйте вопрос самостоятельно и рекомендуйте оптимальный подход — укажите, верна
+   ли идея пользователя, верна ли она частично или существует лучший вариант.
+2. **За поверхностными запросами скрывается глубокая сложность.** «Хочу кнопку вывода
+   средств» подразумевает платёжную инфраструктуру, compliance, банковские интеграции и
+   проверки на мошенничество. Выявите весь скрытый объём до написания спецификации.
+3. **Внимание пользователя бесценно.** Исследуйте всё, на что можно ответить без
+   дополнительных вопросов. Каждый вопрос пользователю сопровождайте рекомендуемым
+   ответом, который можно принять или отклонить.
 
 ---
 
-## Phase 0: Parse Input
+## Фаза 0: Разбор вводных данных
 
-### 0.1 Separate the need from the proposed solution
+### 0.1 Отделите потребность от предложенного решения
 
-Extract:
-- **Business need** — the underlying problem/goal (often implicit).
-- **Proposed solution** — what the user literally said (one candidate, not the answer).
-- **Known constraints** — platform, libraries, "no new deps", deadline.
-- **Assumed context** — what the user knows vs may not have considered.
+Извлеките:
+- **Бизнес-потребность** — лежащую в основе проблему/цель (часто неявную).
+- **Предложенное решение** — то, что пользователь буквально сказал (один из вариантов, а не ответ).
+- **Известные ограничения** — платформу, библиотеки, «без новых deps», сроки.
+- **Предполагаемый контекст** — что пользователь знает и что мог не учесть.
 
-When need and proposed solution differ ("I want a withdrawal button" → need: users cash
-out earnings), acknowledge both. The spec addresses the business need with the best
-available solution.
+Если потребность и предложенное решение различаются («Хочу кнопку вывода средств» →
+потребность: пользователи хотят обналичивать заработок), зафиксируйте оба. Спецификация
+должна описывать бизнес-потребность и лучшее доступное решение.
 
-Generate kebab-case slug (`offline-mode`, `push-notifications`).
+Сгенерируйте slug в kebab-case (`offline-mode`, `push-notifications`).
 
-Artifacts:
-- Spec: `docs/specs/YYYY-MM-DD-<slug>.md` (version-controlled, permanent)
-- State: `./swarm-report/spec-<slug>-state.md` (operational, deleted after)
+Артефакты:
+- Спецификация: `docs/specs/YYYY-MM-DD-<slug>.md` (под версионным контролем, постоянная)
+- Состояние: `./swarm-report/spec-<slug>-state.md` (служебное, удаляется после завершения)
 
-### 0.2 Hidden complexity & scope depth
+### 0.2 Скрытая сложность и глубина охвата
 
-Two pre-research checks:
+Перед исследованием выполните две проверки:
 
-**Hidden complexity** — flag in the state file when the request names a UI element but
-the real work is backend, implies external services / money / legal / compliance, modifies
-a flow other features depend on, or uses domain jargon that could mean different scopes.
-Surfacing the iceberg early is one of the most valuable things this skill does. If the
-feature is clearly enormous (months, multiple teams), say so upfront and ask one scoping
-question.
+**Скрытая сложность** — отметьте в файле состояния, если запрос называет элемент UI, но
+реальная работа относится к backend, подразумевает внешние сервисы / деньги / legal / compliance,
+изменяет поток, от которого зависят другие функции, или использует предметный жаргон,
+который может означать разные границы работ. Раннее выявление скрытого объёма — одна из
+самых ценных задач этого skill. Если функция явно огромна (месяцы работы, несколько
+команд), скажите об этом заранее и задайте один вопрос для уточнения масштаба.
 
-**Scope depth ambiguity** — when the same phrase can mean radically different scopes
-("push notifications" → local alerts vs full FCM/APNs integration), ask ONE question
-laying out options from minimal to full, with a recommended option based on project
-context. Skip if scope is clearly understood. Trigger on: external services,
-multi-system integration, OS-level capabilities.
+**Неопределённость глубины охвата** — если одна и та же фраза может означать радикально
+разный объём («push notifications» → локальные уведомления или полноценная интеграция
+FCM/APNs), задайте ОДИН вопрос с вариантами от минимального до полного и рекомендуемым
+вариантом с учётом контекста проекта. Пропустите этот шаг, если охват понятен. Выполняйте
+его при наличии: внешних сервисов, интеграции нескольких систем, возможностей уровня ОС.
 
-### Research track selection
+### Выбор направлений исследования
 
-Don't run everything by default. Activate tracks based on what gives useful signal:
+Не запускайте всё по умолчанию. Активируйте направления, исходя из того, какие из них дадут полезный сигнал:
 
-| Signal | Tracks |
+| Сигнал | Направления |
 |---|---|
-| Existing product functionality | Codebase + Business Analyst |
-| New module / cross-layer / architectural change | Codebase + Architecture |
-| External API / protocol / algorithm / unfamiliar domain | Web Research |
-| Vague idea, unclear user-facing impact | Business Analyst |
-| Library / versioning / dependency concern | Web Research (+ maven-mcp if JVM) |
-| Straightforward single-module change | Codebase only |
+| Существующая функциональность продукта | Codebase + Business Analyst |
+| Новый модуль / межслойное / архитектурное изменение | Codebase + Architecture |
+| Внешний API / протокол / алгоритм / незнакомая предметная область | Web Research |
+| Расплывчатая идея, неясное влияние на пользователя | Business Analyst |
+| Библиотека / версионирование / проблема с зависимостью | Web Research (+ maven-mcp if JVM) |
+| Простое изменение в одном модуле | Только Codebase |
 
-**If the project has existing business / requirements docs** (`docs/`, `*.md` specs, linked issues), read them **before** launching agents — they often answer questions upfront.
+**Если в проекте есть существующие бизнес-документы / документы с требованиями** (`docs/`, спецификации `*.md`, связанные issues), прочитайте их **до** запуска агентов — часто они заранее отвечают на вопросы.
 
-**Default when uncertain:** Codebase + Business Analyst. Add others as findings reveal gaps.
-
----
-
-## Phase 1: Research
-
-### 1.1 Launch research consortium
-
-Launch all selected agents **in a single message** (parallel). Each works independently.
-
-Available tracks:
-
-- **Codebase Expert (Explore)** — always include. Existing code, patterns, deps, module boundaries, TODOs, test infra.
-- **Architecture Expert** — new module, dependency-direction change, new abstractions, multi-layer.
-- **Web Research** — external protocols, non-trivial algorithms, third-party integration, unfamiliar domain.
-- **Business Analyst** — user-facing impact, unclear scope, vague idea.
-- **Critical Evaluation** — user proposed a specific technical approach, OR codebase has established patterns that may be outdated. Produces 3 approach options (Radical / Classic / Conservative).
-- **Dependency Chain** — external services, OS-level capabilities, infrastructure, setup phase.
-
-Use [`references/research-prompts.md`](references/research-prompts.md) verbatim per agent.
-
-### 1.2 State file
-
-Create `./swarm-report/spec-<slug>-state.md` before launching agents. Standard fields per global state-file template, plus skill-specific sections:
-
-- **Input** — goal, motivation, known constraints
-- **Research Tracks** — checklist of tracks launched/skipped (with skip reason)
-- **Findings** — populated as agents complete
-- **Interview Log** — populated during Phase 2
-
-Update as each agent completes.
+**По умолчанию при неопределённости:** Codebase + Business Analyst. Добавляйте остальные направления по мере выявления пробелов.
 
 ---
 
-## Phase 2: Interview
+## Фаза 1: Исследование
 
-**Entry contract:** research completed, state file holds findings, no user questions asked yet beyond optional scope-depth.
+### 1.1 Запустите исследовательский консорциум
 
-**Round loop** (the unique pattern of this skill):
+Запустите всех выбранных агентов **одним сообщением** (параллельно). Каждый работает независимо.
 
-1. Synthesize findings against the feature checklist (permissions, platform behavior, prerequisites, error states, security, performance, backward compat).
-2. Sort remaining items: **already known** (skip), **proposed defaults** (propose for confirmation), **genuine gaps** (ask).
-3. If Critical Evaluation produced 3 approach options and approach is unchosen, present them **first** and wait for the pick — it shapes every subsequent question.
-4. Present open questions in Question Format (each with recommended answer + alternatives). Wait.
-5. Record answers in state file. Check for new gaps. Loop.
+Доступные направления:
 
-**Exit:** no open gaps remain and approach chosen → Phase 3. Round-100 cap → remaining items become non-blocking open questions in the spec; blockers flagged for Phase 4 review.
+- **Codebase Expert (Explore)** — всегда включайте. Существующий код, паттерны, deps, границы модулей, TODO, тестовая инфраструктура.
+- **Architecture Expert** — новый модуль, изменение направления зависимостей, новые абстракции, несколько слоёв.
+- **Web Research** — внешние протоколы, нетривиальные алгоритмы, интеграция сторонних систем, незнакомая предметная область.
+- **Business Analyst** — влияние на пользователя, неясный охват, расплывчатая идея.
+- **Critical Evaluation** — пользователь предложил конкретный технический подход ИЛИ в кодовой базе есть устоявшиеся паттерны, которые могут быть устаревшими. Выдаёт 3 варианта подхода (Radical / Classic / Conservative).
+- **Dependency Chain** — внешние сервисы, возможности уровня ОС, инфраструктура, фаза настройки.
 
-**Large-feature phasing.** If the feature spans multiple independent phases, offer a phased approach. If accepted, spec Phase 1 only — remaining phases go in "Future Phases".
+Для каждого агента используйте [`references/research-prompts.md`](references/research-prompts.md) без изменений.
 
-See [`references/interview-rounds.md`](references/interview-rounds.md) for the feature checklist, approach-options presentation, question format, round script, and phasing template.
+### 1.2 Файл состояния
 
----
+Создайте `./swarm-report/spec-<slug>-state.md` до запуска агентов. Используйте стандартные поля из глобального шаблона файла состояния и добавьте разделы, специфичные для skill:
 
-## Phase 3: Write Spec Draft
+- **Input** — цель, мотивация, известные ограничения
+- **Research Tracks** — список запущенных/пропущенных направлений (с причиной пропуска)
+- **Findings** — заполняется по мере завершения работы агентов
+- **Interview Log** — заполняется во время Фазы 2
 
-Write the spec as if the reader is an implementing agent with zero additional context.
-Nothing can be left to inference. Every requirement is verifiable. Every decision is
-explicit with its rationale.
-
-Follow the canonical Markdown spec template — YAML frontmatter with `type`/`slug`/`date`/`status` plus optional `platform`/`surfaces`/`risk_areas`/`non_functional`/`acceptance_criteria_ids`/`design` fields that drive downstream `acceptance` and `generate-test-plan`, followed by body sections: Context and Motivation, Acceptance Criteria (stable `AC-N` ids), Prerequisites, Affected Modules and Files, Technical Approach, Technical Constraints, Decisions Made, Out of Scope, Open Questions, and Future Phases.
-
-See [`references/spec-template.md`](references/spec-template.md) for the full template (frontmatter fields, section headers, table shapes, and inline instructions) — copy it verbatim into the draft and fill in each placeholder.
+Обновляйте его по мере завершения работы каждого агента.
 
 ---
 
-## Phase 4: Review Loop
+## Фаза 2: Интервью
 
-### 4.0 Pre-review TODO sweep
+**Условие входа:** исследование завершено, файл состояния содержит результаты, пользователю ещё не задавались вопросы, кроме необязательного вопроса о глубине охвата.
 
-Before launching any reviewer, grep all source docs the spec depends on for unaddressed items:
+**Цикл раундов** (уникальный паттерн этого skill):
+
+1. Сопоставьте результаты с чек-листом функции (разрешения, поведение платформы, prerequisites, состояния ошибок, безопасность, производительность, backward compat).
+2. Отсортируйте оставшиеся пункты: **уже известно** (пропустить), **предлагаемые значения по умолчанию** (предложить подтвердить), **настоящие пробелы** (спросить).
+3. Если Critical Evaluation выдал 3 варианта подхода и подход ещё не выбран, представьте их **сначала** и дождитесь выбора — он определит все последующие вопросы.
+4. Представьте открытые вопросы в формате Question Format (каждый с рекомендуемым ответом + альтернативами). Дождитесь ответа.
+5. Запишите ответы в файл состояния. Проверьте новые пробелы. Повторите цикл.
+
+**Выход:** открытых пробелов не осталось и подход выбран → Фаза 3. При достижении лимита в 100 раундов оставшиеся пункты становятся неблокирующими открытыми вопросами в спецификации; блокеры отмечаются для проверки в Фазе 4.
+
+**Разбиение большой функции на фазы.** Если функция состоит из нескольких независимых фаз, предложите поэтапный подход. Если он принят, специфицируйте только Фазу 1 — остальные фазы поместите в «Future Phases».
+
+Чек-лист функции, представление вариантов подхода, формат вопросов, сценарий раунда и шаблон разбиения на фазы описаны в [`references/interview-rounds.md`](references/interview-rounds.md).
+
+---
+
+## Фаза 3: Написание черновика спецификации
+
+Пишите спецификацию так, будто читатель — агент-исполнитель, у которого нет дополнительного контекста.
+Ничего нельзя оставлять на усмотрение. Каждое требование должно быть проверяемым. Каждое решение
+должно быть явно указано вместе с его обоснованием.
+
+Следуйте каноническому шаблону Markdown-спецификации — YAML frontmatter с полями `type`/`slug`/`date`/`status` и необязательными полями `platform`/`surfaces`/`risk_areas`/`non_functional`/`acceptance_criteria_ids`/`design`, которые используются последующими `acceptance` и `generate-test-plan`, а затем разделы основного текста: Context and Motivation, Acceptance Criteria (стабильные идентификаторы `AC-N`), Prerequisites, Affected Modules and Files, Technical Approach, Technical Constraints, Decisions Made, Out of Scope, Open Questions и Future Phases.
+
+Полный шаблон (поля frontmatter, заголовки разделов, формы таблиц и встроенные инструкции) находится в [`references/spec-template.md`](references/spec-template.md) — скопируйте его в черновик без изменений и заполните каждый placeholder.
+
+---
+
+## Фаза 4: Цикл проверки
+
+### 4.0 Поиск TODO перед проверкой
+
+До запуска любого проверяющего найдите во всех исходных документах, от которых зависит спецификация, нерассмотренные пункты:
 
 ```bash
 grep -rniE 'TODO|FIXME|verify|needs investigation|to be confirmed|TBD|XXX' \
@@ -158,44 +159,44 @@ grep -rniE 'TODO|FIXME|verify|needs investigation|to be confirmed|TBD|XXX' \
 
 Replace `<spec-filename>` with the actual spec file name (e.g. `2026-05-27-offline-mode.md`) so the spec itself is never scanned.
 
-Replace `<your-baseline-doc-dirs>` with the actual directories that hold source docs for this repo (e.g. `docs/design/ docs/research/`). **Do NOT add `2>/dev/null`** — if a directory doesn't exist, grep will print an error, which is what you want: missing dirs with `2>/dev/null` silently produce zero output, indistinguishable from "no findings".
+Замените `<your-baseline-doc-dirs>` фактическими каталогами с исходными документами этого репозитория (например, `docs/design/ docs/research/`). **НЕ добавляйте `2>/dev/null`** — если каталога не существует, grep выведет ошибку, чего и требуется добиться: отсутствующие каталоги с `2>/dev/null` молча дадут пустой вывод, неотличимый от «ничего не найдено».
 
-For each hit:
-- **Closed in spec** — spec explicitly addresses (AC, Decision, or Technical Approach paragraph). No action.
-- **Out of Scope** — spec's `## Out of Scope` section explicitly lists it (optionally noting the owner or deferral target). No action.
-- **Neither** — gap. Either address inline or add to Out of Scope before proceeding. **Do not skip.**
+Для каждого найденного совпадения:
+- **Закрыто в спецификации** — спецификация явно рассматривает его (в AC, Decision или абзаце Technical Approach). Действий не требуется.
+- **Out of Scope** — раздел `## Out of Scope` спецификации явно перечисляет его (при необходимости с указанием владельца или того, куда он отложен). Действий не требуется.
+- **Ни то ни другое** — пробел. Либо закройте его прямо в тексте, либо добавьте в Out of Scope перед продолжением. **Не пропускайте.**
 
-Why this exists: TODO lists in baseline / research / review docs encode the questions the source authors already knew were unanswered. A spec that ignores them is built on a knowingly incomplete foundation. Real-world failure mode: visual-parity doc says «Drop-shadow rendering TBD», spec never addresses it, pilot devs hit the gap in week 6 of implementation.
+Зачем это нужно: списки TODO в исходных документах, документах исследования и проверки содержат вопросы, на которые авторы уже знали, что нет ответа. Спецификация, игнорирующая их, строится на заведомо неполном основании. Реальный сценарий сбоя: в документе о визуальном соответствии сказано «Drop-shadow rendering TBD», спецификация это не рассматривает, и разработчики пилотной версии сталкиваются с пробелом на шестой неделе реализации.
 
-This is mechanical — automate it. Don't trust «I think we covered everything».
+Это механическая проверка — автоматизируйте её. Не полагайтесь на «кажется, мы всё учли».
 
-### 4.1 Present draft to user
+### 4.1 Представьте черновик пользователю
 
-Do NOT paste the full spec into chat — the spec file is the artifact; chat is for
-navigation. Instead, present a compact summary:
-- Spec title and one-sentence goal
-- 3–5 key acceptance criteria (by AC-N id and a short label)
-- Any open questions that remain unresolved
+НЕ вставляйте полную спецификацию в чат — артефактом является файл спецификации, а чат нужен для
+навигации. Вместо этого представьте краткое резюме:
+- название спецификации и цель в одном предложении;
+- 3–5 ключевых критериев приёмки (с идентификатором AC-N и короткой меткой);
+- все оставшиеся нерешёнными открытые вопросы.
 
-If there are open questions, ask exactly ONE of them now. After the user responds,
-loop back for the next open question if any remain.
+Если есть открытые вопросы, задайте сейчас ровно ОДИН из них. После ответа пользователя
+вернитесь к следующему открытому вопросу, если такие ещё остались.
 
-### 4.2 Self-review while user reads
+### 4.2 Самопроверка, пока пользователь читает
 
-While the user reviews, run a self-check:
-- Every acceptance criterion is objectively verifiable (not "should feel fast")
-- Every affected module listed with change type
-- No decision left to the implementing agent's judgment
-- Out of scope is explicit — nothing accidentally implied
-- No blocking open questions remain unresolved
-- **All source-doc TODOs from §4.0 addressed** — re-grep after edits, expect zero unhandled hits
-- **Each user interaction (gesture / event / system trigger) has full mechanical specification** — for every drag, tap, long-press, swipe, back-gesture, system-event: trigger conditions, state precondition, visual feedback, hit-testing / coordinate-resolution rule, commit timing, callbacks emitted, failure modes. Half-specified interactions (e.g., "user can drag widget" without anchor / hit-test / drop-zone math) are a top source of post-approval rework.
+Пока пользователь проверяет документ, выполните самопроверку:
+- каждый критерий приёмки объективно проверяем (а не «должен ощущаться быстрым»);
+- каждый затронутый модуль перечислен с типом изменения;
+- ни одно решение не оставлено на усмотрение агента-исполнителя;
+- Out of scope описан явно — ничего не подразумевается случайно;
+- не осталось нерешённых блокирующих открытых вопросов;
+- **все TODO из исходных документов по §4.0 обработаны** — после правок повторите grep, ожидается ноль необработанных совпадений;
+- **каждое взаимодействие пользователя (жест / событие / системный триггер) имеет полное механическое описание** — для каждого drag, tap, long-press, swipe, back-gesture, system-event укажите условия срабатывания, предусловие состояния, визуальную обратную связь, правило hit-testing / разрешения координат, момент фиксации, отправляемые callbacks и режимы отказа. Неполностью описанные взаимодействия (например, «пользователь может перетащить widget» без математики anchor / hit-test / drop-zone) — один из главных источников доработок после утверждения.
 
-Fix any self-identified gaps.
+Исправьте все выявленные таким образом пробелы.
 
-### 4.3 Run multiexpert-review (spec profile)
+### 4.3 Запустите multiexpert-review (профиль spec)
 
-Run `multiexpert-review` with explicit profile hint — prepend to args:
+Запустите `multiexpert-review` с явной подсказкой профиля — добавьте в начало аргументов:
 
 ```
 profile: spec
@@ -203,97 +204,97 @@ profile: spec
 <full spec content + original feature goal>
 ```
 
-The hint is defense-in-depth: inline-arg callsites lack frontmatter the detector classifies
-on, and the prefix short-circuits detection deterministically. See
-[`references/profile-hint-rationale.md`](references/profile-hint-rationale.md).
+Подсказка служит дополнительной защитой: у вызовов с inline-аргументами нет frontmatter,
+по которому работает классификатор, а префикс детерминированно прекращает дальнейшее
+распознавание. См. [`references/profile-hint-rationale.md`](references/profile-hint-rationale.md).
 
-The draft is in-memory (not yet saved to `docs/specs/`), so engine classifies source as
-`conversation` and uses `inline-revise` for FAIL fixes — revise-loop iterations happen
-inline in this flow.
+Черновик находится в памяти (ещё не сохранён в `docs/specs/`), поэтому engine классифицирует
+источник как `conversation` и использует `inline-revise` для исправлений FAIL — итерации
+цикла правок происходят непосредственно в этом процессе.
 
-The spec profile (panel: business-analyst + architecture-expert) checks AC falsifiability,
-prerequisite realism, explicit Out of Scope, decisions with rationale, affected-modules
-completeness, blocking vs non-blocking open questions, technical-approach detail.
+Профиль spec (panel: business-analyst + architecture-expert) проверяет фальсифицируемость AC,
+реалистичность prerequisites, явный Out of Scope, решения с обоснованием, полноту списка
+затронутых модулей, блокирующие и неблокирующие открытые вопросы, детализацию технического подхода.
 
-**Do not shrink the reviewer panel.** Include ALL triggered reviewers that are installed —
-if the profile's `optional_if` regex matches (security-expert on PII/auth/encryption,
-performance-expert on SLA/latency/budget, ux-expert on a11y/UI/UX), the engine includes
-them when installed and skips them when not; call out any skipped-due-to-missing reviewer
-rather than silently dropping the perspective.
-Skipping a profile-triggered reviewer because «that domain was already covered in an
-earlier review of the underlying research» is false economy: each multiexpert cycle
-reviews a different artifact (spec vs research are different texts even when they
-overlap in topic), and the reviewer's perspective on the spec-level contract is what
-matters here. Cost of including: ~2-5 minutes per extra agent. Cost of omission: gaps
-that surface only after approval (visual-interaction details, perf budgets, a11y flows
-are typical victims).
+**Не сокращайте панель проверяющих.** Включите ВСЕ сработавшие проверки, доступные в системе —
+если regex `optional_if` профиля совпадает (security-expert для PII/auth/encryption,
+performance-expert для SLA/latency/budget, ux-expert для a11y/UI/UX), engine включает их,
+если они установлены, и пропускает, если нет; явно укажите, какие проверки пропущены из-за
+отсутствия соответствующего проверяющего, вместо того чтобы молча исключать эту перспективу.
+Пропуск проверки, активированной профилем, со словами «эта предметная область уже была
+рассмотрена в предыдущей проверке исходного исследования» — ложная экономия: каждый цикл
+multiexpert проверяет другой артефакт (спецификация и исследование — разные тексты, даже
+если они пересекаются по теме), и здесь важна перспектива проверяющего на контракт уровня
+спецификации. Цена включения: ~2–5 минут на каждого дополнительного агента. Цена пропуска:
+пробелы, обнаруживающиеся только после утверждения (типичные жертвы — детали визуальных
+взаимодействий, бюджеты производительности, сценарии a11y).
 
-| Severity | Action |
+| Серьёзность | Действие |
 |---|---|
 | PASS | Proceed |
 | Minor | Fix inline, note changes |
 | CONDITIONAL / contradictions | Surface to user, resolve |
 | FAIL | Engine drives revise-loop; iterate until PASS/CONDITIONAL or user escalation |
 
-### 4.4 Discussion round after review
+### 4.4 Обсуждение после проверки
 
-After self-review and multiexpert-review complete, if either surfaced issues or open questions:
-present them to the user for a final discussion round. This may loop back into Phase 2
-style Q&A to close remaining gaps.
+После завершения self-review и multiexpert-review, если хотя бы одна проверка выявила проблемы
+или открытые вопросы, представьте их пользователю для финального раунда обсуждения. При этом
+можно вернуться к вопросам и ответам в стиле Фазы 2, чтобы закрыть оставшиеся пробелы.
 
-### 4.5 Implementation walk-through pass (adversarial)
+### 4.5 Проход реализации (адверсариальная проверка)
 
-Reviewers find problems. **Implementers find missing pieces.** These are different
-failure modes — a reviewer reading «AC-DRAG-1: drag shadow rendered from getWidgetIcon»
-sees a satisfied AC; an implementer asked «build this» immediately wonders «where is
-the shadow positioned relative to my finger? how do I know which slot is the drop
-target?». The reviewer's mindset doesn't generate that question; the implementer's does.
+Проверяющие находят проблемы. **Исполнители находят недостающие части.** Это разные
+режимы отказа — проверяющий, читающий «AC-DRAG-1: drag shadow rendered from getWidgetIcon»,
+видит выполненный AC; исполнитель, которому поручили «собрать это», сразу задаётся вопросами:
+«где расположена тень относительно пальца? как понять, какой слот является drop target?».
+Мышление проверяющего не порождает этот вопрос; мышление исполнителя — порождает.
 
-Run **one** Agent (general-purpose, sonnet) with this brief:
+Запустите **одного** Agent (general-purpose, sonnet) со следующим заданием:
 
-> You are pretending to be the implementing engineer for `<spec-path>`. Don't review the
-> spec — try to *use* it. Pick the single most complex user interaction in the spec
-> (drag, complex gesture, multi-step flow) and mentally simulate implementing it
-> end-to-end: from user trigger → state transitions → visual updates → callbacks → cleanup.
-> Every time you'd have to *guess* a detail or ask a clarifying question — list it.
-> Output: bullet list of «I'd have to guess X because the spec doesn't specify Y». Cap 15 items.
+> Представьте, что вы инженер-исполнитель для `<spec-path>`. Не проверяйте спецификацию —
+> попробуйте *использовать* её. Выберите самое сложное взаимодействие пользователя в спецификации
+> (drag, сложный жест, многошаговый поток) и мысленно промоделируйте реализацию от начала до конца:
+> от действия пользователя → переходов состояний → визуальных обновлений → callbacks → очистки.
+> Каждый раз, когда вам пришлось бы *угадывать* деталь или задавать уточняющий вопрос, перечислите это.
+> Вывод: маркированный список «Мне пришлось бы угадать X, потому что спецификация не указывает Y». Максимум 15 пунктов.
 
-For each item the agent surfaces:
-- **Trivially fillable** (one-line clarification) → fix inline, move on.
-- **Requires design decision** → surface to user as a question (same format as Phase 2).
-- **Already specified, agent missed it** → no action, mention in the discussion.
+Для каждого пункта, выявленного агентом:
+- **Тривиально заполняется** (уточнение в одну строку) → исправьте inline и продолжайте.
+- **Требует проектного решения** → задайте пользователю вопрос (в том же формате, что в Фазе 2).
+- **Уже указано, но агент это пропустил** → действий не требуется, упомяните в обсуждении.
 
-Cost: ~3-5 minutes of one agent. Avoided cost: post-approval fix-up commits when pilot
-devs hit the gap weeks later.
+Затраты: ~3–5 минут работы одного агента. Предотвращённые затраты: исправляющие коммиты
+после утверждения, когда разработчики пилотной версии обнаружат пробел через несколько недель.
 
-Skip only if the spec is for a small, well-bounded change with no complex interactions.
+Пропускайте только в случае небольшой, чётко ограниченной спецификации без сложных взаимодействий.
 
-### 4.6 Approval
+### 4.6 Утверждение
 
-Once the user is satisfied and no issues remain, update spec status from `draft` to
-`approved` and proceed to save.
-
----
-
-## Phase 5: Save
-
-Save the approved spec to `docs/specs/YYYY-MM-DD-<slug>.md`, flip frontmatter `status`
-from `draft` to `approved`, retire the state file, confirm in one sentence with a
-suggested next step (`/generate-test-plan`, plan-mode implementation, or
-`/multiexpert-review`). Do not auto-invoke downstream skills — the user decides.
-
-See [`references/output-layout.md`](references/output-layout.md) for path conventions,
-confirmation message, and hand-off rules.
+Когда пользователь удовлетворён результатом и проблем не осталось, измените статус спецификации
+с `draft` на `approved` и перейдите к сохранению.
 
 ---
 
-## Red Flags / STOP Conditions
+## Фаза 5: Сохранение
 
-- **Fundamental contradiction** — acceptance criteria are mutually exclusive, or a constraint
-  makes the feature impossible. Surface the conflict, don't invent a workaround.
-- **Missing critical access** — feature requires systems, APIs, or credentials not available.
-  List what's needed and stop.
-- **Scope genuinely unbounded** — after one scoping attempt, still too large to spec.
-  Propose phased approach and wait for user alignment.
-- **Decision requires product authority** — choice has business, legal, or brand implications
-  the team cannot make unilaterally. Flag as blocking open question.
+Сохраните утверждённую спецификацию в `docs/specs/YYYY-MM-DD-<slug>.md`, измените во frontmatter
+`status` с `draft` на `approved`, удалите файл состояния и подтвердите это одним предложением
+с предложением следующего шага (`/generate-test-plan`, plan-mode implementation или
+`/multiexpert-review`). Не вызывайте автоматически последующие skills — решение принимает пользователь.
+
+Соглашения о путях, подтверждающее сообщение и правила передачи описаны в
+[`references/output-layout.md`](references/output-layout.md).
+
+---
+
+## Красные флаги / условия STOP
+
+- **Фундаментальное противоречие** — критерии приёмки взаимоисключающие или ограничение
+  делает функцию невозможной. Выявите конфликт, не придумывайте обходное решение.
+- **Нет критически важного доступа** — функции требуются недоступные системы, API или учётные данные.
+  Перечислите необходимое и остановитесь.
+- **Охват действительно неограничен** — даже после одной попытки определить границы объём всё ещё слишком велик для спецификации.
+  Предложите поэтапный подход и дождитесь согласия пользователя.
+- **Решение требует полномочий владельца продукта** — выбор имеет бизнес-, юридические последствия
+  или последствия для бренда, и команда не может принять его единолично. Отметьте его как блокирующий открытый вопрос.

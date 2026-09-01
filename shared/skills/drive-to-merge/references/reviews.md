@@ -1,28 +1,28 @@
-# drive-to-merge — Phase 2.3 Review Handling + 2.4 Decision Table
+# drive-to-merge — Phase 2.3: обработка ревью + Phase 2.4: таблица решений
 
-Build (or refresh) the branch-change model, fetch review activity, categorize each leftover comment against the whole branch diff, verify suggestions, propose a concrete action per item, and render the gate as a diff-grounded plan.
+Постройте (или обновите) модель изменений ветки, получите активность ревью, классифицируйте каждый оставшийся комментарий по полному diff ветки, проверьте предложения, сформируйте конкретное действие для каждого пункта и отобразите gate как план на основе diff.
 
-## 2.3.0 Build (or refresh) the branch-change model
+## 2.3.0 Построение (или обновление) модели изменений ветки
 
-Before touching individual comments, understand what the whole branch does. Every leftover comment is reasoned against this model, not just its own line — a reviewer often flags a symptom whose cause or correct fix lives elsewhere in the branch diff.
+Прежде чем разбирать отдельные комментарии, поймите, что делает вся ветка. Каждый оставшийся комментарий рассматривается относительно этой модели, а не только собственной строки: reviewer часто указывает на симптом, причина или правильное исправление которого находятся в другой части diff ветки.
 
-First entry this session — build the full model from the complete branch diff:
+При первом входе в эту сессию постройте полную модель по полному diff ветки:
 
 ```bash
 git diff "origin/$BASE"...HEAD
 ```
 
-From it, write a short structured understanding (a few lines, not a transcript): what the branch does, which files/areas it touches, and the key behaviors, invariants, and contracts it introduces or changes. Record `analyzed_through_sha` = current `HEAD`.
+На его основе составьте краткое структурированное понимание (несколько строк, не стенограмму): что делает ветка, какие файлы/области затрагивает и какие ключевые поведения, инварианты и контракты вводит или изменяет. Запишите `analyzed_through_sha` = текущий `HEAD`.
 
-Subsequent rounds — refresh with the **delta** only, do not re-read the full diff. First guard: if `analyzed_through_sha` is non-empty **and** `git merge-base --is-ancestor "<analyzed_through_sha>" HEAD` succeeds, use the delta:
+В следующих раундах обновляйте только **delta**, не перечитывайте полный diff. Сначала проверьте: если `analyzed_through_sha` не пуст и `git merge-base --is-ancestor "<analyzed_through_sha>" HEAD` завершается успешно, используйте delta:
 
 ```bash
 git diff "<analyzed_through_sha>"...HEAD   # new commits since last analysis
 ```
 
-Otherwise (sha empty, or rebase rewrote history so the sha is no longer an ancestor), rebuild from the full diff (`git diff "origin/$BASE"...HEAD`) and reset `analyzed_through_sha` to the current `HEAD`.
+Иначе (sha пуст или rebase переписал историю так, что sha больше не является предком) перестройте модель по полному diff (`git diff "origin/$BASE"...HEAD`) и сбросьте `analyzed_through_sha` на текущий `HEAD`.
 
-Reconcile the result into the cached model and advance `analyzed_through_sha` to the new `HEAD`. Persist the compact model summary and `analyzed_through_sha` to the state file (see [`setup.md`](setup.md) `Branch change model`) so the model survives context compaction; on resume, reuse the cached model and re-read only the delta since the stored sha (same guard applies).
+Согласуйте результат с кэшированной моделью и обновите `analyzed_through_sha` до нового `HEAD`. Сохраните краткое резюме модели и `analyzed_through_sha` в файле состояния (см. [`setup.md`](setup.md), `Branch change model`), чтобы модель пережила сжатие контекста; при возобновлении используйте кэшированную модель и перечитывайте только delta после сохранённого sha (с тем же защитным условием).
 
 ## 2.3.1 Fetch
 
@@ -43,40 +43,40 @@ gh api "repos/$OWNER/$REPO_NAME/issues/$PR_NUMBER/comments" \
 # Paginate 100 per page until hasNextPage == false; accumulate to a temp file
 ```
 
-For GitLab use `glab api "/projects/$PROJECT/merge_requests/$MR_IID/discussions"` which returns resolution state inline.
+Для GitLab используйте `glab api "/projects/$PROJECT/merge_requests/$MR_IID/discussions"`, который возвращает состояние разрешения прямо в ответе.
 
-The branch diff is already loaded into the branch-change model (2.3.0) — do not re-fetch it here.
+Diff ветки уже загружен в модель изменений ветки (2.3.0) — не получайте его повторно здесь.
 
-## 2.3.2 Filter before categorizing
+## 2.3.2 Фильтрация перед классификацией
 
-- Skip replies in already-resolved threads.
-- Skip the skill's own earlier replies — identify by `(author == principal) AND (comment id OR body signature matches a state file Commitments row with replied: true)`. Do NOT skip every comment from the principal unconditionally — the user may also post from the same account, and those comments must be treated as reviewer input.
-- Skip comments already covered by a row in state file `Commitments` with `replied: true`.
+- Пропускайте ответы в уже разрешённых тредах.
+- Пропускайте собственные прежние ответы навыка — определяйте их по условию `(author == principal) AND (comment id OR body signature matches a state file Commitments row with replied: true)`. НЕ пропускайте безусловно каждый комментарий от principal: пользователь тоже может писать с того же аккаунта, и такие комментарии нужно считать входными данными reviewer.
+- Пропускайте комментарии, уже покрытые строкой в `Commitments` файла состояния с `replied: true`.
 
-## 2.3.3 Categorize each remaining item
+## 2.3.3 Классификация каждого оставшегося пункта
 
-Category (one of):
+Категория (одна из):
 
-| Category | When |
+| Категория | Когда |
 |---|---|
-| `BLOCKING` | Security vuln, correctness bug on main path, crash, data loss risk, compliance violation, inaccurate data in regulated/audit/financial pipelines |
-| `IMPORTANT` | Non-critical bug, missing error handling, logic error, edge-case miss, missing test for a broken case |
-| `SUGGESTION` | Refactor, alternative approach, architectural improvement — no correctness risk if left as-is |
-| `NIT` | Naming, formatting, style with no functional impact |
-| `QUESTION` | Reviewer asks for clarification — may or may not imply a change |
-| `PRAISE` | Approval, compliment |
-| `OUT_OF_SCOPE` | Valid but belongs in a different PR or issue |
+| `BLOCKING` | Уязвимость безопасности, ошибка корректности на основном пути, crash, риск потери данных, нарушение compliance, неточные данные в регулируемых/audit/финансовых pipeline |
+| `IMPORTANT` | Некритичный баг, отсутствие обработки ошибок, логическая ошибка, пропущенный edge case, отсутствие теста для сломанного сценария |
+| `SUGGESTION` | Рефакторинг, альтернативный подход, архитектурное улучшение — при сохранении текущего вида риск корректности отсутствует |
+| `NIT` | Именование, форматирование, стиль без функционального влияния |
+| `QUESTION` | Reviewer просит уточнение — изменение может потребоваться, а может и нет |
+| `PRAISE` | Одобрение, комплимент |
+| `OUT_OF_SCOPE` | Обоснованно, но относится к другому PR или issue |
 
-Actionability (one of):
+Применимость действия (одна из):
 
-| Actionability | Meaning |
+| Применимость действия | Значение |
 |---|---|
-| `FIXABLE` | Clear what to change; can be handed off as-is |
-| `NEEDS_CLARIFICATION` | Ambiguous comment — must ask reviewer before acting |
-| `DISCUSSION` | No single right answer — needs user decision |
-| `NO_ACTION` | Already fixed, duplicate, invalid, praise |
+| `FIXABLE` | Понятно, что изменить; можно передать как есть |
+| `NEEDS_CLARIFICATION` | Неоднозначный комментарий — перед действием нужно спросить reviewer |
+| `DISCUSSION` | Единственного правильного ответа нет — требуется решение пользователя |
+| `NO_ACTION` | Уже исправлено, дубликат, недействительно, praise |
 
-Priority (derived, used for ordering in the decision table):
+Приоритет (выводится и используется для порядка в таблице решений):
 
 - `P0` = BLOCKING + FIXABLE
 - `P1` = IMPORTANT + FIXABLE
@@ -84,40 +84,40 @@ Priority (derived, used for ordering in the decision table):
 - `P3` = NIT + FIXABLE, SUGGESTION + DISCUSSION
 - `P4` = PRAISE, OUT_OF_SCOPE, NO_ACTION
 
-## 2.3.4 Verify the suggestion against the branch-change model
+## 2.3.4 Проверка предложения по модели изменений ветки
 
-For every BLOCKING / IMPORTANT + FIXABLE item, reason about it against the whole branch (the 2.3.0 model), not just the commented line:
+Для каждого пункта BLOCKING / IMPORTANT + FIXABLE рассуждайте с учётом всей ветки (модели из 2.3.0), а не только строки с комментарием:
 
-1. Is the suggestion correct for this codebase's patterns?
-2. Would it break tests that currently pass?
-3. Is there a comment / ADR / commit message explaining why the current form exists?
-4. Does it apply to all platforms/versions this PR targets?
-5. Does the fix conflict with — or duplicate — something the branch introduces elsewhere, and is the flagged symptom actually caused by a change in another part of the diff? If so, the real fix may live at that other site.
+1. Соответствует ли предложение шаблонам этой кодовой базы?
+2. Не сломает ли оно проходящие сейчас тесты?
+3. Есть ли комментарий / ADR / сообщение коммита, объясняющее существование текущей формы?
+4. Применимо ли оно ко всем платформам/версиям, на которые нацелен этот PR?
+5. Не конфликтует ли исправление с тем, что ветка вводит в другом месте, и не дублирует ли его; действительно ли указанный симптом вызван изменением в другой части diff? Если да, настоящая правка может находиться в том другом месте.
 
-If any check fails → keep the category but change actionability to `DISCUSSION`, record a short note explaining what's wrong with the suggestion.
+Если любая проверка не пройдена → сохраните категорию, но измените применимость действия на `DISCUSSION` и запишите краткую заметку о проблеме предложения.
 
-## 2.3.5 Pattern match across the branch-change model
+## 2.3.5 Поиск шаблона по модели изменений ветки
 
-For every concrete code pattern mentioned (missing null check, deprecated API, hardcoded string, etc.) — search the whole branch diff (all changed files in the 2.3.0 model) for the same shape, not just the local hunk. Additional locations become part of the same item, not separate ones.
+Для каждого указанного конкретного шаблона кода (отсутствующая null-проверка, deprecated API, hardcoded string и т. п.) ищите такую же форму по всему diff ветки (во всех изменённых файлах модели 2.3.0), а не только в локальном hunk. Дополнительные места становятся частью того же пункта, а не отдельными пунктами.
 
-## 2.3.6 Group and dedup
+## 2.3.6 Группировка и устранение дубликатов
 
-Multiple reviewers pointing at the same issue → one group. Multiple comments from one reviewer covering concerns one fix addresses → one group.
+Несколько reviewers указывают на одну проблему → одна группа. Несколько комментариев одного reviewer описывают проблемы, которые устраняет одна правка → одна группа.
 
-## 2.3.7 Propose a concrete solution per actionable item
+## 2.3.7 Конкретное решение для каждого пункта, требующего действия
 
-For each FIXABLE item, generate a specific proposal — not a category label. The proposal is one of:
+Для каждого пункта FIXABLE сформируйте конкретное предложение, а не только название категории. Предложение должно быть одним из следующих:
 
-- **Edit:** `<file:line>` with before/after snippet (≤15 lines total). Shown inline in the decision table row.
-- **Delegate with intent:** a one-paragraph instruction naming the engineer (kotlin-engineer / swift-engineer / compose-developer / swiftui-developer) and the exact files to touch, when the change is too big for a snippet.
-- **Ask in thread:** the clarifying question the skill will post, verbatim. Used for NEEDS_CLARIFICATION.
-- **Dismiss with reply:** the canned template with a 1-sentence context slot, for PRAISE / OUT_OF_SCOPE / NO_ACTION / NIT+NO_ACTION.
+- **Edit:** `<file:line>` с before/after snippet (всего ≤15 строк). Показывается inline в строке таблицы решений.
+- **Delegate with intent:** однопараграфная инструкция с указанием engineer (kotlin-engineer / swift-engineer / compose-developer / swiftui-developer) и точных файлов, которые можно менять, если изменение слишком велико для snippet.
+- **Ask in thread:** уточняющий вопрос, который навык опубликует дословно. Используется для NEEDS_CLARIFICATION.
+- **Dismiss with reply:** готовый шаблон с контекстным slot на 1 предложение для PRAISE / OUT_OF_SCOPE / NO_ACTION / NIT+NO_ACTION.
 
-Never output only a category without a proposal. The value of this skill is the proposal.
+Никогда не выводите только категорию без предложения. Ценность этого навыка — в конкретном предложении.
 
-## 2.4 Decision table (the gate)
+## 2.4 Таблица решений (gate)
 
-Render in session as a **prioritized list**, not a table — a plan grounded in the whole branch, not a per-line checklist. Open with a one-line **branch context** drawn from the 2.3.0 model so the plan visibly accounts for the entire change set. Then one section per priority bucket present in the round, ordered most critical first. Each item is one short paragraph: bold headline = the gist; then prose with author, location, brief context, and the action — no bullet labels, no `→` arrows, no `Reviewer:` / `Action:` / `Verdict:` fields. Reads like a human issue note, not a form. Where a fix touches related changes elsewhere in the branch, name those sites in the item.
+Отображайте в сессии как **приоритизированный список**, а не таблицу: это план на основе всей ветки, а не построчный чек-лист. Начните с однострочного **branch context**, взятого из модели 2.3.0, чтобы план явно учитывал весь набор изменений. Затем добавьте по разделу для каждого присутствующего в раунде диапазона приоритетов, от самого критичного к менее критичному. Каждый пункт — один короткий абзац: жирный заголовок = суть; затем текст с автором, расположением, кратким контекстом и действием — без подписей bullet-пунктов, стрелок `→` и полей `Reviewer:` / `Action:` / `Verdict:`. Текст должен выглядеть как заметка о задаче, а не форма. Если исправление затрагивает связанные изменения в другой части ветки, укажите эти места в пункте.
 
 ```
 Round N — review proposals
@@ -165,22 +165,22 @@ none.
 6 items: 2 edits, 1 delegation, 2 dismissals, 1 clarification.
 ```
 
-### Format rules
+### Правила формата
 
-- One `Branch context:` line right under the title, drawn from the 2.3.0 model — one sentence on what the branch does plus the areas it touches. This frames the plan as diff-grounded; keep it to a single line.
-- When an item's fix touches related changes elsewhere in the branch, name those sites inline (e.g. "same contract at api/Repo.kt:120") so the plan reads as a whole, not a per-line list.
-- Sections in order P0 → P1 → P2 → P3 → P4. Skip empty buckets.
-- Numbering is **continuous** across sections (1, 2, 3 …) — gate commands (`approve`, `skip 1,4`, `stop`) reference these numbers.
-- Each item: `**Bold headline.**` (one sentence on the gist) + `@author, file:line.` + 1–2 sentences of context and action. Snippet inline indented when relevant (≤15 lines).
-- Quote the reviewer verbatim only when paraphrase loses meaning. Otherwise paraphrase to the essence and drop the quotes.
-- No labels, no `→`, no category/actionability/delegate columns — the priority is already conveyed by the section; what to do is the last sentence.
-- `## Blockers` section is always rendered last (one word "none." if empty) — this is what stops the round for the user.
-- `## Summary` — one line with the breakdown by action type.
+- Сразу под заголовком должна быть одна строка `Branch context:`, взятая из модели 2.3.0: одно предложение о том, что делает ветка, и о затронутых областях. Это показывает, что план основан на diff; строка должна быть единственной.
+- Если исправление пункта затрагивает связанные изменения в другой части ветки, укажите эти места inline (например, "same contract at api/Repo.kt:120"), чтобы план читался целиком, а не как построчный список.
+- Разделы идут в порядке P0 → P1 → P2 → P3 → P4. Пустые диапазоны пропускайте.
+- Нумерация **сквозная** между разделами (1, 2, 3 …); команды gate (`approve`, `skip 1,4`, `stop`) ссылаются на эти номера.
+- Каждый пункт: `**Bold headline.**` (одно предложение по сути) + `@author, file:line.` + 1–2 предложения контекста и действия. При необходимости добавляйте snippet с отступом inline (≤15 строк).
+- Цитируйте reviewer дословно только если пересказ искажает смысл. Иначе перескажите суть и уберите кавычки.
+- Никаких labels, `→` и столбцов category/actionability/delegate: приоритет уже передан разделом, а действие должно быть последним предложением.
+- Раздел `## Blockers` всегда выводится последним (одно слово "none." при отсутствии блокеров); именно он останавливает раунд для пользователя.
+- `## Summary` — одна строка с разбивкой по типам действий.
 
-### Gate behaviour
+### Поведение gate
 
-- Default mode: stop here. Tell the user: `reply "approve" to execute all items, "skip 1,4" (or "skip 1 4") to drop items by number, or "stop" to end the round without acting.` Wait for input. Accept both comma-separated and space-separated number lists; strip whitespace around commas. Numbering is global and continuous across sections — no letters, no per-section restart.
-- `--auto`: skip waiting; proceed to Phase 3.
-- `--dry-run`: print the list and stop for good.
+- Режим default: остановитесь здесь. Скажите пользователю: `reply "approve" to execute all items, "skip 1,4" (or "skip 1 4") to drop items by number, or "stop" to end the round without acting.` Ждите ввода. Принимайте списки номеров, разделённые запятыми или пробелами; убирайте пробелы вокруг запятых. Нумерация глобальная и сквозная между разделами: без букв и без перезапуска в каждом разделе.
+- `--auto`: пропустите ожидание и перейдите к Phase 3.
+- `--dry-run`: выведите список и окончательно остановитесь.
 
-Blockers are always surfaced — `--auto` does not swallow them. If any P0 item is DISCUSSION, stop and ask regardless of mode.
+Блокеры всегда показываются — `--auto` их не скрывает. Если любой пункт P0 имеет статус DISCUSSION, остановитесь и спросите независимо от режима.

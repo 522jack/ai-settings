@@ -1,124 +1,125 @@
 ---
 name: research
-description: "Research Consortium — parallel expert investigation of a topic, idea, problem, or technology before implementation. Launches up to 5 domain experts simultaneously, synthesizes findings, and optionally auto-reviews the result. Use when: \"research\", \"investigate options\", \"investigate approaches\", \"explore this idea\", \"technical spike\", \"feasibility\", \"can we do X?\", \"what are the options for\", \"compare approaches\", \"evaluate alternatives\", \"pros and cons of\", \"before we start — let's understand\", \"what do we need to know before\". Do NOT use for: code review (use code-reviewer agent), multiexpert review (use multiexpert-review), narrow codebase lookup (\"how is X done in our code\" — use Explore agent directly), single-library version or changelog lookup (use a dependency/version lookup tool directly), debugging existing bugs."
+description: "Исследовательский консорциум — параллельное экспертное исследование темы, идеи, проблемы или технологии до реализации. Одновременно запускает до 5 предметных экспертов, синтезирует результаты и при необходимости автоматически проверяет итог. Используй, когда: \"research\", \"investigate options\", \"investigate approaches\", \"explore this idea\", \"technical spike\", \"feasibility\", \"can we do X?\", \"what are the options for\", \"compare approaches\", \"evaluate alternatives\", \"pros and cons of\", \"before we start — let's understand\", \"what do we need to know before\". Не используй для: code review (используй code-reviewer agent), multiexpert review (используй multiexpert-review), узкого поиска по кодовой базе (\"how is X done in our code\" — используй Explore agent напрямую), поиска версии или changelog одной библиотеки (используй напрямую инструмент поиска зависимостей/версий), отладки существующих ошибок."
 ---
 
-# Research
+# Исследование
 
-Parallel expert investigation of a topic before implementation. The Research Consortium
-launches up to 5 domain agents simultaneously, each investigating their slice independently,
-then synthesizes findings into a single structured report.
+Параллельное экспертное исследование темы до реализации. Исследовательский консорциум
+одновременно запускает до 5 предметных агентов; каждый независимо исследует свою часть,
+после чего результаты синтезируются в единый структурированный отчёт.
 
-**Synthesis-bias prevention.** The core invariant: **agents that gather data never synthesize
-it.** Each gather-agent runs in isolation with no visibility into the others — only the
-orchestrator merges their findings. This gather/synthesize separation is what makes the
-consortium worth the cost; preserve it across every change.
+**Предотвращение bias синтеза.** Основной инвариант: **агенты, собирающие данные, никогда не
+синтезируют их.** Каждый gather-agent работает изолированно и не видит других агентов — только
+оркестратор объединяет их результаты. Именно это разделение сбора и синтеза оправдывает затраты
+на консорциум; сохраняй его при любых изменениях.
 
-A second, optional layer is the post-synthesis review: in product-angled topics a separate
-`business-analyst` agent challenges the merged report (Phase 4 `business-analyst` mode);
-in purely technical topics the orchestrator runs a self-check against a fixed checklist
-(`tech-sanity` mode). The reviewer layer is a defense-in-depth, not the core value.
+Второй, необязательный слой — проверка после синтеза: в темах с продуктовым аспектом отдельный
+агент `business-analyst` критически проверяет объединённый отчёт (режим Phase 4
+`business-analyst`); в чисто технических темах оркестратор выполняет самопроверку по
+фиксированному чеклисту (режим `tech-sanity`). Слой проверки — это defense-in-depth, а не
+основная ценность процесса.
 
-**Communication policy — non-negotiable.** All dialogue with the user happens in chat via `AskUserQuestion` — never through files. See Phase 2 state-file setup for the canonical rule.
+**Политика коммуникации — обязательна.** Весь диалог с пользователем ведётся в чате через `AskUserQuestion` — никогда через файлы. Каноническое правило см. в настройке state-file в Phase 2.
 
 ---
 
-## Phase 1: Scope the Research
+## Phase 1: Определить рамки исследования
 
-Extract from the user's request:
-- **Topic** — what is being investigated
-- **Context** — why this matters now
-- **Constraints** — known boundaries (KMP, no new deps, deadline)
+Извлеки из запроса пользователя:
+- **Topic** — что исследуется
+- **Context** — почему это важно сейчас
+- **Constraints** — известные границы (KMP, без новых deps, дедлайн)
 
-Select expert tracks:
+Выбери экспертные направления:
 
-| Track | Include when |
+| Направление | Включать, когда |
 |---|---|
-| **Codebase** | Topic touches existing code, patterns, or modules |
-| **Web** | See criteria below — conditional, skip for purely internal topics |
-| **Docs** | Topic involves specific libraries/frameworks with external documentation |
-| **Dependencies** | Topic involves adding, replacing, or evaluating JVM/KMP deps |
-| **Architecture** | Topic affects module boundaries, layer design, or API contracts |
+| **Codebase** | Тема затрагивает существующий код, паттерны или модули |
+| **Web** | См. критерии ниже — направление условное, пропусти для чисто внутренних тем |
+| **Docs** | Тема связана с конкретными библиотеками/фреймворками с внешней документацией |
+| **Dependencies** | Тема связана с добавлением, заменой или оценкой JVM/KMP deps |
+| **Architecture** | Тема влияет на границы модулей, дизайн слоёв или API-контракты |
 
-**Web track inclusion** — launch when ANY of the following holds, otherwise skip:
-- Topic compares against industry practices outside our code.
-- Involves external libraries/frameworks/protocols whose best practices may diverge from the codebase.
-- Benchmarks, post-mortems, or articles on similar problems are needed.
-- The question explicitly asks about "industry consensus" / "how big projects do it".
+**Включение направления Web** — запускай, если выполняется ЛЮБОЕ из условий ниже; иначе пропусти:
+- Тема сравнивается с отраслевыми практиками за пределами нашего кода.
+- Она связана с внешними библиотеками/фреймворками/протоколами, чьи best practices могут отличаться от кодовой базы.
+- Нужны benchmarks, post-mortems или статьи о похожих проблемах.
+- Вопрос явно касается "industry consensus" / "how big projects do it".
 
-Skipping Web on purely internal topics avoids generic web noise and saves a track for
-something that adds signal.
+Пропуск Web для чисто внутренних тем избавляет от общего web-noise и оставляет направление
+для работы, которая добавит полезный сигнал.
 
-### Clarifying questions (round-loop)
+### Уточняющие вопросы (цикл раундов)
 
-Use the `AskUserQuestion` tool for clarification — never plain prose that the user has to
-parse and answer in their own format, and never a written question parked in any file.
-`AskUserQuestion` with 2–4 concrete options surfaces the decision space and gives a
-machine-checkable answer; use free-text (the implicit "Other" option) only when the option
-space is genuinely open. **One question per round** still applies — fire `AskUserQuestion`
-with exactly one question, wait for the answer, fold it into the scope, then fire the next
-round only if a blocker still remains. Multiple rounds are fine; multiple questions in one
-round are not. Each question must be the single most blocking ambiguity right now — not a
-checklist of mild curiosities.
+Для уточнений используй tool `AskUserQuestion` — никогда не обычный текст, который пользователь
+должен самостоятельно разобрать и оформить в ответ, и никогда не оставляй письменный вопрос в
+каком-либо файле. `AskUserQuestion` с 2–4 конкретными вариантами показывает пространство решений
+и даёт ответ, который можно проверить машинно; свободный текст (неявный вариант "Other") используй
+только при действительно открытом множестве вариантов. По-прежнему действует правило **один
+вопрос за раунд**: вызови `AskUserQuestion` ровно с одним вопросом, дождись ответа, включи его в
+рамки исследования и запускай следующий раунд только при наличии blocker. Несколько раундов
+допустимы; несколько вопросов в одном раунде — нет. Каждый вопрос должен касаться единственной
+самой существенной на данный момент неоднозначности, а не быть списком умеренно интересных деталей.
 
-When to ask:
-- **Scope is genuinely ambiguous** (multiple valid interpretations that lead to different expert tracks or different success criteria).
-- **A constraint is missing without which the redirect / consortium decision flips** (e.g. KMP-only vs Android-only changes which tracks are relevant).
+Когда спрашивать:
+- **Рамки действительно неоднозначны** (несколько корректных трактовок ведут к разным экспертным направлениям или критериям успеха).
+- **Не хватает ограничения, без которого меняется решение о redirect / consortium** (например, KMP-only и Android-only требуют разных направлений).
 
-When NOT to ask:
-- Mild gaps the consortium can fill itself (let agents gather, surface anything blocking later in Phase 5.1 dialogue).
-- Stylistic preferences that don't change the recommendation.
-- Anything the auto-review step (Phase 4) would catch.
+Когда НЕ спрашивать:
+- Небольшие пробелы, которые консорциум может заполнить сам (пусть агенты соберут данные, а всё блокирующее будет выявлено позже в диалоге Phase 5.1).
+- Стилистические предпочтения, не меняющие рекомендацию.
+- То, что выявит шаг auto-review (Phase 4).
 
-State the assumed scope when proceeding without asking. Resume Phase 1 from the top after each answered round in case the answer reshuffles track selection or triggers the min-2-tracks redirect.
+Если продолжаешь без вопроса, зафиксируй принятую область исследования. После каждого отвеченного раунда начинай Phase 1 с начала на случай, если ответ изменит выбор направлений или запустит redirect по правилу min-2-tracks.
 
-### Minimum-2-tracks rule
+### Правило минимум 2 направлений
 
-If the topic resolves to **only one** expert track after applying selection criteria, do NOT launch the consortium. The synthesis-bias prevention machinery only pays off when ≥2 independent perspectives are merged. Redirect instead:
+Если после применения критериев выбора для темы остаётся **только одно** экспертное направление, НЕ запускай консорциум. Механизм предотвращения bias синтеза оправдан только при объединении ≥2 независимых точек зрения. Вместо этого выполни redirect:
 
-| Single track | Redirect to |
+| Единственное направление | Redirect к |
 |---|---|
-| Codebase only | Delegate to a single `Explore` agent inline |
-| Docs only | Use a library-docs lookup tool (Context7-style) directly |
-| Dependencies only | Use a dependency/version lookup tool directly (e.g. the `maven-mcp` skill family if installed) |
-| Architecture only | Delegate to `architecture-expert` agent directly |
-| Web only | Answer inline with the available web-search tool; if none is available, answer from training knowledge and explicitly note the limitation |
+| Только Codebase | Напрямую передай задачу одному агенту `Explore` |
+| Только Docs | Напрямую используй инструмент поиска library-docs (в стиле Context7) |
+| Только Dependencies | Напрямую используй инструмент поиска зависимостей/версий (например, семейство skills `maven-mcp`, если оно установлено) |
+| Только Architecture | Напрямую передай задачу агенту `architecture-expert` |
+| Только Web | Ответь в чате с помощью доступного инструмента web-search; если его нет, ответь на основе обучающих данных и явно укажи ограничение |
 
-Report the redirect in one line ("Topic is narrow — handing off to {target} instead of running the consortium"), then exit. Do not create state or report artifacts for redirected topics.
+Сообщи о redirect одной строкой ("Topic is narrow — handing off to {target} instead of running the consortium"), затем заверши работу. Для перенаправленных тем не создавай state или report-артефакты.
 
 ---
 
-## Phase 2: Launch Research Consortium
+## Phase 2: Запустить исследовательский консорциум
 
-Generate a kebab-case slug from the topic (e.g., `ktor-migration`, `push-notifications`)
-— this is the first thing that happens once the consortium is committed (post-redirect).
+Сгенерируй slug в kebab-case из темы (например, `ktor-migration`, `push-notifications`)
+— это первое действие после принятия решения запустить консорциум (post-redirect).
 Paths:
 - Artifact: `./swarm-report/research/research-<slug>.md`
 - State:    `./swarm-report/research-<slug>-state.md`
 
-Launch all selected agents **in a single message** for maximum parallelism. Each works
-independently — never share findings between agents.
+Для максимального параллелизма запускай всех выбранных агентов **в одном сообщении**. Каждый
+работает независимо — никогда не передавай результаты между агентами.
 
-Agent routing per track (see [`references/expert-prompts.md`](references/expert-prompts.md) for
-the exact launch prompts):
+Маршрутизация агентов по направлениям (точные launch prompts см. в
+[`references/expert-prompts.md`](references/expert-prompts.md)):
 
-| Track | Agent | Model |
+| Направление | Agent | Model |
 |---|---|---|
 | Codebase | `Explore` | (built-in default) |
 | Architecture | `architecture-expert` | (agent default) |
-| Web / Docs / Dependencies | `source-researcher` (one independent instance each, `focus: web` / `library-docs` / `dependency-intelligence`) | pinned in the agent — `sonnet` / `medium` |
+| Web / Docs / Dependencies | `source-researcher` (по одному независимому экземпляру для каждого направления, `focus: web` / `library-docs` / `dependency-intelligence`) | зафиксирована в агенте — `sonnet` / `medium` |
 
-The three external tracks do **not** carry a hardcoded toolset: `source-researcher` discovers
-the tools/MCP actually reachable at runtime and queries every relevant channel of its class,
-per the single method in `rules/external-sources.md` § *Tool discovery & multi-channel use*
-(inherited by the agent — not restated in the prompt). Keeping the three as **separate**
-instances preserves the synthesis-bias invariant — never merge them into one `source-researcher`
-call. The codebase-bound tracks keep their verbatim prompts (Explore and architecture-expert have
-different jobs and toolchains).
+Три внешних направления **не** содержат жёстко заданного набора tools: `source-researcher`
+обнаруживает доступные в рантайме tools/MCP и запрашивает каждый релевантный канал своего класса
+согласно единому методу из `rules/external-sources.md` § *Tool discovery & multi-channel use*
+(унаследован агентом — в prompt не повторяется). Хранение этих трёх направлений в виде
+**отдельных** экземпляров сохраняет инвариант против bias синтеза — никогда не объединяй их в
+один вызов `source-researcher`. Направления, привязанные к кодовой базе, сохраняют свои
+verbatim prompts (у Explore и architecture-expert разные задачи и toolchains).
 
-### State persistence
+### Сохранение состояния
 
-Before launching, create `./swarm-report/research-<slug>-state.md`:
+Перед запуском создай `./swarm-report/research-<slug>-state.md`:
 
 ```markdown
 # Research State: {topic}
@@ -144,33 +145,33 @@ Started: {date}
 not user-facing)
 ```
 
-The state file and any other temp files live at the `./swarm-report/` **root** —
-that's the temp/working area. Use them freely for the orchestrator's internal needs:
-progress tracking, inter-phase info passing, expert-output buffering for compaction
-resilience. Update the checklist as each agent completes and fold raw findings here if
-it helps survive a compaction.
+Файл состояния и все остальные temp-файлы находятся в **корне** `./swarm-report/` — это
+временная рабочая область. Свободно используй их для внутренних нужд оркестратора:
+отслеживания прогресса, передачи данных между фазами, буферизации результатов экспертов для
+устойчивости к compaction. По мере завершения агентов обновляй чеклист и при необходимости
+складывай сюда необработанные результаты, чтобы пережить compaction.
 
-The `./swarm-report/research/` subdirectory is reserved for **finished deliverables**
-only — the polished report from Phase 5.2 lands there, nothing else.
+Подкаталог `./swarm-report/research/` предназначен только для **готовых deliverables** — туда
+попадает итоговый отчёт из Phase 5.2 и больше ничего.
 
-**Communication policy (canonical).** Clarification questions and the user's answers live exclusively in the chat session — never in any file under `./swarm-report/`. The saved report is a **handoff artifact** for downstream skills/agents (`/write-spec`, `/multiexpert-review`, Plan Mode); the user does not have to open it. The in-chat summary at Phase 5.3 is what the user reads to make decisions. Every blocker the user can resolve is surfaced via `AskUserQuestion` in dialogue **before** the report is written. The file is never a parking lot for pending questions, draft hedges, or "TBD — ask user" placeholders — if something needs user input, fire `AskUserQuestion` now.
+**Политика коммуникации (каноническая).** Уточняющие вопросы и ответы пользователя существуют только в сессии чата — никогда в файлах под `./swarm-report/`. Сохранённый отчёт — это **handoff artifact** для downstream skills/agents (`/write-spec`, `/multiexpert-review`, Plan Mode); пользователю не нужно открывать его. Для принятия решений пользователь читает саммари в чате в Phase 5.3. Каждый blocker, который может разрешить пользователь, выноси в диалог через `AskUserQuestion` **до** записи отчёта. Файл никогда не должен быть местом для отложенных вопросов, черновых оговорок или placeholders вида "TBD — ask user" — если нужен ввод пользователя, вызови `AskUserQuestion` сейчас.
 
 ---
 
-## Phase 3: Synthesize Findings
+## Phase 3: Синтезировать результаты
 
-Combine findings into a structured synthesis held primarily in working memory. The
-synthesis is mutable until Phase 5 closes the clarification round-loop, so **do not write
-the final report here** — that is exclusively Phase 5.2. (Internal temp files allowed at
-the `./swarm-report/` root per the Phase 2 rules.) Cross-reference findings for:
-- **Convergence** — multiple experts independently agree (strongest signal)
-- **Contradictions** — surface explicitly, do not paper over
-- **Gaps** — what no expert covered
-- **Dependencies between findings** — one expert's conclusion changes another's relevance
+Объедини результаты в структурированный синтез, хранящийся преимущественно в рабочей памяти.
+Синтез можно менять до завершения цикла уточнений в Phase 5, поэтому **не записывай итоговый
+отчёт здесь** — это исключительная задача Phase 5.2. (Временные внутренние файлы разрешены в
+корне `./swarm-report/` согласно правилам Phase 2.) Сопоставь результаты, чтобы выявить:
+- **Convergence** — независимое согласие нескольких экспертов (сильнейший сигнал)
+- **Contradictions** — явно покажи противоречия, не сглаживай их
+- **Gaps** — что не охватил ни один эксперт
+- **Зависимости между результатами** — вывод одного эксперта меняет значимость результата другого
 
-### Report structure
+### Структура отчёта
 
-Use this exact structure when Phase 5.2 writes the final report to
+Используй эту точную структуру, когда Phase 5.2 записывает итоговый отчёт в
 `./swarm-report/research/research-<slug>.md`:
 
 ```markdown
@@ -206,7 +207,7 @@ genuinely viable, state that explicitly with reasons others were ruled out.
 | Compatibility | ... | ... | ... |
 | Risk | low/med/high | ... | ... |
 
-Skip the table when one approach dominates on every dimension.
+Пропусти таблицу, если один подход превосходит остальные по всем измерениям.
 
 ## Library / Dependency Recommendations
 | Library | Version | KMP | Vulnerabilities | Notes |
@@ -232,36 +233,36 @@ Skip the table when one approach dominates on every dimension.
 
 ---
 
-## Phase 4: Auto-Review
+## Phase 4: Автоматическая проверка
 
-Pick the review mode based on the topic profile, then record it in the report header
-`Auto-review mode:` field as one of `business-analyst` or `tech-sanity` (not the literal
-pipe — pick one).
+Выбери режим проверки по профилю темы, затем запиши его в заголовке отчёта в поле
+поле `Auto-review mode:` как одно из значений `business-analyst` или `tech-sanity` (не
+буквальный pipe — выбери одно значение).
 
-### Mode selection
+### Выбор режима
 
-Use **`business-analyst`** when the topic has a product / scope angle:
-- Decision affects feature scope, MVP boundaries, time-to-market, or user-facing trade-offs.
-- The question contains an implicit or explicit "what to build" component (not only "how to build").
-- The decision touches SLA / SLO / cost / business risk.
+Используй **`business-analyst`**, если тема имеет продуктовый аспект или аспект scope:
+- Решение влияет на scope функции, границы MVP, time-to-market или компромиссы для пользователя.
+- Вопрос содержит явную или неявную составляющую "what to build" (а не только "how to build").
+- Решение затрагивает SLA / SLO / cost / business risk.
 
-Use **`tech-sanity`** (lightweight self-check, no agent launch) when the topic is purely
-technical with no product angle — e.g. "which DI", "which serializer", "which test runner",
-"sync vs async retries". Running business-analyst here adds tokens and latency without
-producing actionable output.
+Используй **`tech-sanity`** (лёгкая самопроверка без запуска агента), если тема чисто
+техническая и не имеет продуктового аспекта — например, "which DI", "which serializer",
+"sync vs async retries". Запуск business-analyst в этом случае увеличивает расход tokens и
+latency, не давая практически применимого результата.
 
-**Tiebreaker.** When the topic could plausibly fit either mode (e.g. "Coil vs Glide" where
-the technical pick subtly affects app size and MVP scope), default to `tech-sanity`. Promote
-to `business-analyst` only if the report's recommendation materially depends on a product /
-scope judgement that the gatherers did not make. The cost asymmetry is real — `tech-sanity`
-is free, `business-analyst` is a full agent launch — so bias toward the cheaper option when
-in doubt.
+**Tiebreaker.** Если тема правдоподобно подходит под оба режима (например, "Coil vs Glide", где
+технический выбор косвенно влияет на размер приложения и scope MVP), по умолчанию выбирай
+`tech-sanity`. Переключайся на `business-analyst` только если рекомендация отчёта существенно
+зависит от продуктового решения или решения о scope, которое gatherers не принимали. Асимметрия
+стоимости реальна: `tech-sanity` бесплатен, а `business-analyst` требует полноценного запуска
+агента, поэтому при сомнениях выбирай более дешёвый вариант.
 
-### Mode `business-analyst`
+### Режим `business-analyst`
 
-Launch the `business-analyst` agent against the synthesized report. The reviewer holds a
-distinct perspective from the gatherers — they check completeness, product sense,
-practical viability:
+Запусти агента `business-analyst` для проверки синтезированного отчёта. Проверяющий обладает
+отдельной от gatherers точкой зрения и проверяет полноту, продуктовую обоснованность и
+практическую реализуемость:
 
 ```
 Review this research report for completeness and practical viability.
@@ -285,103 +286,102 @@ List gaps with severity (critical / major / minor).
 Respond in the same language as the research topic description.
 ```
 
-### Mode `tech-sanity`
+### Режим `tech-sanity`
 
-Run a self-check pass on the report against this checklist (no agent — direct verification):
+Выполни самопроверку отчёта по этому чеклисту (без агента — непосредственная проверка):
 
-1. **Approaches evaluated ≥2** — at least two viable options laid out side-by-side, or an
-   explicit justification why only one survived.
-2. **Risks listed** — each approach has its risks called out with severity.
-3. **Recommendation justified** — the chosen option cites specific expert findings, not
-   "feels right".
-4. **Sources cited** — every non-obvious claim links to a codebase location, doc URL, or
-   dependency coordinate.
+1. **Оценено ≥2 подхода** — рядом представлены как минимум два жизнеспособных варианта либо
+   явно обосновано, почему остался только один.
+2. **Риски перечислены** — для каждого подхода указаны риски с severity.
+3. **Рекомендация обоснована** — выбранный вариант ссылается на конкретные результаты
+   экспертов, а не на ощущение "feels right".
+4. **Источники указаны** — каждая нетривиальная претензия содержит ссылку на расположение в
+   кодовой базе, URL документации или координаты зависимости.
 
-If any item fails, fix the report before saving (re-run a track or fill the gap from the
-existing findings). Do not promote to `business-analyst` mode just because the checklist
-fails — the failure is a content gap, not a mode mismatch.
+Если какой-либо пункт не выполнен, исправь отчёт до сохранения (повтори направление или заполни
+пробел по имеющимся результатам). Не переключайся в режим `business-analyst` только из-за
+провала чеклиста — это пробел в содержании, а не несовпадение режима.
 
-The self-check produces no chat output; any fixes go into the synthesis silently. The
-report's prose stays in the same language as the research topic description (consistent
-with the gather-agent prompts).
+Самопроверка не создаёт вывода в чате; все исправления молча вносятся в синтез. Текст отчёта
+остаётся на том же языке, что и описание темы исследования (в соответствии с prompt-ами
+gather-agent).
 
-### Handle findings (both modes)
+### Обработка результатов (оба режима)
 
-- **No issues** → proceed to Phase 5
-- **Minor** → incorporate inline, note changes, proceed to Phase 5
-- **Major/critical, fillable from research** → re-run the relevant expert track, then re-review
-- **Major/critical, the user can resolve** → carry into Phase 5.1 and ask via
-  `AskUserQuestion` in chat; never pre-park the question in any file under `./swarm-report/`
-- **Major/critical, no party in the session can resolve right now** (e.g. pending vendor SLA,
-  unpublished pricing) → record under "Known Unknowns" in the final report as a factual gap,
-  not as a question for anyone
+- **Нет проблем** → переходи к Phase 5
+- **Minor** → внеси изменения в текст, отметь их и переходи к Phase 5
+- **Major/critical, устранимо на основе исследования** → повтори соответствующее экспертное направление, затем выполни повторную проверку
+- **Major/critical, пользователь может разрешить** → перенеси в Phase 5.1 и задай через
+  `AskUserQuestion` в чате; никогда заранее не оставляй вопрос в файлах под `./swarm-report/`
+- **Major/critical, никто в сессии не может разрешить прямо сейчас** (например, ожидается SLA
+  поставщика или не опубликованы цены) → запиши в итоговом отчёте в разделе "Known Unknowns"
+  как фактический пробел, а не как вопрос кому-либо
 
-The report is not saved at this phase; saving happens in Phase 5 after any user-blocking
-clarifications have been resolved in dialogue.
+На этой фазе отчёт не сохраняется; сохранение выполняется в Phase 5 после разрешения в диалоге
+всех уточнений, блокирующих пользователя.
 
 ---
 
-## Phase 5: Resolve, Save, Summarize
+## Phase 5: Разрешить, сохранить, подвести итог
 
-The synthesis from Phase 3 (refined by Phase 4) is held in working memory only — nothing
-is on disk yet. This phase walks through three steps in order.
+Синтез из Phase 3 (уточнённый в Phase 4) пока хранится только в рабочей памяти — на диске
+ещё ничего нет. На этой фазе последовательно выполняются три шага.
 
-### 5.1 Clarification round-loop (dialogue)
+### 5.1 Цикл уточняющих раундов (диалог)
 
-If the synthesis surfaces a question whose answer would materially change the recommendation
-or a key finding, ask it in chat via the `AskUserQuestion` tool — 2–4 concrete options when
-the option space is enumerable, free-text "Other" otherwise. Same pacing as Phase 1: **one
-question per round**, wait for the answer, fold it into the synthesis, then check if any
-blocker remains. Stop the moment no blocker remains. Multiple rounds are fine; multiple
-questions in one round are not.
+Если в синтезе возникает вопрос, ответ на который существенно изменит рекомендацию или важный
+результат, задай его в чате через tool `AskUserQuestion` — 2–4 конкретных варианта, если их
+множество можно перечислить, иначе свободный текст "Other". Темп тот же, что в Phase 1: **один
+вопрос за раунд**; дождись ответа, включи его в синтез и проверь, остался ли blocker. Остановись,
+как только blocker не останется. Несколько раундов допустимы; несколько вопросов в одном раунде — нет.
 
-The dialogue lives in chat. The state file may flip to `Status: awaiting-clarification` as process metadata — question text and answers are never written to any file.
+Диалог ведётся в чате. В файле состояния метаданные процесса могут изменить статус на
+`Status: awaiting-clarification` — текст вопросов и ответы никогда не записываются в файлы.
 
-What does **not** belong in the round-loop:
-- Stylistic preferences that don't change the recommendation.
-- Mild gaps the consortium could plausibly fill on a re-run (re-run instead).
-- Items no party in the session can answer right now (pending vendor SLA, unpublished
-  pricing, future-dated dependency GA) → surface them in the report's "Known Unknowns"
-  section as factual gaps, not as questions for anyone.
+Что **не** относится к циклу раундов:
+- Стилистические предпочтения, не меняющие рекомендацию.
+- Небольшие пробелы, которые консорциум, вероятно, сможет заполнить при повторном запуске (вместо этого выполни повторный запуск).
+- То, на что никто в сессии не может ответить прямо сейчас (ожидаемый SLA поставщика, не опубликованные
+  цены, будущий GA зависимости) → укажи это в разделе "Known Unknowns" отчёта как фактический пробел,
+  а не как вопрос кому-либо.
 
-### 5.2 Save the final report
+### 5.2 Сохранить итоговый отчёт
 
-Once the loop exits, ensure `./swarm-report/research/` exists (`mkdir -p` it if needed —
-fresh repos won't have the nested subdir), then write `./swarm-report/research/research-<slug>.md`.
-The report is a finished deliverable for downstream consumers (`/write-spec`,
-`/multiexpert-review`, Plan Mode, a future research re-run). Every section reflects the
-post-clarification synthesis; "Known Unknowns" holds only external factual gaps (omitted when
-empty). Mark the state file `Status: done`.
+После завершения цикла убедись, что `./swarm-report/research/` существует (при необходимости
+выполни `mkdir -p` — в новых репозиториях вложенного подкаталога может не быть), затем запиши
+`./swarm-report/research/research-<slug>.md`. Отчёт — готовый deliverable для downstream
+consumers (`/write-spec`, `/multiexpert-review`, Plan Mode, будущего повторного исследования).
+Каждый раздел отражает синтез после уточнений; в "Known Unknowns" содержатся только внешние
+фактические пробелы (если их нет, раздел опускается). Укажи в файле состояния `Status: done`.
 
-### 5.3 Chat summary
+### 5.3 Саммари в чате
 
-Post a compact summary (≤30 lines, no tables, no source lists, no inline citations) that
-lets the user decide without opening the file:
+Опубликуй компактное саммари (≤30 строк, без таблиц, списков источников и inline citations),
+чтобы пользователь мог принять решение, не открывая файл:
 
-1. One sentence: topic, tracks ran, overall recommendation.
-2. 3–5 bullets: most decision-relevant findings / blockers / constraints.
-3. One line: suggested next step.
+1. Одно предложение: тема, запущенные направления, общая рекомендация.
+2. 3–5 пунктов: наиболее важные для решения результаты / blocker / ограничения.
+3. Одна строка: рекомендуемый следующий шаг.
 
-### Suggest next action
+### Предложить следующее действие
 
-| Situation | Suggested action |
+| Ситуация | Предлагаемое действие |
 |---|---|
-| Feature is clear, single task, ready to build | Plan mode + start implementing |
-| Complex approach, needs validation | Plan mode → `/multiexpert-review` |
-| Research revealed a bug, not a feature need | Plan mode for the fix |
-| Known Unknowns remain (external factual gaps no party in the session could resolve) | Surface them in the summary, suggest who/when could fill them |
-| Multiple viable approaches, no clear winner | Present trade-offs, ask user to pick |
+| Функция ясна, задача единичная, готова к реализации | Plan mode + start implementing |
+| Подход сложный и требует проверки | Plan mode → `/multiexpert-review` |
+| Исследование выявило ошибку, а не потребность в функции | Plan mode for the fix |
+| Остались Known Unknowns (внешние фактические пробелы, которые никто в сессии не может разрешить) | Укажи их в саммари и предложи, кто и когда может их закрыть |
+| Есть несколько жизнеспособных подходов без явного победителя | Представь компромиссы и попроси пользователя выбрать |
 
-Frame as actionable proposal, not a question.
+Формулируй это как конкретное предложение к действию, а не как вопрос.
 
 ---
 
-## Red Flags / STOP Conditions
+## Красные флаги / STOP Conditions
 
-Stop and escalate when:
-- **Scope explosion** — topic is much larger than it appeared. Report findings, propose narrowing.
-- **Contradictory requirements** — user constraints conflict. Present, ask which takes priority.
-- **No viable approach** — all candidates have critical blockers. Report honestly.
-- **Missing access** — research needs internal systems / paid APIs / credentials. List what's needed.
-- **Stale/conflicting web data** — sources disagree or look outdated. Flag uncertainty.
-
+Остановись и передай вопрос на эскалацию, если:
+- **Взрыв scope** — тема намного шире, чем казалось. Сообщи результаты и предложи сузить рамки.
+- **Противоречивые требования** — ограничения пользователя конфликтуют. Покажи конфликт и спроси, что важнее.
+- **Нет жизнеспособного подхода** — у всех кандидатов есть критические blocker. Честно сообщи об этом.
+- **Нет доступа** — исследованию нужны внутренние системы / платные API / credentials. Перечисли необходимое.
+- **Устаревшие/противоречивые web-данные** — источники расходятся или выглядят устаревшими. Отметь неопределённость.
