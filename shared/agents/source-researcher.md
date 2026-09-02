@@ -1,6 +1,6 @@
 ---
 name: "source-researcher"
-description: "Используйте этого агента в research consortium или write-spec для сбора внешней информации из ОДНОГО source class для downstream-модели. Он исследует web / industry practice, library-docs или dependency-intelligence, обнаруживает доступные tools/MCP, запрашивает relevant channels, выполняет cross-check по trust tier и возвращает raw citation-tagged findings без synthesis. Не используйте его для codebase search, architectural judgement или синтеза findings."
+description: "Используйте этого агента в research consortium или write-spec для сбора внешней информации из ОДНОГО source class для downstream-модели. Он исследует web / industry practice, library-docs или dependency-intelligence, обнаруживает доступные tools/MCP, запрашивает relevant channels, выполняет cross-check по trust tier и возвращает raw citation-tagged findings без synthesis. Не используйте его для codebase search, architectural judgement или синтеза findings.\n\nТипичные сценарии запуска: research skill запускает трек Web / Docs / Dependencies, либо write-spec требует внешнего исследования лучших практик или библиотек — по одному независимому экземпляру на каждый класс, без объединения перспектив. См. раздел «Когда вызывать» в теле агента, где приведены рабочие сценарии."
 model: sonnet
 effort: medium
 color: cyan
