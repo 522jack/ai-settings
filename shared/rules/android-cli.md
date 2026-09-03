@@ -16,25 +16,25 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 
 ## Матрица решений
 
-| Задача | Команда |
-|------|---------|
-| Поиск docs Android / Jetpack / Compose / AGP / SDK | `android docs search "<query>"` |
-| Получение страницы документации (URL из `docs search`) | `android docs fetch <url>` |
-| Метаданные проекта (build targets, APK output paths) | `android describe --project_dir=.` |
-| Дерево UI работающего устройства | `android layout --pretty` |
-| Diff дерева UI после действия | `android layout -d` |
-| Screenshot устройства | `android screen capture -o <path>` |
-| Визуальный выбор UI-элемента (без стабильного id) | `android screen capture -a` then `android screen resolve --screenshot <p> --string "tap on #3"` |
-| Список AVD | `android emulator list` |
-| Запуск / остановка / удаление AVD | `android emulator start <avd> [--cold]` / `stop` / `remove` |
-| Создание AVD из профиля (watch / phone / XR…) | `android emulator create <profile>` (`--list-profiles` to enumerate) |
-| Установка / обновление / удаление / список SDK packages | `android sdk install|update|remove|list` |
-| Deploy собранного APK | `android run --apks <p1,p2…> --activity <name> --device <id> [--debug]` — `--type` = component type (ACTIVITY/SERVICE…), **не** build variant |
-| Информация об окружении (SDK path, CLI version) | `android info` |
-| Scaffold нового проекта (только по явному запросу) | `android create [template] --name <n> --minSdk <v>` |
-| Список / поиск bundled skills (только чтение) | `android skills list` / `android skills find <keyword>` |
-| Чтение bundled skill как руководства (без install) | `Read ~/.android/cli/skills/**/<skill-name>/SKILL.md` |
-| Установка skill (маршрутизация через Skill tool; для проекта через `--project=<path>`) | `android skills add <skill-name> --agent=<agent>` |
+| Задача                                                                                 | Команда                                                                                                                                       |
+|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| Поиск docs Android / Jetpack / Compose / AGP / SDK                                     | `android docs search "<query>"`                                                                                                               |
+| Получение страницы документации (URL из `docs search`)                                 | `android docs fetch <url>`                                                                                                                    |
+| Метаданные проекта (build targets, APK output paths)                                   | `android describe --project_dir=.`                                                                                                            |
+| Дерево UI работающего устройства                                                       | `android layout --pretty`                                                                                                                     |
+| Diff дерева UI после действия                                                          | `android layout -d`                                                                                                                           |
+| Screenshot устройства                                                                  | `android screen capture -o <path>`                                                                                                            |
+| Визуальный выбор UI-элемента (без стабильного id)                                      | `android screen capture -a` then `android screen resolve --screenshot <p> --string "tap on #3"`                                               |
+| Список AVD                                                                             | `android emulator list`                                                                                                                       |
+| Запуск / остановка / удаление AVD                                                      | `android emulator start <avd> [--cold]` / `stop` / `remove`                                                                                   |
+| Создание AVD из профиля (watch / phone / XR…)                                          | `android emulator create <profile>` (`--list-profiles` to enumerate)                                                                          |
+| Установка / обновление / удаление / список SDK packages                                | `android sdk install                                                                                                                          |update|remove|list` |
+| Deploy собранного APK                                                                  | `android run --apks <p1,p2…> --activity <name> --device <id> [--debug]` — `--type` = component type (ACTIVITY/SERVICE…), **не** build variant |
+| Информация об окружении (SDK path, CLI version)                                        | `android info`                                                                                                                                |
+| Scaffold нового проекта (только по явному запросу)                                     | `android create [template] --name <n> --minSdk <v>`                                                                                           |
+| Список / поиск bundled skills (только чтение)                                          | `android skills list` / `android skills find <keyword>`                                                                                       |
+| Чтение bundled skill как руководства (без install)                                     | `Read ~/.android/cli/skills/**/<skill-name>/SKILL.md`                                                                                         |
+| Установка skill (маршрутизация через Skill tool; для проекта через `--project=<path>`) | `android skills add <skill-name> --agent=<agent>`                                                                                             |
 
 > Интеграция с Android Studio (`android studio *`) намеренно не включена — она не используется.
 
@@ -56,13 +56,13 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 
 Крайний случай (CLI отсутствует на машине). Один раз сообщить: «Android CLI not installed — install per the docs URL, or proceeding with fallbacks». Затем:
 
-| Задача | Fallback |
-|------|----------|
-| Documentation | Context7 (`resolve-library-id`) → WebSearch по `developer.android.com` → WebFetch страницы |
-| Метаданные проекта | Read `app/build.gradle*` / `settings.gradle*`; `ksrc` для dep sources |
-| Layout / screenshot | `adb shell uiautomator dump` + `adb pull /sdcard/window_dump.xml` / `adb exec-out screencap -p > shot.png` |
-| SDK / Emulator | `$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager` / `$ANDROID_HOME/emulator/emulator -list-avds`, `avdmanager` |
-| Deploy | `./gradlew :app:installDebug` затем `adb shell am start -n <pkg>/<activity>` |
+| Задача              | Fallback                                                                                                         |
+|---------------------|------------------------------------------------------------------------------------------------------------------|
+| Documentation       | Context7 (`resolve-library-id`) → WebSearch по `developer.android.com` → WebFetch страницы                       |
+| Метаданные проекта  | Read `app/build.gradle*` / `settings.gradle*`; `ksrc` для dep sources                                            |
+| Layout / screenshot | `adb shell uiautomator dump` + `adb pull /sdcard/window_dump.xml` / `adb exec-out screencap -p > shot.png`       |
+| SDK / Emulator      | `$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager` / `$ANDROID_HOME/emulator/emulator -list-avds`, `avdmanager` |
+| Deploy              | `./gradlew :app:installDebug` затем `adb shell am start -n <pkg>/<activity>`                                     |
 
 ## Операционные заметки
 

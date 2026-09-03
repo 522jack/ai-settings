@@ -4,28 +4,28 @@
 
 ## Матрица решений
 
-| Задача | Инструмент |
-|------|------|
-| Найти class / interface / struct | `ast-index class "Name"` |
-| Найти любой symbol по имени | `ast-index symbol "Name"` |
-| Универсальный поиск (symbol + file + refs) | `ast-index search "query"` |
-| Найти все использования symbol | `ast-index usages "Name"` |
-| Найти все references (defs + imports + usages) | `ast-index refs "Name"` |
-| Найти subclasses / implementors | `ast-index implementations "Interface"` |
-| Иерархия class/type | `ast-index hierarchy "ClassName"` |
-| Кто вызывает function | `ast-index callers "functionName"` |
-| Дерево вызовов | `ast-index call-tree "fn" --depth 3` |
-| Зависимости module | `ast-index deps "module-name"` |
-| Обратные dependents | `ast-index dependents "module-name"` |
-| Symbols в file | `ast-index outline path/to/File.kt` |
-| Public API модуля | `ast-index api "module-path"` |
-| Потенциально неиспользуемые symbols | `ast-index unused-symbols` |
-| Поиск TODO/FIXME/HACK | `ast-index todo` |
-| Поиск по regex / string literal | **Grep** |
-| Поиск содержимого comments | **Grep** |
-| Разрешение типов, выведенные types | **LSP hover** |
-| Перейти к определению (type-aware) | **LSP goToDefinition** |
-| Точная иерархия вызовов | **LSP incomingCalls / outgoingCalls** |
+| Задача                                         | Инструмент                              |
+|------------------------------------------------|-----------------------------------------|
+| Найти class / interface / struct               | `ast-index class "Name"`                |
+| Найти любой symbol по имени                    | `ast-index symbol "Name"`               |
+| Универсальный поиск (symbol + file + refs)     | `ast-index search "query"`              |
+| Найти все использования symbol                 | `ast-index usages "Name"`               |
+| Найти все references (defs + imports + usages) | `ast-index refs "Name"`                 |
+| Найти subclasses / implementors                | `ast-index implementations "Interface"` |
+| Иерархия class/type                            | `ast-index hierarchy "ClassName"`       |
+| Кто вызывает function                          | `ast-index callers "functionName"`      |
+| Дерево вызовов                                 | `ast-index call-tree "fn" --depth 3`    |
+| Зависимости module                             | `ast-index deps "module-name"`          |
+| Обратные dependents                            | `ast-index dependents "module-name"`    |
+| Symbols в file                                 | `ast-index outline path/to/File.kt`     |
+| Public API модуля                              | `ast-index api "module-path"`           |
+| Потенциально неиспользуемые symbols            | `ast-index unused-symbols`              |
+| Поиск TODO/FIXME/HACK                          | `ast-index todo`                        |
+| Поиск по regex / string literal                | **Grep**                                |
+| Поиск содержимого comments                     | **Grep**                                |
+| Разрешение типов, выведенные types             | **LSP hover**                           |
+| Перейти к определению (type-aware)             | **LSP goToDefinition**                  |
+| Точная иерархия вызовов                        | **LSP incomingCalls / outgoingCalls**   |
 
 ## Правила приоритета
 
