@@ -86,12 +86,12 @@ Pick the package manager by lockfile: `pnpm-lock.yaml` → `pnpm run`, `yarn.loc
 
 | Флаг | Эффект |
 |---|---|
-| `--all` | Run every check regardless of earlier failures (PARTIAL verdict if mixed). |
-| `--fast` | Skip tests AND the public-API coverage gate; build + lint + typecheck only. |
-| `--only <category>` | Single category (`build` / `lint` / `typecheck` / `tests`); coverage gate skipped. |
-| `--no-coverage-gate` | Skip Phase 3.5 only. Recorded as `skipped: [coverage]` plus a Notes entry. |
+| `--all` | Run every configured check regardless of earlier failures (PARTIAL verdict if mixed). |
+| `--fast` | Skip existing tests; build + lint + typecheck only. |
+| `--only <category>` | Single category (`build` / `lint` / `typecheck` / `tests`). |
+| `--coverage-gate` | Явно включить аудит соответствия новых public symbols тестам. Использовать только когда пользователь запросил tests/coverage audit. |
 
-Вызывающий код передаёт режим первым токеном `--<flag>` или естественным языком («fast mode», «only the tests»). Взаимоисключающие флаги → завершение с ясной ошибкой.
+Вызывающий код передаёт режим первым токеном `--<flag>` или естественным языком. Взаимоисключающие флаги → завершение с ясной ошибкой.
 
 ### Сбор вывода
 
@@ -99,21 +99,17 @@ Pick the package manager by lockfile: `pnpm-lock.yaml` → `pnpm run`, `yarn.loc
 
 ---
 
-## Фаза 3.5: gate покрытия публичного API (включён по умолчанию)
+## Фаза 3.5: аудит покрытия публичного API (opt-in)
 
-Запускается после категории tests. Даже если build / lint / typecheck / tests прошли, новый публичный символ без соответствующего теста проваливает этот gate — это ранняя проверка; поздний аудит находится в фазе D `finalize`.
+По умолчанию `SKIP`: отсутствие нового теста не проваливает `/check` и не инициирует написание тестов.
 
-**Symbol classification, trivial-no-test allow-list, and test-matching priority** — see `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § Public-API coverage gate.
+Запускать только с `--coverage-gate`, который отражает явную просьбу пользователя написать тесты или выполнить coverage audit. После категории tests сопоставить новые public symbols по правилам `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § Public API coverage.
 
-**Когда запускается gate:** текущая ветка отличается от удалённой ветки по умолчанию (определите base через `git remote show origin | grep "HEAD branch"`, запасные варианты `main`/`master`/`develop`; работайте с `git diff $(git merge-base origin/<base> HEAD)..HEAD`). Если ветка — default, молча пропустите. `--no-coverage-gate` → запишите `skipped: [coverage]`.
+**Когда запускается:** текущая ветка отличается от удалённой ветки по умолчанию. Если ветка — default, записать `SKIP`.
 
-**Per-language matching extras** beyond the global rule:
-- Kotlin annotation `@NoTestRequired` or `@Suppress("MissingTest")` satisfies the gate; equivalent line comment `// no-test-required: <reason>` works for Swift / Rust / Go / TS / JS / Python.
-- Files under `no-test-harness/` are an escape hatch for legacy modules.
+**Per-language matching extras:** Kotlin `@NoTestRequired` / `@Suppress("MissingTest")`; для Swift / Rust / Go / TS / JS / Python — `// no-test-required: <reason>`; `no-test-harness/` остаётся escape hatch legacy-модулей.
 
-**Вывод:** строка `coverage` в отчёте и массивы блока вердикта. Результат: `PASS` (каждый символ сопоставлен или тривиален), `FAIL` (один или несколько не сопоставлены — перечислите `<file>:<line>: <symbol>` и проверенное правило) или `SKIP` (явное переопределение).
-
-`coverage: FAIL` от `/check` означает, что инженер добавляет тесты, помечает символ как тривиальный или передаёт `--no-coverage-gate` (не рекомендуется, фиксируется). При вызове из `finalize` исправление в том же запуске выполняет инженер, добавивший символ.
+**Вывод:** `PASS`, если каждый символ сопоставлен или помечен; `FAIL`, если есть gaps; `SKIP`, если opt-in отсутствует. При `FAIL` предложить конкретные тесты. Писать их разрешено, потому что `--coverage-gate` допустим только после явного запроса пользователя.
 
 ---
 
@@ -139,8 +135,8 @@ skipped: [tests]
 
 `verdict` is one of:
 
-- **PASS** — every executed check exit 0 AND coverage gate (when run) matched every new public symbol.
-- **FAIL** — at least one executed check non-zero OR coverage gate had unmatched symbols. Default fail-fast: a failure followed by SKIP for remaining categories is still FAIL.
+- **PASS** — every executed check exit 0 AND opt-in coverage audit (when run) matched every new public symbol.
+- **FAIL** — at least one executed check non-zero OR requested coverage audit had unmatched symbols. Default fail-fast: a failure followed by SKIP for remaining categories is still FAIL.
 - **PARTIAL** — reserved for `--all` when some passed and some failed.
 
 ---

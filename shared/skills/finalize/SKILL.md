@@ -34,7 +34,7 @@ description: >
 - `--skip-deep-scan` — полностью пропустить Phase 0 (дословно записывается в `acknowledged risks`). Phase 0 также автоматически пропускается для тривиальных diff.
 - `--skip-experts` — пропустить Phase D (редко полезно; эксперты автоматически пропускаются, если ни один триггер не сработал).
 - `--max-rounds N` (≥ 1) — переопределить значение по умолчанию 3. Используйте после ESCALATE, чтобы выполнить ещё один раунд без перезапуска.
-- `--coverage-audit` / `--skip-coverage-audit` — принудительно включить / выключить `test-coverage-expert` в Phase D. Пропуск не рекомендуется; он дословно записывается в `acknowledged risks`.
+- `--coverage-audit` — явно включить аудит покрытия и разрешить написание недостающих тестов. Использовать только когда пользователь попросил tests/coverage audit; без флага аудит не запускается.
 - `--skip-security-review "<reason>"` — отключить для этого раунда и `risk_areas`, и триггеры шаблонов. Причина сохраняется дословно. Не рекомендуется; другие эксперты Phase D всё равно запускаются.
 
 ---
@@ -143,7 +143,7 @@ Round N:
 
 Три агента `always` покрывают направления, которыми не владеет ни одна другая фаза; `comment-analyzer` запускается при изменениях комментариев/документации, поскольку устаревание комментариев менее приоритетно и шумнее остальных трёх направлений — его место оправдано только когда есть комментарии для аудита.
 
-Находки оцениваются по той же шкале 0–100, что и у `code-reviewer` (наследуется через общий prompt). Применяйте цикл исправлений Phase A: BLOCK (critical/major ≥ 75) → fix → `/check`; WARN (minor ≥ 50) → только отчёт; ниже порога → отбросить. Исправления качества тестов, требующие нового тестового кода, делегируйте подходящему инженерному агенту.
+Находки оцениваются по общей шкале. Исправления существующих тестов допустимы, но добавление новых test cases или расширение coverage выполняется только при явном запросе пользователя; иначе записать рекомендацию как NIT, не BLOCK.
 
 ---
 
@@ -160,7 +160,7 @@ Round N:
 | `build-engineer` | Gradle / Bazel / npm / Cargo / Xcode build script changes, plugin upgrades, version-catalog edits |
 | `devops-expert` | CI / CD config, GitHub Actions / GitLab pipelines, deploy scripts, Dockerfile, infra-as-code |
 | `business-analyst` | spec / requirements / scope changes (rare in finalize — usually fires upstream) |
-| `test-coverage-expert` | see [`test-coverage-expert` (conditional)](#test-coverage-expert-conditional) below |
+| `test-coverage-expert` | только при `--coverage-audit`, переданном после явного запроса пользователя |
 
 Ни один триггер не сработал → полностью пропустите Phase D в этом раунде.
 
@@ -196,61 +196,19 @@ Round N:
 - Performance / architecture + critical ≥ 75: исправьте, если проблема локальна для diff; escalate, если требуется более широкая переработка.
 - Отдельного правила «всегда исправлять при 50» нет: шкала один раз определена в `code-reviewer.md` и наследуется.
 
-### `test-coverage-expert` (условный)
+### `test-coverage-expert` (только opt-in)
 
-Поздний аудит покрытия, дополняющий ранний gate `check` Phase 3.5 (#154). Обнаруживает заявленные, но не реализованные TC, изменения data layer без integration-тестов и пробелы, пропущенные инженерным специалистом. Правило public API определено в `$HOME/dotfiles/ai/shared/rules/qa-and-testing.md` § 1; система приоритетов (P0–P3) — в § 2.
+По умолчанию этот этап пропускается и отсутствие нового теста не считается BLOCK. Не выводить необходимость аудита из public API, data layer или test plan автоматически.
 
-**Запускайте, если выполнено ЛЮБОЕ условие:** (1) diff добавляет символ public API без соответствующего тестового файла (согласно § 1); (2) `docs/testplans/<slug>-test-plan.md` объявляет TC без соответствующей реализации в тестовых источниках этого slug — сопоставляйте по `Type` TC (#153), а также упоминанию имени / файла; это интерпретирует агент, а не regex; (3) diff затрагивает файлы data layer / repository / service / use-case без добавления или обновления тестов; (4) `--coverage-audit`.
+Запускайте только с `--coverage-audit`, когда пользователь явно попросил написать тесты или проверить coverage. Агент читает test plan, diff и существующие tests, записывает `swarm-report/<slug>-coverage-audit.md`; при найденных gaps может написать недостающие тесты и повторно запустить `/check --coverage-gate`.
 
-**Пропускайте, если выполнено ЛЮБОЕ условие:** (1) тривиальный diff (один файл, < 50 LOC, без нового public API, только рефакторинг); (2) `--skip-coverage-audit` (дословно записывается в отчёт finalize); (3) для затронутого модуля нет тестовой инфраструктуры — завершите этап с follow-up issue ("add test harness for X"). Никогда не пропускайте молча.
+Без `--coverage-audit` запишите `phase: D/coverage, status: skipped, reason: tests not requested`; не добавляйте это в `acknowledged risks`, поскольку это штатная политика pipeline.
 
-Переиспользует существующих инженерных агентов (`kotlin-engineer` / `swift-engineer` / `compose-developer` / `swiftui-developer`) с prompt для аудита покрытия. Агент читает `docs/testplans/<slug>-test-plan.md`, diff и тестовые файлы; записывает `swarm-report/<slug>-coverage-audit.md`; при пробелах в том же вызове Task пишет недостающие тесты и повторно запускает `/check` (author-fixes-tests, qa-and-testing.md § 4).
+При opt-in используйте вердикты:
 
-**Schema for `swarm-report/<slug>-coverage-audit.md`:**
-
-```markdown
-# Coverage audit: <slug>
-
-**Date:** <ISO date>
-**Slug:** <slug>
-**Triggered by:** new-public-api | tp-tc-mismatch | data-layer-no-tests | --coverage-audit
-**Verdict:** PASS | GAPS_RESOLVED | ESCALATE
-
-## Inputs
-- Test plan: `docs/testplans/<slug>-test-plan.md` (or `N/A: no test plan`)
-- Diff against: `origin/<base>` (commit hash range)
-- Test files in diff: <list>
-
-## Cross-reference
-
-| TC ID | Type | Status | Test file |
-|---|---|---|---|
-| TC-1 | unit | covered | `src/test/.../FooSpec.kt` |
-| TC-2 | ui-instrumentation | gap | — |
-
-## Public API audit
-
-| Symbol | File | Status | Test file |
-|---|---|---|---|
-| `LoginViewModel` | `feature/auth/.../LoginViewModel.kt` | covered | `LoginViewModelTest.kt` |
-| `RateLimiter.allow()` | `core/.../RateLimiter.kt` | gap | — |
-
-## Gaps and resolution
-- (gap-1) TC-2 `Login error state` — added `LoginScreenInstrumentedTest`.
-- (gap-2) `RateLimiter.allow()` — added `RateLimiterTest.allow_blocks_after_threshold`.
-
-## /check after fixes
-verdict: PASS
-passed: [build, lint, typecheck, tests, coverage]
-```
-
-Вердикт → результат Phase D:
-
-- `PASS` — все строки покрыты до аудита; Phase D продолжается с другими экспертами.
-- `GAPS_RESOLVED` — агент написал недостающие тесты, `/check` дал PASS. Считается PASS; файл аудита перечисляет исправления для отчёта finalize.
-- `ESCALATE` — агент не смог создать пригодный тест за 3 попытки ИЛИ пробел структурно нетестируем. Считается BLOCK; применяется бюджет раундов.
-
-`--skip-coverage-audit` описан в §Inputs; при его установке причина пропуска записывается в `acknowledged risks`.
+- `PASS` — gaps не найдены;
+- `GAPS_RESOLVED` — запрошенные тесты добавлены, `/check --coverage-gate` прошёл;
+- `ESCALATE` — пригодный тест не удалось создать или область структурно нетестируема; это BLOCK.
 
 ---
 
@@ -342,7 +300,7 @@ Never paste the report table into chat — the file is for reference.
 
 - **In scope:** improving quality of code *related to the current diff*; delegating fixes to engineer agents; `/check` after each mutation.
 - **Out of scope:** new features, scope changes, functional acceptance, architectural redesign.
-- Keep fixes inside files touched by the original change. Adjacent-file edits only when a finding explicitly requires them (e.g., `pr-test-analyzer` adding a sibling test, `/simplify` extracting a helper).
+- Keep fixes inside files touched by the original change. Adjacent-file edits only when required; sibling test files may be added only during explicit `--coverage-audit`.
 - Never re-scope under "cleanup" — structural issues beyond narrow-fix reach escalate.
 - Never silently skip Phase A — `code-reviewer`'s plan-conformance check is the anchor. If it fails to launch for infrastructure reasons, stop and escalate.
 

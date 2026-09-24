@@ -48,25 +48,21 @@ review_blockers: []     # filled by the review loop when blockers remain
 | <risk> | critical / major / minor | <how the plan handles it> |
 
 ## Проверка и источники
-<Как проверяется ЗАВЕРШЁННАЯ реализация — контракт, с которым сверяется `/acceptance`. Отличается
-от `check` для каждой задачи в tasks.md: тот доказывает каждую задачу, этот — что всё изменение
-завершено и корректно. Обязательный раздел — план без него нельзя утвердить (qa-and-testing §6, §0).>
+<Как проверяется завершённая реализация доступными средствами. Обязательный раздел, но он не требует
+создания новых тестов или запуска mobile runtime QA.>
 
 | Источник истины | Тип | Статус | Достаточен для проверки? |
 |---|---|---|---|
-| <path / link / "baseline captured at swarm-report/<slug>-baseline.md"> | spec / test-plan / requirements / before-state baseline / Figma-or-screenshots / debug-repro | present / to-capture-before-impl / absent | yes — <why it lets someone who's never seen the system confirm "done"> / no — <gap + how it's closed before implementation> |
+| <path / link / requirements / existing baseline> | spec / existing-test / requirements / Figma / debug-repro | present / absent | yes — <что доказывает> / no — <остаточный риск> |
 
-**Стратегия тестирования (уровни пирамиды):** всегда L0 build + <применимые уровни, например L1 static,
-L2 unit, L3 UI, L5 manual> — <одна строка: почему эти уровни нужны для изменения>. L5 обязателен для
-обновлений библиотек, миграций и изменений infra-слоя (network/storage/auth/DI). Если пропущен уровень,
-который матрица маршрутизации помечает обязательным, назовите его и зафиксированное исключение
-(qa-and-testing §1/§4) — никогда не пропускайте молча.
+**Стратегия проверки:** L0 targeted build + L1 static/review + существующие релевантные tests, если они
+есть. Новые unit/UI/E2E/snapshot tests и test infrastructure — только если пользователь явно попросил.
+Для Android/iOS L5 manual, запуск приложения, emulator/simulator/device и снятие screenshots — только
+по явной просьбе пользователя; отсутствие opt-in не является исключением и не блокирует утверждение плана.
 
-> Поле `spec:` во frontmatter содержит только ссылку на spec для инструментов; эта секция — полный
-> человекочитаемый контракт проверки, поэтому перечисляйте каждый источник, а не только spec. Для
-> исправления ошибки источником является `swarm-report/<slug>-debug.md`; для миграции/задачи «поведение
-> не должно измениться» — baseline исходного состояния, снятый **до** любого редактирования
-> (task-types § Before-state baseline).
+> Для migration или задачи «поведение не должно измениться» использовать уже доступный baseline.
+> Если его нет, описать intended behavior и риск отсутствия runtime-сравнения; не снимать mobile baseline
+> автоматически.
 
 ## Вне области работ
 - <что этот план ЯВНО НЕ делает, с владельцем/целью отсрочки, если применимо>

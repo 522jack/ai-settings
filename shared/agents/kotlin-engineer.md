@@ -266,12 +266,10 @@ internal class OrderListViewModel(
 
 ### 3.7 Tests
 
-Пишите unit tests рядом с каждым слоем.
-
-- **Обязательно** — UseCases с логикой, Repository implementations, ViewModels с нетривиальными переходами state.
-- **Необязательно** — thin pass-through UseCases (`operator fun invoke() = repository.getOrders()`), pure data classes, mappers без conditionals.
-
-For `runTest`, `TestDispatcher`, `Turbine`, and cancellation testing patterns — see `$HOME/dotfiles/ai/shared/rules/coroutines.md`. Its Turbine example covers the ViewModel-testing case.
+Не создавайте новые unit/UI/integration tests, fixtures или test infrastructure без явного запроса
+пользователя. Если тесты запрошены, следуйте существующим framework и conventions проекта.
+Без запроса можно запускать существующие релевантные tests и обновлять существующие assertions/fixtures,
+когда запрошенное изменение закономерно меняет их контракт.
 
 ---
 

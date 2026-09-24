@@ -55,6 +55,7 @@ Save to `swarm-report/<slug>-acceptance.md`. Legacy fields preserved; new sectio
 **Project type:** <project_type>
 **Project type override:** <spec | user | none>
 **Ecosystem:** <ecosystem>
+**Mobile manual requested:** true / false
 **Spec source:** [что использовано]
 **Test plan:** [разрешённый постоянный путь / создан на лету / none]
 **test_plan_source:** receipt | mounted | on-the-fly | absent
@@ -77,7 +78,7 @@ Save to `swarm-report/<slug>-acceptance.md`. Legacy fields preserved; new sectio
 
 | Check | Agent / Tool | Verdict | Severity | Confidence | Artifact |
 |---|---|---|---|---|---|
-| Ручной QA | manual-tester | … | … | … | swarm-report/<slug>-acceptance-manual.md |
+| Ручной QA | manual-tester | … / SKIPPED (`mobile runtime QA not requested`) | … | … | swarm-report/<slug>-acceptance-manual.md / — |
 | Ревью кода | code-reviewer | … | … | … | swarm-report/<slug>-acceptance-code.md |
 | Покрытие AC | business-analyst | … | … | … | swarm-report/<slug>-acceptance-ac-coverage.md |
 | Дизайн | ux-expert | … | … | … | swarm-report/<slug>-acceptance-design.md |

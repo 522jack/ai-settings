@@ -19,15 +19,16 @@
 
 ## Сопоставление адаптеров
 
-| Контракт | Claude Code | Codex | Общий fallback |
-|---|---|---|---|
-| Project instructions | `CLAUDE.md` плюс импортированные правила | `AGENTS.md` плюс skills/rules | Явно прочитать каждый доступный файл инструкций. |
-| Specialist delegation | `Task` / custom agents / `Explore` | multi-agent tools, если доступны; загрузить выбранный профиль из `~/dotfiles/ai/shared/agents/` в пакет делегирования | Использовать отдельный worktree/process, если доступен; иначе явно указать ограничение и выполнять работу локально только при безопасности такого подхода. |
-| Codebase search specialist | `Explore` или настроенный поисковый агент | subagent `explorer`, если доступен | Сначала использовать индексированный поиск; избегать широкого raw grep. |
-| User choice tool | `AskUserQuestion` | `request_user_input`, если доступен, иначе один краткий вопрос в чате | Спрашивать в чате; никогда не откладывать вопросы, решаемые пользователем, в файлы. |
-| Skill invocation | Slash command или Skill tool | Установленный skill из `~/.codex/skills` | Вручную следовать `SKILL.md`. |
-| Runtime QA | mobile/browser MCP tools | доступные MCP/tools, Playwright/browser/mobile plugins | По возможности выполнять действия на реальном устройстве/в браузере; документировать отсутствующую возможность. |
-| Hook enforcement | Claude hooks в `settings.json` | sandbox/approvals Codex плюс ручная синхронизация при старте сессии | Запускать shell guard scripts вручную или через механизм хуков рантайма. |
+| Контракт | Claude Code | Codex | Oh My Pi (OMP) | Общий fallback |
+|---|---|---|---|---|
+| Project instructions | `CLAUDE.md` плюс импортированные правила | `AGENTS.md` плюс skills/rules | `~/.omp/agent/AGENTS.md`, который импортирует общий контракт | Явно прочитать каждый доступный файл инструкций. |
+| Specialist delegation | `Task` / custom agents / `Explore` | multi-agent tools, если доступны; загрузить выбранный профиль из `~/dotfiles/ai/shared/agents/` в пакет делегирования | `task`: агент `task` для реализации, `scout` для read-only поиска, `reviewer` для ревью; содержимое выбранного профиля из `shared/agents/` передать в пакет делегирования | Использовать отдельный worktree/process, если доступен; иначе явно указать ограничение и выполнять работу локально только при безопасности такого подхода. |
+| Codebase search specialist | `Explore` или настроенный поисковый агент | subagent `explorer`, если доступен | `task` с агентом `scout`; точечное чтение в main session — `read`, `grep`, `glob` | Сначала использовать индексированный поиск; избегать широкого raw grep. |
+| User choice tool | `AskUserQuestion` | `request_user_input`, если доступен, иначе один краткий вопрос в чате | `ask`; использовать только когда ответ нельзя получить из проекта или инструментов | Спрашивать в чате; никогда не откладывать вопросы, решаемые пользователем, в файлы. |
+| Skill invocation | Slash command или Skill tool | Установленный skill из `~/.codex/skills` | Сначала прочитать `skill://<name>`; native discovery — `~/.omp/agent/skills/<name>/SKILL.md` | Вручную следовать `SKILL.md`. |
+| Runtime tools | Инструменты текущей сессии Claude Code | Доступные Codex tools | `read`/`grep`/`glob` для чтения и поиска, `edit` для точечных изменений, `write` для создания или полной замены, `bash` для внешних команд, `browser` для интерактивного web UI, `eval` для программируемых сценариев | Использовать ближайший безопасный инструмент и точно описывать ограничения. |
+| Runtime QA | mobile/browser MCP tools | доступные MCP/tools, Playwright/browser/mobile plugins | `browser` для web UI; подключённые MCP/device tools для остальных поверхностей; `eval` для сценариев, которым нужна программная оркестрация | По возможности выполнять действия на реальном устройстве/в браузере; документировать отсутствующую возможность. |
+| Hook enforcement | Claude hooks в `settings.json` | sandbox/approvals Codex плюс ручная синхронизация при старте сессии | Claude hooks/settings не устанавливаются; запускать нужные guard scripts через `bash` вручную | Запускать shell guard scripts вручную или через механизм хуков рантайма. |
 
 ## Устаревшие псевдонимы
 

@@ -61,7 +61,7 @@ echo "  Agents: ~/.claude/agents/* → $REPO/shared/agents/*"
 echo "  Agent references: ~/.claude/agent-references → $REPO/shared/agent-references"
 
 # Skills (symlink each skill dir individually — don't replace existing dirs)
-mkdir -p "$HOME/.claude/skills" "$HOME/.codex/skills" "$HOME/.agents/skills"
+mkdir -p "$HOME/.claude/skills" "$HOME/.codex/skills" "$HOME/.agents/skills" "$HOME/.omp/agent/skills"
 
 for skill_dir in "$REPO/shared/skills"/*/; do
     skill_name="$(basename "$skill_dir")"
@@ -75,6 +75,11 @@ for skill_dir in "$REPO/shared/skills"/*/; do
     [ -L "$target_codex" ] && rm "$target_codex"
     [ -d "$target_codex" ] && [ ! -L "$target_codex" ] && { mkdir -p "$BACKUP"; cp -r "$target_codex" "$BACKUP/"; rm -rf "$target_codex"; }
     ln -sf "$skill_dir" "$target_codex"
+    # Oh My Pi
+    target_omp="$HOME/.omp/agent/skills/$skill_name"
+    [ -L "$target_omp" ] && rm "$target_omp"
+    [ -d "$target_omp" ] && [ ! -L "$target_omp" ] && { mkdir -p "$BACKUP"; cp -r "$target_omp" "$BACKUP/"; rm -rf "$target_omp"; }
+    ln -sf "$skill_dir" "$target_omp"
     # Gemini in Android Studio discovers physical skill directories reliably;
     # do not use symlinks here.
     target_gemini="$HOME/.agents/skills/$skill_name"
@@ -88,7 +93,7 @@ for skill_dir in "$REPO/shared/skills"/*/; do
     /usr/bin/ditto "$skill_dir" "$target_gemini"
 done
 
-echo "  Skills: ~/.claude/skills/* and ~/.codex/skills/* → $REPO/shared/skills/*"
+echo "  Skills: ~/.claude/skills/*, ~/.codex/skills/*, and ~/.omp/agent/skills/* → $REPO/shared/skills/*"
 echo "  Gemini skills: ~/.agents/skills/* copied from $REPO/shared/skills/*"
 
 # Codex
@@ -99,6 +104,15 @@ backup_if_exists "$HOME/.codex/AGENTS.md"
 ln -sf "$REPO/shared/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
 echo "  Codex: ~/.codex/AGENTS.md → $REPO/shared/AGENTS.md"
+
+# Oh My Pi
+mkdir -p "$HOME/.omp/agent"
+
+backup_if_exists "$HOME/.omp/agent/AGENTS.md"
+
+ln -sf "$REPO/omp/AGENTS.md" "$HOME/.omp/agent/AGENTS.md"
+
+echo "  Oh My Pi: ~/.omp/agent/AGENTS.md → $REPO/omp/AGENTS.md"
 
 # Global neutral AGENTS.md
 # Harness-specific adapters must be installed in their own runtime locations.

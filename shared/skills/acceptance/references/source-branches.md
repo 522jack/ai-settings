@@ -12,18 +12,16 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 описание PR, issue GitHub/Linear. Прочитайте все предоставленные источники.
 
 **Прочитайте frontmatter spec.** Если он есть, загрузите `platform`, `surfaces`, `risk_areas`,
-`non_functional`, `acceptance_criteria_ids`, `design.figma`. These drive the conditional
-триггеры шага 3 и два инвариантных защитных правила базового плана:
+`non_functional`, `acceptance_criteria_ids`, `design.figma`. Они управляют условными review-проверками,
+но сами по себе не разрешают mobile manual QA.
 
-- наличие `ui` в `surfaces` принудительно добавляет `manual-tester` в fan-out, если есть источник
-  сценария, даже когда шаг 0 обнаружил non-UI проект (гибридные продукты с UI- и non-UI-поверхностями);
-- если `surfaces` задан, но не содержит `ui`, а проект определён как UI, это означает, что spec
-  явно исключает UI — пропустите `manual-tester`, даже если `has_ui_surface` равно true, и укажите
-  это в секции Check Plan receipt.
+- Для Android/iOS наличие `ui` в `surfaces`, test plan или `design.figma` **не** добавляет
+  `manual-tester`; он запускается только при `mobile_manual_requested == true`.
+- Если `surfaces` явно исключает `ui`, manual-tester пропускается независимо от project type.
+- Для web/desktop UI сохраняется базовый runtime QA.
 
-Если у spec нет frontmatter (spec до итерации 2, внешний spec или issue в виде обычного текста),
-каждое условие по умолчанию имеет значение «не вызвано», а `surfaces` считается не заданным;
-выполняются только базовые проверки, зависящие от `has_ui_surface`. Это сохраняет обратную совместимость.
+Если у spec нет frontmatter, выполняйте базовый план по `project_type`; для Android/iOS это
+code review и build smoke без запуска приложения.
 
 ## 1.2 Поиск доступных артефактов (параллельно)
 
@@ -45,7 +43,7 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 согласно каноническому определению в `generate-test-plan/SKILL.md` §Receipt: считайте
 `PASS` / `WARN` / `skipped` as proceed; `FAIL` and `pending` as blockers that escalate
 возвращаемыми вызывающему коду и эскалируйте их, рекомендуя пересмотр через `multiexpert-review` до
-повторного запуска acceptance. Передайте **постоянный файл** `manual-tester` как основной источник test-plan.
+повторного запуска acceptance. Передайте постоянный файл `manual-tester` только если manual runtime check включён по правилам базового плана.
 Если receipt содержит поле `platform:`, используйте его как дополнительный вход для политики
 переопределения шага 0.
 
@@ -59,7 +57,7 @@ mount-receipt в `swarm-report/<slug>-test-plan.md` по каноническо�
 `generate-test-plan/SKILL.md` §Receipt. Примените mount-переопределения: `status: Mounted`,
 `review_verdict: skipped`, `source_spec: existing (pre-orchestration)`. Derive
 `phase_coverage` по заголовкам фаз постоянного файла; опустите поле, если покрытие нельзя надёжно
-определить. Передайте постоянный файл `manual-tester`.
+определить. Передайте постоянный файл `manual-tester` только если manual runtime check запланирован.
 
 ### Ветвь 3 — доступен встроенный test plan, spec или `debug.md` (`test_plan_source: on-the-fly`)
 

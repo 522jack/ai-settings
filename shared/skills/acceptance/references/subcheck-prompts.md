@@ -4,8 +4,9 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 
 ## Запуск `manual-tester` (UI-ветвь)
 
-`manual-tester` полностью отвечает за среду выполнения согласно разделу Step 0 Environment Setup.
-Acceptance не запускает её заранее — это намеренное делегирование.
+Для Android/iOS запускать только при `mobile_manual_requested == true`, установленном явной просьбой
+пользователя в текущей задаче. Spec, UI surface и test plan не являются opt-in. Для web/desktop
+сохраняется базовая UI-ветвь. `manual-tester` полностью отвечает за runtime environment.
 
 Содержимое запроса:
 1. **Контекст spec** — полный текст или ясные указатели.

@@ -36,11 +36,10 @@ receipt профиля).
 
 ## Правила передачи
 
-- **Не** вызывайте downstream-навыки автоматически. Предложите следующий шаг (реализовать задачи; затем
-  `/write-tests`, `/check`, `/finalize`, `/acceptance`) and let the user/agent drive — toolbox
-  model. (The mandatory Phase 3 inline `multiexpert-review` call and the Phase 3.5 adversarial
-  red-team Agent call are the review gate built into this skill, not downstream chains — these are
-  the sanctioned in-skill invocations.)
+- **Не** вызывайте downstream-навыки автоматически. Предложите реализовать задачи, затем
+  `/check`, `/finalize`, `/acceptance`; `/write-tests` упоминайте только при явном запросе пользователя
+  на новые тесты. Mandatory Phase 3 inline `multiexpert-review` и Phase 3.5 red-team Agent остаются
+  встроенными review gates этого skill.
 - `progress.md` — текущий журнал: по мере завершения каждого `T-N` отметьте его и добавьте однострочный
   вывод. Реализующий агент коммитит план и код вместе, чтобы в PR был виден план, создавший изменение.
 - `create-pr` обнаруживает `docs/plans/<slug>/plan.md` и ссылается на него в теле PR; `finalize`

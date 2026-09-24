@@ -4,28 +4,28 @@
 
 ## Обязательные ворота
 
-**Preparation gate — до любой реализации.** Автономно и сначала через исследование собрать всё необходимое для создания *и* проверки — три реально собранных результата, а не просто названных:
-- **Sources of truth** (что означает «готово»): spec/AC, before-state baseline, screenshots/Figma, debug-repro. Активно *создавать* их — делать screenshots, запускать emulator, снимать baseline до migration. Если чего-то не хватает и это нельзя создать самостоятельно → спросить пользователя, указав, какая проверка без этого ухудшится. Подробности: [[qa-and-testing]] §6 + [[task-types]] § Before-state baseline. Начинать реализацию без необходимых для проверки sources of truth нельзя.
-- **Knowledge sources** (как это создать): доверенные docs/source по tier T1–T4 — см. [[external-sources]]. Память агента и код проекта устаревают; при пробеле или сомнении проверять по official source, а не действовать по памяти. Если понимания не хватает или возник тупик → сначала `research` skill, а не вопрос пользователю.
-- **Testability + decomposition**: оценить сложность проверки изменения и заранее предложить упрощения (sample/sandbox app, screenshot tests, несколько emulators), чтобы быстро проверить прототип до изменений в реальном приложении; декомпозировать задачу, слишком большую для одного плана. Подробности: [[task-types]] § Test feasibility gate.
+**Preparation gate — до любой реализации.** Собрать доступные источники, необходимые для реализации и проверки:
+- **Sources of truth:** spec/AC, предоставленные screenshots/Figma, debug-repro, уже существующий behavioral baseline. Не запускать mobile приложение/emulator/simulator/device и не создавать новый test baseline без явного запроса пользователя. Если источника нет, зафиксировать intended behavior и риск вместо блокировки реализации.
+- **Knowledge sources:** доверенные docs/source по tier T1–T4 — см. [[external-sources]]. При пробеле или сомнении проверять official source; для неизвестного использовать `research`.
+- **Verification + decomposition:** выбрать targeted build/static checks и существующие релевантные tests. Новые тесты, sample/sandbox app, screenshot tests и несколько emulators только предложить; создавать или запускать их можно лишь по явной просьбе пользователя.
 
-Автономность: сосредоточить вопросы на этом подготовительном этапе; после сбора источников продолжать без повторных обращений. Стандартное/очевидное решение — применять, не спрашивать. Пропускать подготовку только в тех же тривиальных случаях, что и указанные ниже ворота.
+Автономность: стандартное решение применять без вопроса. Отдельно спрашивать только о действительно необходимом пользовательском решении; отсутствие opt-in на новые тесты или mobile manual QA означает, что эти действия пропускаются.
 
 **Quality gate — `finalize`.** Обязателен после каждой реализации, в которой писался код, — до объявления задачи завершённой. Finalize отвечает за *то, как написан код*: это полный цикл review→fix→simplify, повторяемый до исчезновения замечаний выше Minor или завершения с ESCALATE, требующим решения пользователя. `code-reviewer` — один из компонентов, которыми управляет цикл; **отдельный запуск code-reviewer НЕ закрывает эти ворота**: после одного review шаги fix и simplify остаются невыполненными. «Код уже отревьюен» не является основанием пропустить `finalize`. Исключения: чистые изменения документации, изменения только конфигурации без логики, однострочные механические изменения с очевидным результатом.
 
-**Acceptance gate — `acceptance`.** Запускается после `finalize` — до PR promotion. Проверяет реализацию по source of truth (spec, test plan, design или behavioral baseline) и выполняет runtime checks, включая `manual-tester` или эквивалент runtime QA для UI surfaces. Эти ворота независимы: `finalize` проверяет *как написан код* (чистоту), `acceptance` — *что делает код* (работает ли он как задумано); один не заменяет другой, обязательны оба. Те же исключения, что и для `finalize`.
+**Acceptance gate — `acceptance`.** Запускается после `finalize` до PR promotion и проверяет реализацию по доступному source of truth. Для Android/iOS базовый acceptance ограничен code review и build smoke; `manual-tester`, emulator/simulator/device и mobile runtime QA добавляются только по явной просьбе пользователя. Для web/desktop действуют обычные runtime checks, если они доступны.
 
 **PR promotion gate — `create-pr --promote`** (draft → ready for review) требует явного подтверждения пользователя. Открытие draft PR — обычная операция; promotion сигнализирует о завершении задачи и делает её видимой reviewers — это действие над общим состоянием.
 
 ## Процессы
 
 **Нетривиальные features:**
-1. Plan mode → **preparation gate** (выше): собрать sources of truth (spec, Figma, AC list, before-state baseline для migrations), подтвердить knowledge sources, оценить testability и декомпозировать. Для неизвестного — сначала research. Опционально `/multiexpert-review` для планов с высоким риском, `/write-spec`, если изменение слишком велико, чтобы удержать его в голове, `/write-plan` для фиксации плана, пригодного для review.
+1. Plan mode → preparation gate: собрать доступные sources of truth, подтвердить knowledge sources, выбрать проверки и декомпозировать. Для неизвестного — сначала research. Опционально `/multiexpert-review`, `/write-spec` или `/write-plan`.
 2. Реализовать в feature branch в worktree. Рано открыть draft PR через `/create-pr --draft`.
-3. `check` → `finalize` → `acceptance` → `create-pr --promote` (требуется подтверждение пользователя) → `drive-to-merge`.
+3. `check` (существующие проверки) → `finalize` → `acceptance` без mobile manual QA → `create-pr --promote` (требуется подтверждение пользователя) → `drive-to-merge`. Новые тесты и mobile manual QA добавлять только по явному запросу.
 
 **Исправления ошибок:**
-1. Plan mode (debug + fix в плане). Зафиксировать шаги воспроизведения в `swarm-report/<slug>-debug.md` — это source of truth для `/acceptance`.
-2. Сначала написать failing test, воспроизводящий ошибку, затем реализовать исправление (red-green) → `check` → `finalize` → `acceptance` → PR. Regression test необязателен только если применяется feasibility gate — тогда нужна отслеживаемая exception, никогда молчаливый skip (см. строку bug-fix в [[task-types]] + [[qa-and-testing]] §4). `write-tests` может создать каркас теста.
+1. Зафиксировать root cause и доступные шаги воспроизведения в `swarm-report/<slug>-debug.md`.
+2. Реализовать исправление → `check` → `finalize` → `acceptance` → PR. Regression test писать только по явной просьбе пользователя; без неё использовать доступное воспроизведение и существующие тесты.
 
 **Exploratory QA без spec:** напрямую вызвать specialist `manual-tester` или эквивалент runtime QA (skill не нужен).

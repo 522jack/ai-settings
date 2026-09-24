@@ -37,6 +37,7 @@ description: >
 - **Вердикт отдельной проверки** — каждая под-проверка сообщает `PASS | WARN | FAIL | SKIPPED`, а также
   `severity` (`critical | major | minor`), `confidence` (`high | medium | low`) и
   `domain_relevance` (`high | medium | low`) для агрегации.
+- **`mobile_manual_requested`** — true только при явной просьбе пользователя в текущем запросе выполнить manual/runtime QA на Android/iOS emulator, simulator или device. Не выводится из UI surface, spec, test plan или risk area.
 - **Критичность ошибки** — `P0 | P1 | P2 | P3`. Не изменена по сравнению с предыдущей схемой receipt.
 - **Aggregated Status** — `VERIFIED | FAILED | PARTIAL`. Вычисляется; таблица находится в
   `references/aggregation.md` §Aggregated Status.
@@ -81,13 +82,7 @@ on-the-fly | absent`. Если `swarm-report/<slug>-debug.md` — единств
 [`references/source-branches.md`](references/source-branches.md). Record the selected
 branch as `test_plan_source` in the receipt.
 
-**Проверка инструментирования.** Если test plan заканчивается существующей секцией `## Non-functional /
-Instrumentation` section that exists and is not `N/A: <reason>` (Log events / Metrics /
-Traces / Alerts / Dashboards — see [`generate-test-plan` Field Definitions](../generate-test-plan/SKILL.md#non-functional--instrumentation-mandatory-for-user-facing--prod-bound)),
-acceptance проверяет на запущенном приложении, что каждое объявленное event / metric / span
-срабатывает при выполнении тестируемого поведения. Несовпадение (объявлено, но не отправлено, или отправлено
-с неправильными полями) становится P1-замечанием acceptance и направляется в стандартный цикл FAILED → Implement.
-Явное `N/A: <reason>` в секции test-plan пропускает эту проверку.
+**Проверка инструментирования.** Для web/desktop выполнять её на запущенном приложении, когда test plan явно задаёт instrumentation. Для Android/iOS запуск приложения и проверка runtime instrumentation допустимы только при `mobile_manual_requested == true`; иначе записать проверку как `SKIPPED: mobile runtime QA not requested`, не понижая итоговый verdict.
 
 ---
 
@@ -104,19 +99,17 @@ acceptance проверяет на запущенном приложении, ч
 
 Варианты: (1) создать отсутствующий источник предложенным upstream-навыком и повторить запуск; (2) прервать без receipt.
 
-Исследовательский QA без сценария выполняется прямым вызовом агента `manual-tester` (см. § Step 4b в `agents/manual-tester.md`) — никогда не предлагайте это как fallback внутри acceptance.
+Исследовательский QA без сценария выполняется прямым вызовом `manual-tester`; для Android/iOS только по явной просьбе пользователя о mobile runtime QA.
 
 После структурированного upstream-шага (`write-spec`, `generate-test-plan`, сохранённый `debug.md`) этот gate срабатывает редко; основной случай — самостоятельные вызовы.
 
 ---
 
-## Шаг 2: сохраните E2E-сценарий
+## Шаг 2: сохраните E2E-сценарий для запрошенного runtime QA
 
-Актуально только когда `has_ui_surface == true` и существует источник сценария (test plan, spec с AC или `debug.md`). `manual-tester` требует повторной привязки к этому файлу; acceptance записывает его здесь и перечитывает при агрегации. Средой запущенного приложения (устройство, simulator, emulator, browser) **владеет `manual-tester`** (его Step 0); этот навык не проверяет устройства, не запускает installs и dev-серверы.
+Для Android/iOS выполнять этот шаг только при `mobile_manual_requested == true` и наличии источника сценария. Для web/desktop — когда `has_ui_surface == true` и есть источник сценария. Средой запущенного приложения владеет `manual-tester`.
 
-Сохраните в `swarm-report/<slug>-e2e-scenario.md`, используя канонический шаблон E2E Scenario из инструкций текущей среды проекта. В начало добавьте поля `Project type: <project_type>` и `Spec source: <what was used>`.
-
-Правило для исправления ошибки: шаги берутся из инвертированного воспроизведения в `debug.md` — «Step X triggers the bug» → «Step X no longer triggers the bug».
+Сохраните `swarm-report/<slug>-e2e-scenario.md` по каноническому шаблону. Для bug fix инвертируйте шаги воспроизведения: «Step X triggers the bug» → «Step X no longer triggers the bug».
 
 ---
 
@@ -150,7 +143,7 @@ Spec hash: <sha256 of spec file, or null>
 Test-plan hash: <sha256 of permanent test plan, or null>
 
 ## Planned Checks
-- [ ] manual (triggered by has_ui_surface + scenario)
+- [ ] manual (web/desktop UI, либо Android/iOS только при explicit mobile request)
 - [ ] code (triggered by dedup miss)
 - [ ] ac-coverage (triggered by spec.acceptance_criteria_ids)
 - [ ] security (triggered by spec.risk_areas: [auth])
@@ -184,10 +177,11 @@ Blockers: <copy from aggregated receipt>
 
 ### Базовый план проверок
 
-| `has_ui_surface` | Базовый fan-out |
+| `project_type` | Базовый fan-out |
 |---|---|
-| `true` | `manual-tester` + `code-reviewer` (unless skipped by Step 2.5) |
-| `false` | `code-reviewer` (unless skipped by Step 2.5) + build smoke (Bash) |
+| `android` / `ios` | `code-reviewer` (unless skipped by Step 2.5) + build smoke; добавить `manual-tester` только при `mobile_manual_requested == true` |
+| `web` / `desktop` | `manual-tester` + `code-reviewer` (unless skipped by Step 2.5) |
+| non-UI | `code-reviewer` (unless skipped by Step 2.5) + build smoke |
 
 ### Условные триггеры
 
@@ -258,7 +252,7 @@ blocked_on: <optional — what the user must resolve; also used when a planned p
 
 ## Шаг 4: объедините результаты и запишите receipt
 
-Apply PoLL rules and the Aggregated Status table from [`references/aggregation.md`](references/aggregation.md) — same protocol as `multiexpert-review`, per-check input shape. Read frontmatter of each per-check artifact first; body only when `verdict != PASS`. Missing per-check artifact → `verdict: FAIL` with `blocked_on: per-check artifact missing`; never silently drop.
+Apply PoLL rules and the Aggregated Status table from [`references/aggregation.md`](references/aggregation.md). Read frontmatter of each **planned** per-check artifact first; body only when `verdict != PASS`. Missing planned artifact → `verdict: FAIL`; checks intentionally omitted by opt-in policy are `SKIPPED`, не missing.
 
 Save aggregated receipt at `swarm-report/<slug>-acceptance.md` using the template in `references/aggregation.md` §Receipt format. Downstream routing (VERIFIED / FAILED / PARTIAL) lives in the same reference §Routing.
 
@@ -276,11 +270,9 @@ Save aggregated receipt at `swarm-report/<slug>-acceptance.md` using the templat
 
 ## Цикл повторной проверки
 
-On fix-loop re-entry (after `FAILED` → fix on the branch → re-run acceptance), compute
-`diff_hash_new` and decide which checks to re-run vs reuse, per the decision table in
-[`references/re-verification.md`](references/re-verification.md). Spec and test-plan
-change overrides (`spec_hash` / `test_plan_hash` mismatch forces `business-analyst` /
-`manual-tester`) and back-compat rules are documented there.
+On fix-loop re-entry compute `diff_hash_new` and decide which planned checks to re-run vs reuse per
+[`references/re-verification.md`](references/re-verification.md). Spec/test-plan changes can force
+`business-analyst`, но для Android/iOS никогда не включают `manual-tester` без нового явного opt-in.
 
 Объедините результаты в новый receipt, перезаписав предыдущий. Повторяйте до VERIFIED или
 пока пользователь не решит отправить результат как есть.

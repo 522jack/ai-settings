@@ -51,6 +51,9 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 
 - **Skills: регистрация ≠ доступность.** Файлы уже на диске — `Read` работает всегда, проактивно. `android skills add` / `init` *регистрируют* skill в роутинге Skill tool — **только по явной просьбе** и когда нужно автосрабатывание по триггерам. **Никогда** не выполнять автоматически `android init` / `skills add --all`: это дублирует глобальные skills и ломает routing. Синтаксис: имя позиционное (`--skill=` удалён); флаги `--agent` / `--project` — проверять через usage, не угадывать.
 - **Никогда не обновлять автоматически:** при сообщении «A new version available» — одна строка раз в сессию, спросить перед `android update`. (`info`: `version` ядра и `launcher_version` обёртки; отставание launcher нормально.)
+- **Device actions — только по запросу.** Не выполнять `android run`, `android emulator start/create`,
+  `android layout`, `android screen capture` и соответствующие raw `adb`/emulator действия для manual QA
+  без явной просьбы пользователя в текущей задаче. Build и чтение project metadata не требуют opt-in.
 
 ## Fallback при отсутствии CLI
 

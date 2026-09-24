@@ -17,7 +17,7 @@ metadata:
    - investigation/debugging: `debugging-expert.md` or `source-researcher.md`;
    - architecture: `architecture-expert.md`;
    - review: `code-reviewer.md`, `security-expert.md`, `performance-expert.md`, or `ui-accessibility-reviewer.md`;
-   - runtime/UI verification: `manual-tester.md`.
+   - runtime/UI verification: `manual-tester.md`; для Android/iOS выбирать только по явной просьбе пользователя о manual/runtime QA на emulator/simulator/device.
 3. Прочитайте каждый выбранный профиль до подготовки запроса на делегирование. Не утверждайте, что профиль применялся, если он не был прочитан.
 4. Создайте пакет делегирования, содержащий:
    - задачу и критерии приёмки;
