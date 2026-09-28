@@ -1,5 +1,5 @@
 #!/bin/bash
-# Auto-sync ~/dotfiles/ai on session start: commit local edits, rebase on remote, push.
+# Auto-pull ~/dotfiles/ai on session start. Never commit or push.
 #
 # Never fail silently. Every non-OK outcome is recorded via three channels:
 #   - ~/.dotfiles-ai-sync-status (rendered in statusline)
@@ -36,12 +36,10 @@ if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
   git rebase --abort 2>/dev/null || true
 fi
 
-# Commit local edits
-if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
-  if ! git add -A 2>/dev/null || ! git commit --quiet -m "[auto-pull] save local $(hostname -s)" 2>/dev/null; then
-    alarm "cannot commit local edits — sync skipped; fix git state in ~/dotfiles/ai"
-    exit 0
-  fi
+# Leave all working-tree changes for the user to review and sync manually.
+if [ -n "$(git status --porcelain --untracked-files=normal 2>/dev/null)" ]; then
+  warn "local changes — pull skipped; review changes and run csync when ready"
+  exit 0
 fi
 
 # Fetch
@@ -67,16 +65,12 @@ fi
 
 AHEAD=$(git rev-list --count "$UPSTREAM..HEAD" 2>/dev/null || echo 0)
 if [ "$AHEAD" -gt 0 ]; then
-  if git push --quiet 2>/dev/null; then
-    clear_status
-    note "synced (pushed $AHEAD, pulled $BEHIND)"
-  else
-    alarm "push failed — $AHEAD local commit(s) NOT synced; run csync"
-    exit 0
-  fi
+  warn "local commit(s) not pushed — review and run csync when ready"
+elif [ "$BEHIND" -gt 0 ]; then
+  clear_status
+  note "synced (pulled $BEHIND)"
 else
   clear_status
-  [ "$BEHIND" -gt 0 ] && note "synced (pulled $BEHIND)"
 fi
 
 exit 0
