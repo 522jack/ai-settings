@@ -23,13 +23,9 @@
 
 **Mobile L5 — только opt-in.** Не запускать ручное тестирование, приложение, emulator, simulator или physical device для Android/iOS без явной просьбы пользователя в текущей задаче. Это относится также к снятию screenshots и behavioral baseline с устройства. Когда пользователь просит такую проверку, закрыть её самостоятельно через текущий runtime adapter (`android`, mobile MCP, `manual-tester` или ближайший эквивалент); emulator/simulator предпочтительнее физического устройства, если реальное hardware не требуется.
 
-### Сбор логов L5 — фильтровать, ограничивать, маскировать
+### Сбор логов L5
 
-Когда L5 читает runtime logs тестируемого приложения (logcat / `os_log` / server logs) как сигнал проверки, обязательны три правила:
-
-- **Опира́ться на детерминированный verifier, а не на текст лога.** Pass/fail определяется test exit code, build result или screenshot/`assert_visible`. Лог — это *диагностическая гипотеза*, объясняющая **почему**; никогда не единственный сигнал pass/fail (логи шумные и нестабильные). Crash scan дополняет детерминированную проверку, но не заменяет её.
-- **Фильтровать и ограничивать до передачи в context.** Никогда не направлять raw logs в диалог — это переполняет context и тонет в шуме. Для pass/fail scan использовать level ≥ ERROR; ограничивать по package/PID на Android (`--pid=$(adb shell pidof -s PKG)`, `get_logs(level="E", package=…)`), по `subsystem` на iOS (`simctl log show --predicate 'subsystem=="<bundleId>"'`); ограничивать объём (`-m N` / `tail` / last-N); большой output → в файл или `ctx_batch_execute`, агент читает путь, а не bytes. Паттерны сбоев: Android `FATAL EXCEPTION` / `AndroidRuntime: FATAL` / ANR / unhandled NPE; iOS `fault`/`error`.
-- **Удалять secrets до передачи.** Логи, которые агент *читает*, подчиняются тому же правилу «что никогда не попадает в лог», что и записываемые им логи ([[logging]]): никогда не передавать в context raw `.env`, `curl -v` или `Authorization` headers; маскировать `Bearer .*`, `*_TOKEN`, `*_KEY`, PII. OWASP LLM06 — собранные логи достигают model provider.
+Единая политика фильтрации, ограничения объёма, redaction и детерминированного verifier — [logging.md](logging.md). Для Android ограничивать package/PID, для iOS — subsystem; crash scan дополняет проверку, но не заменяет её.
 
 ### Одноразовые тесты проверки
 
@@ -53,11 +49,11 @@
 
 ## 5. Тестовая инфраструктура — определяется проектом
 
-Конкретные runner, task names и commands — ответственность **проекта**; читать их из runtime instruction files проекта (`<repo>/AGENTS.md`, `<repo>/CLAUDE.md` или эквивалента) или build config, а не из универсальной таблицы здесь. Если проект их не задаёт, выводить из root marker files (`build.gradle*` / `Package.swift` / `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` / `Makefile`) и build config — и **блокировать работу и спрашивать**, если ошибочно предположение о Xcode scheme/destination, Python runner flags или модуле, которому принадлежат изменённые files в monorepo.
+Конкретные runner, task names и commands — ответственность **проекта**; читать их из runtime instruction files проекта (`<repo>/AGENTS.md`, `<repo>/CLAUDE.md` или эквивалента) или build config, а не из универсальной таблицы здесь. Если проект их не задаёт, выводить из root marker files (`build.gradle*` / `Package.swift` / `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` / `Makefile`) и build config — и исследовать доступные targets/runner/module при неоднозначности. Спрашивать только если доступные данные не позволяют безопасно выбрать команду; продолжать независимую работу.
 
 ## 6. Источник истины для проверки
 
-Обязательный результат планирования — определяет «готово», по нему `/acceptance` проверяет контракт.
+Source of truth определяет «готово»; при high-risk или явно запрошенном запуске `acceptance` проверяет этот контракт.
 
 | Тип | Когда использовать | Artifact |
 |---|---|---|
@@ -71,3 +67,7 @@
 **Behavioral baseline:** для «shouldn't affect behavior» / migration использовать уже доступные passing tests, сохранённые API snapshots, требования или предоставленные screenshots. Снимать новый baseline через mobile emulator/simulator/device можно только по явной просьбе пользователя. Если доступного baseline нет, задокументировать intended behavior, отсутствие runtime baseline и риск; это не должно автоматически запускать manual QA.
 
 **Отсутствующий источник:** если source of truth нет и создать его невозможно без opt-in действий, задокументировать в плане intended behavior, почему нет formal source и какой доступный proxy используется. `/acceptance` может выполнить code/build проверки без mobile manual QA; предложить пользователю отдельный opt-in запуск, но не блокировать реализацию только из-за его отсутствия.
+
+## Hooks, CI и риск
+
+Проектные hooks/CI — обязательные проверки: targeted checks не отменяют их. Уровни mechanical/ordinary/high-risk, порядок review/finalize/acceptance и условия переиспользования результата определены в [workflow.md](workflow.md).

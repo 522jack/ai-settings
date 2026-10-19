@@ -62,12 +62,18 @@ Save to `swarm-report/<slug>-acceptance.md`. Legacy fields preserved; new sectio
 **Context artifacts:** [пути к upstream-артефактам, использованным как вход — например, research.md, debug.md, write-tests.md, quality.md]
 
 ## Idempotency Hashes
-- `diff_hash`: <sha256 of `git diff <base>...HEAD`>
+- `diff_hash`: <digest of committed/staged/unstaged/relevant untracked code state>
 - `spec_hash`: <sha256 of the spec file bytes, or `null` if no file spec>
 - `test_plan_hash`: <sha256 of the permanent test plan, or `null`>
+- `scope_hash`: <requirements/AC/scenario scope identity>
+- `environment`: <toolchain/dependencies/config/runtime identity and check command>
 
-Эти три хэша определяют таблицу решений Re-verification Loop; downstream-оркестраторам
-не нужно их читать.
+Identity фиксируется согласно [state-and-schema.md](state-and-schema.md). `diff_hash`
+не ограничивается `git diff <base>...HEAD`: HEAD/Date не доказывают состояние working tree.
+Для каждой reused check сохраните pointer на исходный artifact и evidence неизменности
+проверенного code + scope + environment/command. Общий хэш сам по себе не доказывает
+неизменность отдельных unaffected checks. Legacy receipt без достаточного exact-state
+evidence не позволяет reuse. Решения о повторе — в [re-verification.md](re-verification.md).
 
 ## Check Plan
 - список выполненных проверок, по одной в строке, с их триггером;
@@ -117,7 +123,7 @@ signal — упомяните его в первом предложении.]
 
 - **VERIFIED** → `create-pr` (или пометить существующий PR готовым к ревью).
 - **FAILED** с P0/P1 и очевидной причиной → исправить в ветке, используя список ошибок,
-  затем повторить acceptance. Максимум 3 итерации.
+  затем повторить затронутые проверки acceptance на изменённом состоянии. Максимум 3 содержательных цикла; unchanged FAIL сохраняется без retry.
 - **FAILED** с P0/P1 и неясной причиной → сначала исследовать первопричину (debug в plan-mode),
   затем исправить и повторить.
 - **FAILED** с P0/P1, требующей регрессионного покрытия → добавить в test plan `## Regression TC`,

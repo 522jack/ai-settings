@@ -1,17 +1,11 @@
 # Codex Adapter
 
-Codex consumes the shared harness through `~/.codex/AGENTS.md` and `~/.codex/skills/*`.
+`setup.sh` связывает `shared/AGENTS.md` с `~/.codex/AGENTS.md` и устанавливает физические копии `shared/skills/*` в `~/.agents/skills/*`, откуда Codex обнаруживает навыки. Прежние управляемые ссылки `~/.codex/skills/*` на эти исходники удаляются, чтобы не создавать дубли. Миграция прежних физических копий выполняется с `--adopt-legacy` только при соответствующей управляемой Codex-ссылке; локально изменённые управляемые копии сохраняются. При конфликте с пользовательским навыком в любом runtime-пути установка этого навыка целиком пропускается, конфликт выводится в отчёте.
 
-The shared contract is defined in `shared/rules/runtime-adapter.md`. Codex-specific behavior:
+`AGENTS.md` содержит постоянно действующее ядро и маршрутизацию. Codex не должен считать ссылки или строки `@...` прочитанными импортами: перед действием явно прочитать только применимые rules. При расширении scope загрузить добавившиеся доменные правила до изменений; передать специалисту их пути.
 
-- `setup.sh` symlinks `shared/AGENTS.md` to `~/.codex/AGENTS.md`.
-- `setup.sh` symlinks every `shared/skills/<name>/` directory to `~/.codex/skills/<name>/`.
-- Codex currently does not use the Claude hook system. At session start, run
-  `bash "$HOME/dotfiles/ai/shared/scripts/auto-pull.sh"` unless the runtime already did it.
-- For delegation, use Codex multi-agent tools when available. If a requested shared workflow names
-  Claude-specific tools (`Task`, `Explore`, slash commands), map them through
-  `runtime-adapter.md` instead of treating the Claude name as mandatory.
-- Guard scripts in `shared/scripts/` are still canonical. If Codex cannot attach them as hooks,
-  run the relevant script manually or rely on Codex sandbox/approval enforcement and state the
-  adapter limitation when it matters.
+Контракт — `shared/rules/runtime-adapter.md`; таблица tools и legacy mappings — `shared/rules/references/current-adapter.md`, загружать при делегировании/runtime QA/hooks. Сохранять default/inherit модели согласно ограничениям текущего рантайма. Недоступная возможность — `ADAPTER_LIMITATION`, а не фиктивный PASS.
 
+Claude hooks не устанавливаются в Codex. При старте выполнить `bash "$HOME/dotfiles/ai/shared/scripts/auto-pull.sh"`, если рантайм ещё этого не сделал. Канонические guard scripts из `shared/scripts/` запускать вручную при соответствующем действии, когда hooks недоступны. `auto-pull.sh` никогда не коммитит/пушит; изменённая конфигурация синхронизируется только по явной авторизации.
+
+Workflow mechanical/ordinary/high-risk определён в `shared/rules/workflow.md`. Project hooks/CI обязательны, новые тесты/mobile manual QA регулируются единой `qa-and-testing.md`.

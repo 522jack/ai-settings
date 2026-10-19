@@ -1,8 +1,34 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="$HOME/dotfiles/ai"
-BACKUP="$HOME/dotfiles/ai/.backup/$(date +%Y%m%d_%H%M%S)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_HOME="$HOME"
+SKILLS_ONLY=false
+ADOPT_LEGACY=false
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --root|--home)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || { echo "$1 requires a directory" >&2; exit 2; }
+            if [ "$1" = --root ]; then REPO="$2"; else TARGET_HOME="$2"; fi
+            shift 2 ;;
+        --skills-only) SKILLS_ONLY=true; shift ;;
+        --adopt-legacy) ADOPT_LEGACY=true; shift ;;
+        *) echo "Usage: $0 [--root DIR] [--home DIR] [--skills-only] [--adopt-legacy]" >&2; exit 2 ;;
+    esac
+done
+REPO="$(cd "$REPO" && pwd -P)"
+TARGET_HOME="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "$TARGET_HOME")"
+BACKUP="$TARGET_HOME/.local/state/ai-harness/backups/$(date +%Y%m%d_%H%M%S)_$$"
+install_skills() {
+    local adoption=()
+    [ "$ADOPT_LEGACY" = true ] && adoption=(--adopt-legacy)
+    python3 "$REPO/shared/scripts/install-shared-skills.py" --root "$REPO" --home "$TARGET_HOME" \
+        --backup-dir "$BACKUP" "${adoption[@]}"
+}
+if [ "$SKILLS_ONLY" = true ]; then
+    install_skills
+    exit
+fi
 
 echo "Setting up AI agent configs from $REPO"
 
@@ -17,121 +43,89 @@ backup_if_exists() {
 }
 
 # Claude Code
-mkdir -p "$HOME/.claude"
+mkdir -p "$TARGET_HOME/.claude"
 
-backup_if_exists "$HOME/.claude/CLAUDE.md"
-backup_if_exists "$HOME/.claude/settings.json"
-backup_if_exists "$HOME/.claude/hooks"
+backup_if_exists "$TARGET_HOME/.claude/CLAUDE.md"
+backup_if_exists "$TARGET_HOME/.claude/settings.json"
+backup_if_exists "$TARGET_HOME/.claude/hooks"
 # BSD ln follows a destination symlink to a directory, creating a nested self-link.
-[ -L "$HOME/.claude/hooks" ] && rm "$HOME/.claude/hooks"
+[ -L "$TARGET_HOME/.claude/hooks" ] && rm "$TARGET_HOME/.claude/hooks"
 # Remove dir before symlinking (ln -sf won't replace an existing dir)
-[ -d "$HOME/.claude/hooks" ] && [ ! -L "$HOME/.claude/hooks" ] && rm -rf "$HOME/.claude/hooks"
+[ -d "$TARGET_HOME/.claude/hooks" ] && [ ! -L "$TARGET_HOME/.claude/hooks" ] && rm -rf "$TARGET_HOME/.claude/hooks"
 
-ln -sf "$REPO/claude/CLAUDE.md"     "$HOME/.claude/CLAUDE.md"
-ln -sf "$REPO/claude/settings.json" "$HOME/.claude/settings.json"
-ln -sf "$REPO/claude/hooks"         "$HOME/.claude/hooks"
+ln -sf "$REPO/claude/CLAUDE.md"     "$TARGET_HOME/.claude/CLAUDE.md"
+ln -sf "$REPO/claude/settings.json" "$TARGET_HOME/.claude/settings.json"
+ln -sf "$REPO/claude/hooks"         "$TARGET_HOME/.claude/hooks"
 
 echo "  Claude Code: ~/.claude/CLAUDE.md → $REPO/claude/CLAUDE.md"
 echo "  Claude Code: ~/.claude/settings.json → $REPO/claude/settings.json"
 echo "  Claude Code: ~/.claude/hooks → $REPO/claude/hooks"
 
 # Agents (symlink each agent file individually)
-mkdir -p "$HOME/.claude/agents"
+mkdir -p "$TARGET_HOME/.claude/agents"
 
 for agent_file in "$REPO/shared/agents"/*.md; do
     agent_name="$(basename "$agent_file")"
-    target="$HOME/.claude/agents/$agent_name"
+    target="$TARGET_HOME/.claude/agents/$agent_name"
     [ -f "$target" ] && [ ! -L "$target" ] && { mkdir -p "$BACKUP"; cp "$target" "$BACKUP/"; rm "$target"; }
     ln -sf "$agent_file" "$target"
 done
 
 # Agent references (symlink whole dir if possible, else individual files)
-[ -L "$HOME/.claude/agent-references" ] && rm "$HOME/.claude/agent-references"
-if [ ! -e "$HOME/.claude/agent-references" ]; then
-    ln -sf "$REPO/shared/agent-references" "$HOME/.claude/agent-references"
+[ -L "$TARGET_HOME/.claude/agent-references" ] && rm "$TARGET_HOME/.claude/agent-references"
+if [ ! -e "$TARGET_HOME/.claude/agent-references" ]; then
+    ln -sf "$REPO/shared/agent-references" "$TARGET_HOME/.claude/agent-references"
 else
-    mkdir -p "$HOME/.claude/agent-references"
+    mkdir -p "$TARGET_HOME/.claude/agent-references"
     for ref_file in "$REPO/shared/agent-references"/*.md; do
         ref_name="$(basename "$ref_file")"
-        ln -sf "$ref_file" "$HOME/.claude/agent-references/$ref_name"
+        ln -sf "$ref_file" "$TARGET_HOME/.claude/agent-references/$ref_name"
     done
 fi
 
 echo "  Agents: ~/.claude/agents/* → $REPO/shared/agents/*"
 echo "  Agent references: ~/.claude/agent-references → $REPO/shared/agent-references"
 
-# Skills (symlink each skill dir individually — don't replace existing dirs)
-mkdir -p "$HOME/.claude/skills" "$HOME/.codex/skills" "$HOME/.agents/skills" "$HOME/.omp/agent/skills"
-
-for skill_dir in "$REPO/shared/skills"/*/; do
-    skill_name="$(basename "$skill_dir")"
-    # Claude Code
-    target_claude="$HOME/.claude/skills/$skill_name"
-    [ -L "$target_claude" ] && rm "$target_claude"
-    [ -d "$target_claude" ] && [ ! -L "$target_claude" ] && { mkdir -p "$BACKUP"; cp -r "$target_claude" "$BACKUP/"; rm -rf "$target_claude"; }
-    ln -sf "$skill_dir" "$target_claude"
-    # Codex
-    target_codex="$HOME/.codex/skills/$skill_name"
-    [ -L "$target_codex" ] && rm "$target_codex"
-    [ -d "$target_codex" ] && [ ! -L "$target_codex" ] && { mkdir -p "$BACKUP"; cp -r "$target_codex" "$BACKUP/"; rm -rf "$target_codex"; }
-    ln -sf "$skill_dir" "$target_codex"
-    # Oh My Pi
-    target_omp="$HOME/.omp/agent/skills/$skill_name"
-    [ -L "$target_omp" ] && rm "$target_omp"
-    [ -d "$target_omp" ] && [ ! -L "$target_omp" ] && { mkdir -p "$BACKUP"; cp -r "$target_omp" "$BACKUP/"; rm -rf "$target_omp"; }
-    ln -sf "$skill_dir" "$target_omp"
-    # Gemini in Android Studio discovers physical skill directories reliably;
-    # do not use symlinks here.
-    target_gemini="$HOME/.agents/skills/$skill_name"
-    if [ -L "$target_gemini" ]; then
-        rm "$target_gemini"
-    elif [ -e "$target_gemini" ]; then
-        mkdir -p "$BACKUP"
-        cp -r "$target_gemini" "$BACKUP/"
-        rm -rf "$target_gemini"
-    fi
-    /usr/bin/ditto "$skill_dir" "$target_gemini"
-done
-
-echo "  Skills: ~/.claude/skills/*, ~/.codex/skills/*, and ~/.omp/agent/skills/* → $REPO/shared/skills/*"
-echo "  Gemini skills: ~/.agents/skills/* copied from $REPO/shared/skills/*"
+# One physical discovery location shared by Codex and Gemini; custom skills are preserved.
+# Existing installations migrate with --adopt-legacy, with backups outside the source repo.
+install_skills
 
 # Codex
-mkdir -p "$HOME/.codex"
+mkdir -p "$TARGET_HOME/.codex"
 
-backup_if_exists "$HOME/.codex/AGENTS.md"
+backup_if_exists "$TARGET_HOME/.codex/AGENTS.md"
 
-ln -sf "$REPO/shared/AGENTS.md" "$HOME/.codex/AGENTS.md"
+ln -sf "$REPO/shared/AGENTS.md" "$TARGET_HOME/.codex/AGENTS.md"
 
 echo "  Codex: ~/.codex/AGENTS.md → $REPO/shared/AGENTS.md"
 
 # Oh My Pi
-mkdir -p "$HOME/.omp/agent"
+mkdir -p "$TARGET_HOME/.omp/agent"
 
-backup_if_exists "$HOME/.omp/agent/AGENTS.md"
+backup_if_exists "$TARGET_HOME/.omp/agent/AGENTS.md"
 
-ln -sf "$REPO/omp/AGENTS.md" "$HOME/.omp/agent/AGENTS.md"
+ln -sf "$REPO/omp/AGENTS.md" "$TARGET_HOME/.omp/agent/AGENTS.md"
 
 echo "  Oh My Pi: ~/.omp/agent/AGENTS.md → $REPO/omp/AGENTS.md"
 
 # Global neutral AGENTS.md
 # Harness-specific adapters must be installed in their own runtime locations.
-if [ -L "$HOME/AGENTS.md" ]; then
+if [ -L "$TARGET_HOME/AGENTS.md" ]; then
     echo "  Global: preserving existing ~/AGENTS.md symlink"
 else
-    backup_if_exists "$HOME/AGENTS.md"
-    printf '%s\n' "@${REPO}/shared/global-neutral.md" > "$HOME/AGENTS.md"
+    backup_if_exists "$TARGET_HOME/AGENTS.md"
+    printf '%s\n' "@${REPO}/shared/global-neutral.md" > "$TARGET_HOME/AGENTS.md"
     echo "  Global: ~/AGENTS.md → imports $REPO/shared/global-neutral.md"
 fi
 
 # Pi
-mkdir -p "$HOME/.pi/agent" "$HOME/.pi/agent/extensions"
-backup_if_exists "$HOME/.pi/agent/AGENTS.md"
-ln -sf "$REPO/pi/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+mkdir -p "$TARGET_HOME/.pi/agent" "$TARGET_HOME/.pi/agent/extensions"
+backup_if_exists "$TARGET_HOME/.pi/agent/AGENTS.md"
+ln -sf "$REPO/pi/AGENTS.md" "$TARGET_HOME/.pi/agent/AGENTS.md"
 for extension_file in "$REPO/pi/extensions"/*.ts; do
     [ -e "$extension_file" ] || continue
     extension_name="$(basename "$extension_file")"
-    target="$HOME/.pi/agent/extensions/$extension_name"
+    target="$TARGET_HOME/.pi/agent/extensions/$extension_name"
     [ -L "$target" ] && rm "$target"
     [ -e "$target" ] && [ ! -L "$target" ] && { mkdir -p "$BACKUP"; cp -r "$target" "$BACKUP/"; rm -rf "$target"; }
     ln -sf "$extension_file" "$target"

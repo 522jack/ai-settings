@@ -1,55 +1,17 @@
 ---
 name: specialist-routing
-description: Направляйте нетривиальную работу над функциональностью к подходящим профилям специалистов harness и формируйте квитанцию делегирования. Используйте при реализации, ревью, тестировании или валидации функциональности, которой полезен специалист.
+description: "Выбрать профиль специалиста harness для реализации, исследования или проверки и передать scoped task с receipt. Применять при product edit по правилу делегирования или реально необходимой экспертизе; выбирает минимальный набор ролей, не полный review fan-out."
 metadata:
   short-description: Направление работы над функциональностью специалистам harness
 ---
 
 # Маршрутизация к специалистам
 
-Используйте этот навык для нетривиальной работы над функциональностью. Не вызывайте всех специалистов по умолчанию: выбирайте только нужные задаче роли, сохраняя обязательные контрольные этапы общего рабочего процесса.
+Главная сессия оркестрирует: продуктовый код/config/tests и долгие проверки выполняет специалист; orienting reads/process/config files в разрешённой области остаются у main. Явное user «сделай сам» действует на текущую задачу.
 
-## Перед делегированием
+1. Определите task phase/stack/risk; выберите минимальные реально доступные `~/dotfiles/ai/shared/agents/` profiles. Implementation → stack engineer; search/debug → Explore/debugging; review → code-reviewer и only triggered domain expert; runtime → manual-tester, mobile только explicit opt-in.
+2. Прочитайте выбранные profiles, не каталог всех агентов. Delegation packet: exact task/AC, owned paths/modules, profile paths, applicable restrictions, relevant source/context, expected artifact/verdict. Независимое review не передавайте автору изменения; непересекающиеся задачи можно parallel.
+3. Specialist сообщает actually used profiles, read/changed surfaces, commands/evidence, PASS|PASS_WITH_NOTES|BLOCKED и risks. Missing runtime specialist → ADAPTER_LIMITATION, не заявляйте применение phantom profile.
+4. Синтезируйте receipt: Required/Applied profiles, Delegation runtime, Verdicts, Verification state+results, Open risks. Достаточна краткая запись в итоговом task report, не отдельный ritual file.
 
-1. Определите фазу задачи и стек.
-2. Выберите минимальный достаточный набор специалистов из `~/dotfiles/ai/shared/agents/`:
-   - implementation: `kotlin-engineer.md`, `compose-developer.md`, or the closest stack specialist;
-   - investigation/debugging: `debugging-expert.md` or `source-researcher.md`;
-   - architecture: `architecture-expert.md`;
-   - review: `code-reviewer.md`, `security-expert.md`, `performance-expert.md`, or `ui-accessibility-reviewer.md`;
-   - runtime/UI verification: `manual-tester.md`; для Android/iOS выбирать только по явной просьбе пользователя о manual/runtime QA на emulator/simulator/device.
-3. Прочитайте каждый выбранный профиль до подготовки запроса на делегирование. Не утверждайте, что профиль применялся, если он не был прочитан.
-4. Создайте пакет делегирования, содержащий:
-   - задачу и критерии приёмки;
-   - точные пути/модули в области работ;
-   - пути выбранных профилей;
-   - ограничения из профиля и применимых правил проекта;
-   - ожидаемый артефакт и формат вердикта.
-
-## Делегирование
-
-Передайте пакет делегирования специалисту/субагенту Codex через текущий адаптер среды выполнения. Специалист должен сообщить:
-
-- фактически использованные пути профилей;
-- просмотренные/изменённые файлы или поверхности;
-- выполненные проверки;
-- вердикт: `PASS`, `PASS_WITH_NOTES` или `BLOCKED`;
-- нерешённые риски или необходимые последующие действия.
-
-Если среда выполнения не может предоставить специалиста, зафиксируйте `ADAPTER_LIMITATION` и не представляйте работу как выполненную с использованием профиля специалиста.
-
-## Квитанция завершения функциональности
-
-До объявления нетривиальной функциональности завершённой включите эту квитанцию в итоговый синтез (или в отчёт задачи, если он существует):
-
-```text
-Specialist receipt
-- Required profiles: <пути или none с указанием причины>
-- Applied profiles: <фактически прочитанные и использованные пути>
-- Delegation: <subagent/runtime или ADAPTER_LIMITATION>
-- Verdicts: <PASS | PASS_WITH_NOTES | BLOCKED>
-- Verification: <результаты check/finalize/acceptance>
-- Open risks: <none или явный список>
-```
-
-Пустое поле `Applied profiles` допустимо только для тривиальной задачи, задачи исключительно по документации или при явной фиксации ограничения среды выполнения.
+Risk gate: mechanical targeted existing checks; ordinary + one independent semantic review; high-risk auth/security/data loss/schema/concurrency/public API/CLI/architecture + finalize/acceptance. Явные skills/project required checks/hooks/CI сохраняются. Reuse лишь конкретное exact code+scope+env состояние; new tests и Android/iOS runtime QA не добавляются автоматически. Делегирование не расширяет scope и external permissions.

@@ -1,107 +1,18 @@
-# Цикл ревью: автор против скептика
+# Review gate плана
 
-Самое важное свойство этого навыка: **агент, который пишет план, не должен утверждать его.**
-У планировщика есть встроенный стимул создать то, что *быстро проходит gate*, объявить план
-«достаточно хорошим» и двигаться дальше. Без контроля этот стимул приводит к планам, полным расплывчатых
-формулировок («корректно обработать ошибки», «подключить», «обновить соответствующие
-файлы»), которые выглядят завершёнными, но разваливаются при реализации.
+Ревью автора не заменяет независимого критика. Для ordinary/mechanical bounded plan один соответствующий independent reviewer; `--quick` облегчает investigation, не отменяет review. High-risk auth/security/data loss/schema/concurrency/public API/CLI/architecture → multiexpert-review, profile implementation-plan, только реально relevant perspectives.
 
-Защита — **отдельный критик-соперник**, чья единственная задача — найти ошибки. Её обеспечивают два
-механизма, работающие вместе:
-
-1. **multiexpert-review (профиль `implementation-plan`)** — критика панели (фаза 3). Дополнение
-   запроса профиля задаёт каждому рецензенту строгую, но справедливую позицию red team с явными
-   критериями против обхода проверки. Это основной и обязательный критик.
-2. **Соперничающий проход red team** (фаза 3.5) — один скептически настроенный агент, который не
-   *рецензирует* план, а пытается *использовать* его и сломать, выявляя пробелы, с которыми столкнулся
-   бы реализующий агент. Аналогичен фазе 4.5 `write-spec`.
-
-«Строго, но справедливо» работает в обе стороны: критик не должен пропускать реальные слабости и не
-должен выдумывать блокеры, чтобы казаться основательным. Замечание должно называть слабость, её место
-и причину важности.
-
----
-
-## Фаза 3 — multiexpert-review (критик-панель)
-
-Вызовите `multiexpert-review` **inline** (навык вызывает его напрямую, как `write-spec` на фазе 4.3 —
-навыки не связываются друг с другом, кроме этих установленных вызовов внутри навыка: вызов на фазе 3
-`multiexpert-review` и Agent red team на фазе 3.5 являются частью review gate, а не запрещённой
-downstream-цепочкой). Добавьте подсказку профиля, чтобы обнаружение inline-пути было детерминированным:
-
-```
+```text
 profile: implementation-plan
+slug: <slug>
 ---
 docs/plans/<slug>/plan.md
 ```
 
-Зачем нужна подсказка: у мест inline-вызова в аргументах нет frontmatter, по которому классифицирует
-детектор; префикс сокращает путь обнаружения. План уже находится на диске, поэтому движок классифицирует
-источник как `file`, редактирует план на месте при FAIL/CONDITIONAL и записывает вердикт во frontmatter
-плана через `receipt` профиля.
+Reviewer получает plan+tasks+scope+source evidence. Проверяет concrete affected paths/contracts, checkable acceptance, relevant failure cases, hidden scope, mapping AC→tasks, Verification & Sources. Не требует новых тестов/mobile QA без opt-in. Findings должны содержать location+concrete failure.
 
-Профиль выбирает 2–3 рецензентов по tech-match из содержимого плана (не раздувайте панель и не
-исключайте действительно вызванного рецензента). `--quick` разрешает одного рецензента.
+Max 3 содержательных cycles: PASS → gate; CONDITIONAL → локально исправить major, после cap оставить non-blocking note; FAIL → исправить blocker и повторить affected review после реальной мутации. Unchanged plan reuse, не очередной panel. Remaining blocker после cap → review_verdict escalate, status draft, blocking Open Questions; сохранить audit state.
 
-**Цикл** — всего 3 цикла ревью: 1 первоначальное ревью + до 2 повторных (тот же предел, что у `finalize`):
+Дополнительный hostile implementer только когда остаётся значимая неопределённость исполнимости/сложные взаимодействия после primary review, не всегда. Один специалист на riskiest task: входы→state→выход→errors→cleanup; найти места, где нужно угадать contract; максимум 15 конкретных gaps. Указанное уже в плане — no action; локальное уточнение внести; substantive user choice — chat/headless escalation. После contract change повторить affected review.
 
-| Вердикт | Действие |
-|---|---|
-| PASS | `review_verdict: pass` → фаза 4. |
-| CONDITIONAL | Движок редактирует план, устраняя major; повторить ревью. Оставшиеся major после предела (цикл 3) → записать в `## Open Questions` (non-blocking) и продолжить. |
-| FAIL | Движок редактирует план, устраняя блокеры; повторить ревью. При FAIL в цикле 3 → сразу перейти к escalate, без дальнейшего ревью. |
-
-После 3-го цикла с оставшимися блокерами → `review_verdict: escalate`, записать блокеры в
-`## Open Questions` (с меткой blocking), удалить файл состояния
-`./swarm-report/plan-<slug>-state.md` и показать результат. Это единственная автономная остановка и
-только для настоящих блокеров.
-
----
-
-## Фаза 3.5 — соперничающий проход red team (скептик)
-
-Запустите **одного** Agent (general-purpose, sonnet) в роли критически настроенного реализующего агента.
-Он не оценивает план по критериям — он пытается создать реализацию по нему и сообщает каждое место,
-где пришлось бы угадывать:
-
-> You are the engineer ordered to implement `docs/plans/<slug>/plan.md` exactly as written, with no
-> further questions allowed. Do not praise or summarize it. Pick the riskiest task in `tasks.md` and
-> mentally implement it end-to-end: inputs → state changes → outputs → error paths → cleanup. Every
-> time the plan forces you to GUESS a detail, invent a contract, or fill a gap, record it as:
-> "I'd have to guess X because the plan doesn't specify Y (file/section)". Also flag any acceptance
-> that is not actually checkable, any "handle/wire/update appropriately" hand-waving, any missing
-> failure mode, and any task that secretly hides two days of work. Be strict but fair: only real
-> gaps, no invented blockers. Cap 15 items, ordered by how badly each would derail implementation.
-
-Для каждого пункта:
-
-- **Легко устранимый** (однострочное уточнение) → отредактировать план inline и продолжить.
-- **Настоящий пробел дизайна** → исправить план; если требуется решение пользователя, вынести его согласно
-  контракту **Headless mode** в `SKILL.md` (`AskUserQuestion` только при интерактивном режиме/присутствии
-  пользователя; иначе записать как `[blocking]` Open Question, установить `review_verdict: escalate` и остановиться).
-- **Уже указано, но агент пропустил** → без действий.
-
-Пропускайте только с `--quick` для небольшого, чётко ограниченного изменения без рискованных задач.
-
----
-
-## Критерии против обхода проверки (общие для обоих критиков)
-
-Критик отклоняет как blockers или majors планы, которые пытаются пройти проверку без содержания:
-
-- **Расплывчатые глаголы** — «корректно обработать ошибки», «подключить», «обновить соответствующие файлы»,
-  «при необходимости» без конкретной цели. Требуйте настоящий файл, контракт или поведение.
-- **Нефальсифицируемая приёмка** — любая `check` задачи, которую должен оценивать человек («выглядит правильно»,
-  «хорошо работает»). Требуйте имя теста, grep или цель сборки.
-- **Пропущенные режимы отказа** — только happy path. Требуйте ошибки, граничные, пустые и конкурентные случаи,
-  в которые может попасть изменение.
-- **Скрытый масштаб** — однострочная задача, скрывающая подсистему. Требуйте честно разделить её или оценить размер.
-- **Непрослеживаемые требования** — spec `AC-N` без задачи, которая её выполняет, или задача, не выполняющая ничего.
-  Требуйте полного сопоставления.
-- **Отсутствующая или пустая проверка** — нет секции `## Verification & Sources` либо она не называет
-  targeted build/static checks и доступный source of truth. Не требуйте новых тестов или mobile L5:
-  они допустимы только при явном запросе пользователя. Для Android/iOS план должен явно сказать,
-  что emulator/simulator/device QA пропущен по default opt-in policy, а не считать это blocker.
-
-Эти критерии превращают «план, прошедший проверку» в «правильный план». Они находятся в дополнении
-запроса профиля, поэтому панель применяет их автоматически.
+Не использовать planning review как обязательную downstream-цепочку для всей реализации. Final implementation verification идёт risk route, explicit навыки/hooks/CI сохраняются.

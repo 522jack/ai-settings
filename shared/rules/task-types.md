@@ -2,34 +2,21 @@
 
 Матрица маршрутизации: тип задачи → source of truth и минимальная проверка существующими средствами проекта.
 
-## Политика создания тестов
-
-Новые unit/UI/E2E/snapshot tests, fixtures и test infrastructure создаются только по явной просьбе пользователя. Без такого запроса:
-
-1. запускать существующие релевантные тесты разрешено;
-2. обновлять существующие assertions/fixtures разрешено только когда запрошенное изменение меняет их контракт;
-3. пробел покрытия фиксировать как риск или рекомендацию, но не блокировать реализацию;
-4. не создавать test harness, sample app или screenshot baseline ради автоматического прохождения pipeline.
-
-Если пользователь запросил тесты, применять feasibility gate: писать их, когда граница поведения понятна и затраты разумны; иначе объяснить ограничение и предложить ближайшую проверяемую альтернативу.
-
-### Оценка проверяемости на этапе планирования
-
-Определить дешёвую проверку без нового тестового кода: targeted build, lint/typecheck, запуск существующего набора тестов, статический review или воспроизведение предоставленного сценария. Несколько emulators, screenshot tests, sample/sandbox app и disposable tests предлагать как опции, но не создавать и не запускать без явного запроса.
+Политика новых тестов, fixtures, baseline и mobile QA имеет один источник: [qa-and-testing.md](qa-and-testing.md). Глубина review определяется [workflow.md](workflow.md).
 
 ## Матрица маршрутизации
 
-| Тип задачи | Source of truth | Проверка по умолчанию | Новые тесты | Mobile L5 |
-|---|---|---|---|---|
-| Feature | Spec / AC list / task | L0–L1 + существующие релевантные tests | Только по запросу | Только по запросу |
-| Bug fix | `debug.md` или описание воспроизведения | воспроизведение доступным без device способом + L0–L1 + существующие tests | Regression test только по запросу | Только по запросу |
-| Tech migration | доступный before-state baseline / requirements | L0–L1 + существующие tests | Только по запросу | Только по запросу |
-| Library version bump | changelog / requirements / существующий baseline | L0–L1 + существующие tests | Только по запросу | Только по запросу |
-| Refactoring | существующие tests или описанный контракт | L0–L1 + существующие tests | Только по запросу | Только по запросу |
-| Infrastructure change (network / storage / auth / DI) | Spec / requirements | L0–L1 + существующие tests | Только по запросу | Только по запросу |
-| UI / design task | Figma / предоставленные screenshots | L0–L1; design/code review | Только по запросу | Только по запросу |
-| Performance optimization | Benchmark baseline — числа до/после | L0 + benchmark measurement | Только по запросу | Только по запросу |
-| Investigation / research | Research output | L1, если создан код | Только по запросу | Только по запросу |
+| Тип задачи | Source of truth | Проверка по умолчанию |
+|---|---|---|
+| Feature | Spec / AC list / task | L0–L1 + существующие релевантные tests |
+| Bug fix | `debug.md` или описание воспроизведения | воспроизведение доступным без device способом + L0–L1 + существующие tests |
+| Tech migration | доступный before-state baseline / requirements | L0–L1 + существующие tests |
+| Library version bump | changelog / requirements / существующий baseline | L0–L1 + существующие tests |
+| Refactoring | существующие tests или описанный контракт | L0–L1 + существующие tests |
+| Infrastructure change (network / storage / auth / DI) | Spec / requirements | L0–L1 + существующие tests |
+| UI / design task | Figma / предоставленные screenshots | L0–L1; design/code review |
+| Performance optimization | Benchmark baseline — числа до/после | L0 + benchmark measurement |
+| Investigation / research | Research output | L1, если создан код |
 
 L0/L1 можно сузить до затронутого app/module. Проектные hooks и CI остаются авторитетными: pipeline не отключает уже настроенные проверки, но сам не создаёт новые тесты без просьбы пользователя.
 
@@ -41,7 +28,7 @@ L0/L1 можно сузить до затронутого app/module. Проек
 2. предоставленные screenshots или ранее сохранённая manual QA session;
 3. API snapshots, benchmark numbers, требования или AC.
 
-Если baseline отсутствует, описать intended behavior и риск отсутствия runtime-сравнения. Не запускать mobile приложение, emulator/simulator/device и не снимать новый screenshot baseline без явной просьбы пользователя.
+Если baseline отсутствует, описать intended behavior и риск отсутствия runtime-сравнения; ограничения получения baseline — в `qa-and-testing.md`.
 
 ### Что не является baseline до изменений
 

@@ -1,0 +1,9 @@
+# Общая подготовка PR/MR
+
+1. Определите host из origin, используйте gh/glab, remote default BASE (remote symbolic HEAD/show origin; fallback лишь реально существующий main/master/develop), текущую BRANCH и user.email. Не создавать PR с detached HEAD/защищённой default product branch.
+2. Получите existing PR URL/draft/body/state. GitHub `gh pr view --json url,isDraft,number,body`; GitLab `glab mr view --output json`. Сохраняйте rc/stderr: только explicit no-open-PR/MR означает absence; auth/CLI/API errors — stop, не создавать duplicate.
+3. Проверьте выбранный mode до mutations. Обычный push новых commits разрешён запросом PR лишь в рамках текущей авторизации; никогда не создавать commits автоматически. Если upstream отсутствует — `git push -u origin BRANCH`, иначе push только при локальных новых commits. Non-fast-forward/error → stop с evidence; force/history rewrite вне scope.
+4. Analyze log/diff/stat относительно merge-base BASE, including pending changes как uncommitted limitations, не выдавать их за shipped PR code. Slug caller → branch without feature/fix/hotfix/bug/chore/refactor/docs prefixes.
+5. Artifacts relevant slug: research `swarm-report/research/research-<slug>.md`; spec `docs/specs/DATE-<slug>.md`; plan `docs/plans/<slug>/plan.md`+tasks (legacy `<slug>-plan.md`); debug/test-plan/quality/finalize/acceptance/regression-coverage в swarm-report. Ссылки, не inline full text; не публиковать внутренние секреты/недоступные external artifact links как рабочие.
+
+Вердикты качества должны относиться к точному code/scope/environment; stale receipts показывать как stale. Required readiness checks: mechanical targeted existing checks; ordinary + independent semantic review; high-risk auth/security/data loss/schema/concurrency/public API/CLI/architecture + finalize/acceptance. Skill сам не запускает tests/check/review и не меняет code; отсутствие required evidence не заменяется выдуманным PASS.

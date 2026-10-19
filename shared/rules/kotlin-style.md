@@ -20,37 +20,14 @@ paths:
 
 Если в проекте явно установлено другое соглашение о видимости, следовать проекту.
 
-### Как применять
-
-- **Новый код в feature / internal-implementation модулях** (пакеты `internal/`, `feature/.../internal/`, всё вне `api/`) → по умолчанию `internal`. Использовать `private`, если на символ нет ссылок за пределами его файла/класса.
-- **Модули public API** (`api/`, открытые контракты в `:protocol/`, общая инфраструктура `:new-core/`) → `public` допустим, но только для объявлений, предназначенных для других модулей. Внутренние вспомогательные элементы этих модулей всё равно должны быть `internal` / `private`.
-- **Top-level functions, extensions, properties** — то же правило. Вспомогательный элемент, используемый только в одном файле → `private`. Используемый внутри модуля → `internal`. Никогда не делать его public, если он не нужен другим модулям.
-- **Classes, interfaces, sealed hierarchies** — выбирается минимальная видимость. Иерархия реализаций sealed class, используемая только внутри модуля, должна быть `internal`.
-- **Constructors** — их также нужно ограничивать. Если класс создаётся только через factory или DI, пометить конструктор `internal` или `private`.
-- **Элементы `companion object`** — те же приоритеты.
-- **Не писать ключевое слово `public` явно** — это значение Kotlin по умолчанию. `public class Foo` избыточен; использовать `class Foo`. Ключевое слово `public` добавляет шум и ничего не сообщает. Явные модификаторы оставлять для `internal` и `private`.
-
-### Если есть сомнения
-
-Если нельзя выбрать между `internal` и `public` — выбирать `internal`. Позже расширить видимость просто; последующее сужение будет breaking change для тех, кто уже использовал более открытую форму.
-
-### `.kts` (Gradle Kotlin DSL)
-
-Применяется то же правило. Top-level helpers в convention plugins, `build.gradle.kts` и `settings.gradle.kts` должны быть `private`, если используются только в этом скрипте, и `internal`, если общие внутри build module.
+- Helpers/top-level/companion/constructors/sealed implementations ограничивать по месту использования; internal implementation modules не делать public автоматически.
+- В API modules публичными оставлять только намеренные внешние контракты; при сомнении выбирать `internal`.
+- Не писать `public` явно, если проект не требует explicit API mode; default visibility всё равно выбирать осознанно.
+- `.kts` helpers: `private` внутри скрипта, `internal` внутри build module.
 
 ## Операции с коллекциями — предпочитать extension operators циклам `for`
 
 Для любой операции над collection / `Sequence` / `Iterable` / `Map` / `Flow` предпочитать extension operator стандартной библиотеки императивному циклу `for`. Имя оператора выражает намерение; тело `for` с `if`/`add`/`continue` его скрывает.
-
-Распространённые соответствия:
-
-- Фильтрация → `filter` / `filterNot` / `filterIsInstance` / `filterNotNull`.
-- Преобразование → `map` / `mapNotNull` / `mapIndexed` / `flatMap`.
-- Агрегация → `sumOf` / `count` / `maxByOrNull` / `minByOrNull` / `fold` / `reduce`.
-- Группировка / индексация → `groupBy` / `associateBy` / `associateWith`.
-- Поиск → `find` / `firstOrNull` / `any` / `all` / `none`.
-- Побочный эффект для каждого элемента → `forEach` / `onEach` (при построении цепочки использовать `onEach`).
-- Пошаговое построение коллекции → `buildList` / `buildSet` / `buildMap`.
 
 ### Когда `for` — правильный выбор
 
@@ -70,20 +47,6 @@ paths:
 - Аргумент имеет **примитивный тип** (`Boolean`, `Int`, `Long`, `String` и т. д.), а его смысл неочевиден только по месту вызова.
 - **Несколько параметров имеют один тип** — именовать каждый аргумент этого типа. Остальные аргументы вызова можно оставить позиционными, если на них не распространяется другое правило.
 - **Одинокий boolean literal** — худший случай: `setVisible(true)` ничего не сообщает читателю. Именовать его даже если это единственный аргумент: `setVisible(visible = true)`.
-
-```kotlin
-// Bad — three Strings, meaning unclear
-createUser("Alice", "alice@example.com", "password123")
-
-// Good — same-type args named; positional allowed only when unambiguous
-createUser(name = "Alice", email = "alice@example.com", password = "password123")
-
-// Bad — Boolean argument with no context
-setRetry(true, 3)
-
-// Good
-setRetry(enabled = true, maxAttempts = 3)
-```
 
 ### Когда позиционные аргументы допустимы
 
@@ -111,18 +74,6 @@ setRetry(enabled = true, maxAttempts = 3)
 ## Валидация Value Class
 
 Обёртка примитива в `@JvmInline value class` — очевидная часть. Неочевидная часть: **добавлять `init { require(...) }`, когда wrapper задаёт ограничение** — непустое значение, допустимый формат или диапазон. Без напоминания модель часто это пропускает.
-
-```kotlin
-@JvmInline
-value class Email(val value: String) {
-    init { require("@" in value) { "Invalid email: $value" } }
-}
-
-@JvmInline
-value class FavoriteId(val value: String) {
-    init { require(value.isNotBlank()) { "FavoriteId must not be blank" } }
-}
-```
 
 Если для обёрнутого значения нет реального ограничения (например, непрозрачный ID, сгенерированный сервером), пропустить блок `init`. Валидировать там, где валидация имеет смысл, а не ради формальности.
 

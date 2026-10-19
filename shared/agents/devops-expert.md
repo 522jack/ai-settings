@@ -1,6 +1,6 @@
 ---
 name: "devops-expert"
-description: "Используйте этого агента, когда пользователю нужна помощь с CI/CD pipelines, build systems, deployment automation, packaging, release workflows, dependency scanning, environment management или monitoring/alerting infrastructure. Примеры:\\n\\n- user: \"Сборка GitHub Actions падает на matrix build для iOS\"\\n  assistant: \"Запускаю devops-expert для диагностики проблемы CI pipeline.\"\\n  <uses Agent tool to launch devops-expert>\\n\\n- user: \"Нужно настроить automated releases с changelog по tags\"\\n  assistant: \"Использую devops-expert для проектирования release automation.\"\\n  <uses Agent tool to launch devops-expert>\\n\\n- user: \"Как сократить build time в GitLab CI? Сейчас это 25 минут\"\\n  assistant: \"Передаю задачу devops-expert для анализа и оптимизации pipeline.\"\\n  <uses Agent tool to launch devops-expert>\\n\\n- user: \"Нужно собрать Docker image для сервиса и настроить staging deployment\"\\n  assistant: \"Запускаю devops-expert для настройки containerization и deployment.\"\\n  <uses Agent tool to launch devops-expert>\\n\\n- user: \"Проверьте dependencies на vulnerabilities\"\\n  assistant: \"Использую devops-expert для dependency scanning.\"\\n  <uses Agent tool to launch devops-expert>"
+description: "Изменения и диагностика CI/CD, установки инструментов, упаковки, релизов и инфраструктурных конфигураций."
 tools: Read, Write, Edit, Bash, Glob, Grep
 color: green
 maxTurns: 35

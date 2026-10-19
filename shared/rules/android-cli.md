@@ -8,11 +8,11 @@ paths:
 
 # Правила Android CLI
 
-CLI Google `android` (https://developer.android.com/tools/agents/android-cli) — **основной** инструмент для задач Android platform: он объединяет поиск/получение official docs, project metadata, управление AVD/SDK, захват screen/layout устройства, APK deploy и bundled skills. Считать его установленным — на этих машинах это стандарт. Правила проверены на `v1.0.x` (~2026-05).
+CLI Google `android` (https://developer.android.com/tools/agents/android-cli) — **основной** инструмент для задач Android platform: он объединяет поиск/получение official docs, project metadata, управление AVD/SDK, захват screen/layout устройства, APK deploy и bundled skills. Проверять доступность в текущем окружении; синтаксис уточнять по установленной версии.
 
 **Применяется, если** в `*.gradle*` есть ссылка на `com.android.{application,library,kotlin.multiplatform.library}`, существует `AndroidManifest.xml` / `local.properties` с `sdk.dir` или вопрос касается Android platform / SDK / Jetpack / Compose / AGP / tooling. В противном случае не действует.
 
-**Доступность:** считать инструмент доступным. Только если вызов `android` завершается ошибкой, один раз проверить `command -v android`; если команда не найдена, использовать раздел Fallback и не повторять вызовы `android` до конца сессии.
+**Доступность:** один раз проверить `command -v android`; если команды нет, использовать Fallback и не повторять вызовы до изменения окружения.
 
 ## Матрица решений
 
@@ -28,7 +28,7 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 | Список AVD                                                                             | `android emulator list`                                                                                                                       |
 | Запуск / остановка / удаление AVD                                                      | `android emulator start <avd> [--cold]` / `stop` / `remove`                                                                                   |
 | Создание AVD из профиля (watch / phone / XR…)                                          | `android emulator create <profile>` (`--list-profiles` to enumerate)                                                                          |
-| Установка / обновление / удаление / список SDK packages                                | `android sdk install                                                                                                                          |update|remove|list` |
+| Установка / обновление / удаление / список SDK packages                                | `android sdk install/update/remove/list` |
 | Deploy собранного APK                                                                  | `android run --apks <p1,p2…> --activity <name> --device <id> [--debug]` — `--type` = component type (ACTIVITY/SERVICE…), **не** build variant |
 | Информация об окружении (SDK path, CLI version)                                        | `android info`                                                                                                                                |
 | Scaffold нового проекта (только по явному запросу)                                     | `android create [template] --name <n> --minSdk <v>`                                                                                           |
@@ -42,8 +42,8 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 
 Команды перечислены в таблицах выше; здесь указано только, когда `android` primary, а когда fallback.
 
-- **Docs:** `android docs search` — единственный курируемый канал guides (как принято / migration / best practice). Для API truth — **параллельно с `ksrc`** (jar = реальный API, docs = рекомендованная форма; расхождение = legacy / устаревшая версия). Context7 / Web — fallback, когда оба молчат.
-- **Bundled skills** (`~/.android/cli/skills/**/SKILL.md`, 19 шт, T2) — третий канал guides, **install не нужен**: `find <kw>` → `Read SKILL.md` → structured workflow (~10 шагов). Триггер: миграция / upgrade / узкая область (Wear M3, XR, CameraX, Navigation 3, edge-to-edge, Compose Styles/adaptive, R8, Perfetto, testing-setup, PBL, Engage, AppFunctions, XML→Compose, AGP 9). `last-updated` старше года в evolving стеке → понизить вес. **Не использовать**, когда глобальный Claude Code skill покрывает 1:1 (`agp-9-upgrade` ↔ `kotlin-tooling-agp9-migration`) — глобальный приоритетнее (routable, интегрирован с gates).
+- **Docs:** `android docs search` — единственный курируемый канал guides (как принято / migration / best practice). Для API truth достаточно pinned source/API согласно `external-sources.md`; docs/guides дополняют его при migration, ambiguity или evolving patterns.
+- **Bundled skills** (`~/.android/cli/skills/**/SKILL.md`, T2 при проверенном official content) — третий канал guides, **install не нужен**: `find <kw>` → `Read SKILL.md` → structured workflow (~10 шагов). Триггер: миграция / upgrade / узкая область (Wear M3, XR, CameraX, Navigation 3, edge-to-edge, Compose Styles/adaptive, R8, Perfetto, testing-setup, PBL, Engage, AppFunctions, XML→Compose, AGP 9). `last-updated` старше года в evolving стеке → понизить вес. **Не использовать**, когда глобальный Claude Code skill покрывает 1:1 (`agp-9-upgrade` ↔ `kotlin-tooling-agp9-migration`) — глобальный приоритетнее (routable, интегрирован с gates).
 - **Device / SDK / AVD / screen / layout:** `android` primary над raw `adb` / `sdkmanager` / `avdmanager` / `emulator` — на raw переходить только при отсутствии нужного флага.
 - **Build:** саму сборку выполнять проектным Gradle; `android run` — только для deploy-and-launch уже собранного APK.
 
@@ -51,9 +51,7 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 
 - **Skills: регистрация ≠ доступность.** Файлы уже на диске — `Read` работает всегда, проактивно. `android skills add` / `init` *регистрируют* skill в роутинге Skill tool — **только по явной просьбе** и когда нужно автосрабатывание по триггерам. **Никогда** не выполнять автоматически `android init` / `skills add --all`: это дублирует глобальные skills и ломает routing. Синтаксис: имя позиционное (`--skill=` удалён); флаги `--agent` / `--project` — проверять через usage, не угадывать.
 - **Никогда не обновлять автоматически:** при сообщении «A new version available» — одна строка раз в сессию, спросить перед `android update`. (`info`: `version` ядра и `launcher_version` обёртки; отставание launcher нормально.)
-- **Device actions — только по запросу.** Не выполнять `android run`, `android emulator start/create`,
-  `android layout`, `android screen capture` и соответствующие raw `adb`/emulator действия для manual QA
-  без явной просьбы пользователя в текущей задаче. Build и чтение project metadata не требуют opt-in.
+- **Device/manual QA:** применять единую [qa-and-testing.md](qa-and-testing.md); наличие CLI не даёт разрешение на device actions.
 
 ## Fallback при отсутствии CLI
 
@@ -69,5 +67,4 @@ CLI Google `android` (https://developer.android.com/tools/agents/android-cli) �
 
 ## Операционные заметки
 
-- `android skills list` (и аналогичные команды) выводят длинную ANSI progress bar перед результатом — при передаче через pipe/сохранении воспринимать завершающие строки, не относящиеся к progress, как payload.
-- **Особенности `--help` (v1.0):** группы `sdk`/`skills` (и subcommands `skills`), `info`/`init` и `screen capture` отклоняют `--help` (`Unknown option`, но всё равно печатают строку usage); `--help` у **группы** `screen` полностью завершается ошибкой (i/o error) — вызывать `screen capture`/`screen resolve` напрямую. `docs` (и `search`/`fetch`), `emulator`, `create`, `describe`, `run`, `layout` обычно принимают `--help`. Первый вызов за сессию может предваряться шумом `Unpacking embedded installation…`.
+Длинный ANSI output фильтровать; syntax/help quirks проверять по установленной версии. Исторические указатели: [экосистемные заметки](references/ecosystem-notes-2026-10-01.md).

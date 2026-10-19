@@ -28,12 +28,6 @@ Dependency относится к `api`, если выполняется **люб
 
 В противном случае — `implementation`. `public` symbols Kotlin по умолчанию легко пропустить; сначала проверить правило видимости из `kotlin-style.md`, чтобы убедиться, что symbol действительно должен быть public.
 
-### Почему это важно
-
-- `implementation` сохраняет изоляцию classpath Gradle: изменение одного модуля не перекомпилирует downstream consumers, а ABI changes в dep не распространяются дальше.
-- `api` — transitive contract: каждый consumer этого модуля получает dep в compile classpath, хочет он этого или нет. Неправильное использование `api` раздувает rebuild graph и создаёт случайную связанность.
-- Стоимость исправления позже асимметрична: ужесточение `api` → `implementation` — breaking change для тех, кто полагался на утечку; расширение `implementation` → `api` тривиально.
-
 ### Если есть сомнения
 
 Выбирать `implementation`. Ошибка компиляции в consumer module — ясный сигнал расширить конфигурацию; молчаливые transitive leaks — нет.

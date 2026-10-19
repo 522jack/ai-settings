@@ -1,46 +1,12 @@
-# Структура вывода и передача
+# План: расположение и handoff
 
-## Paths
+| File | Purpose |
+|---|---|
+| docs/plans/<slug>/plan.md | Постоянный technical approach/decisions/risk/verification |
+| docs/plans/<slug>/tasks.md | Постоянные T-N/dependencies/files/acceptance/checks |
+| docs/plans/<slug>/progress.md | Журнал исполнения/checklist/learnings |
+| swarm-report/plan-<slug>-state.md | Internal scope/evidence/review cursor; done после завершения |
 
-| Файл | Срок жизни | Коммитится? | Назначение |
-|---|---|---|---|
-| `docs/plans/<slug>/plan.md` | Постоянный | Да — проверяется в PR | Технический подход, затронутые файлы, решения, риски. |
-| `docs/plans/<slug>/tasks.md` | Постоянный | Да | Упорядоченный чек-лист задач с зависимостями и приёмкой каждой задачи. |
-| `docs/plans/<slug>/progress.md` | Постоянный (изменяемое содержимое) | Да — журнал выполнения / аудит | Изменяемый статус и журнал выводов. Отделён от стабильного плана, чтобы рабочие изменения не переписывали дизайн. |
-| `./swarm-report/plan-<slug>-state.md` | Операционный | Нет (gitignored) — удалить после | Результаты исследования, журнал циклов ревью. После работы удаляется. |
+Plan draft→approved лишь когда review не содержит blockers; review_verdict pending→pass|conditional|escalate. State не удалять до сохранения useful evidence, teardown только owned process artifact. Новые permanent files git add; commit исключительно при current authorization.
 
-`docs/plans/` намеренно является соседом `docs/specs/`: spec = *что* (требования + AC), plan =
-*как* (дизайн + задачи). Оба находятся в git, потому что их ценность — возможность ревью в PR
-и возобновления позже; именно этого свойства не хватает встроенному plan mode.
-
-Slug derivation: see `SKILL.md` Phase 0.1.
-
-## Жизненный цикл статуса
-
-`plan.md` frontmatter `status`: `draft` → `approved` (Phase 4 on PASS/CONDITIONAL). On
-`review_verdict: escalate`, leave `status: draft` and stop with the blocking open questions
-surfaced.
-
-`review_verdict`: `pending` → `pass` | `conditional` | `escalate`, записывается циклом фазы 3 (и
-receipt профиля).
-
-## Сообщение подтверждения (по умолчанию, автономный режим)
-
-Одно предложение, например:
-
-> Plan saved to `docs/plans/offline-mode/plan.md` (review: PASS, 7 tasks). Starting with T-1 —
-> add the offline cache layer.
-
-Без запроса подтверждения. С `--interactive` покажите краткое резюме и задайте один вопрос «запускать/изменить»
-до переключения в `approved`.
-
-## Правила передачи
-
-- **Не** вызывайте downstream-навыки автоматически. Предложите реализовать задачи, затем
-  `/check`, `/finalize`, `/acceptance`; `/write-tests` упоминайте только при явном запросе пользователя
-  на новые тесты. Mandatory Phase 3 inline `multiexpert-review` и Phase 3.5 red-team Agent остаются
-  встроенными review gates этого skill.
-- `progress.md` — текущий журнал: по мере завершения каждого `T-N` отметьте его и добавьте однострочный
-  вывод. Реализующий агент коммитит план и код вместе, чтобы в PR был виден план, создавший изменение.
-- `create-pr` обнаруживает `docs/plans/<slug>/plan.md` и ссылается на него в теле PR; `finalize`
-  привязывает проход `code-reviewer` к тому же плану. Кроме записи файла дополнительная связка не нужна.
+Handoff без --interactive: path/review/task count/первый шаг. --interactive требует запрошенного checkpoint. При planning-only scope предложить исполнение; при уже разрешённом implementation продолжать через специалиста. Downstream verification по risk route из SKILL.md, не обязательная check→finalize→acceptance цепочка для малого изменения. create-pr/finalize находят plan по каноническому slug path.
