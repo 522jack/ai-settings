@@ -1,12 +1,11 @@
 ---
 name: test-plan
-description: Профиль артефактов test-plan (docs/testplans/<slug>-test-plan.md и receipts swarm-report/<slug>-test-plan.md). Алфавит вердиктов PASS/WARN/FAIL с чек-листом из 7 элементов (a, b, c, d, e, f, g). Основной рецензент — business-analyst; специалисты доменов добавляются, когда spec затрагивает их вопросы.
+description: Профиль артефактов test-plan (docs/testplans/<slug>-test-plan.md и раздел Test plan общего task report). Алфавит вердиктов PASS/WARN/FAIL с чек-листом из 7 элементов (a, b, c, d, e, f, g). Основной рецензент — business-analyst; специалисты доменов добавляются, когда spec затрагивает их вопросы.
 
 detect:
   frontmatter_type: [test-plan, test-plan-receipt]
   path_globs:
     - "docs/testplans/**"
-    - "swarm-report/*-test-plan.md"
   structural_signatures:
     - "^## Test Cases"
     - "^#{1,6}\\s+TC-[\\w-]+"
@@ -38,7 +37,9 @@ source_routing:
   conversation: N/A
 
 receipt:
-  path_template: "swarm-report/<slug>-test-plan.md"
+  path_template: "swarm-report/<task-slug>.md"
+  section: "Test plan"
+  metadata_key: "test_plan"
   fields_to_update: [review_verdict, review_warnings, review_blockers]
 ---
 
@@ -84,7 +85,7 @@ receipt:
 
 ## Интеграция с receipt
 
-После синтеза шага 4 движок обновляет `swarm-report/<slug>-test-plan.md` (receipt, а не постоянный файл `docs/testplans/<slug>-test-plan.md`), добавляя:
+После синтеза шага 4 main обновляет блок `test_plan` в fenced metadata раздела `## Test plan` в `swarm-report/<task-slug>.md` (постоянный файл `docs/testplans/<slug>-test-plan.md` остаётся источником TC), добавляя:
 
 - `review_verdict: PASS | WARN | FAIL`
 - При WARN: список `review_warnings:`, перечисляющий нарушенные элементы `(d)`, `(e)`, `(g)` с однострочным обоснованием каждого;
@@ -94,4 +95,4 @@ receipt:
 
 ## Revise-loop (только для FAIL)
 
-Тот же конечный автомат, что и в движке по умолчанию: Verdict:FAIL → Fix Plan → Re-review, максимум 3 цикла. Действие «Fix Plan» редактирует постоянный файл test-plan в `docs/testplans/<slug>-test-plan.md`. Каждый цикл добавляет в `Verdict History` файла состояния новый вердикт и оставшиеся блокеры.
+Тот же конечный автомат, что и в движке по умолчанию: Verdict:FAIL → Fix Plan → Re-review, максимум 3 цикла. Действие «Fix Plan» редактирует постоянный файл test-plan в `docs/testplans/<slug>-test-plan.md`. Каждый цикл добавляет в `Verdict History` записи документа в `## Document review` общего отчёта новый вердикт и оставшиеся блокеры.

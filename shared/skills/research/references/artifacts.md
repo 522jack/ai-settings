@@ -1,42 +1,9 @@
-# Research state/report
+# Research в едином task report
 
-После решения consortium (≥2 независимых нужных направления) создайте `swarm-report/research-<slug>-state.md` до fan-out:
+После решения consortium (≥2 независимых нужных направления) main обновляет `Research` в `swarm-report/<task-slug>.md` по `$HOME/dotfiles/ai/shared/rules/task-report.md`. Slug наследуется от задачи; специалисты возвращают receipt в ответе.
 
-```markdown
-# Research State: <topic>
-Slug: <slug>
-Status: investigating | awaiting-clarification | done
-Started: <date>
-## Scope
-Topic / Context / Constraints
-## Expert Tracks
-- [ ] <track> — launched | skipped: reason
-## Findings
-<raw artifacts/results; internal>
-```
+До fan-out: status investigating|awaiting-clarification|done, scope/constraints, выбранные tracks и cursor незавершённой работы. При возврате gatherer обновляйте краткие значимые findings/источники; перед resume перечитывайте раздел. Без сырых ответов, отдельных state-файлов и копирования общего task context.
 
-Обновляйте checklist при возврате каждого gatherer, перечитывайте перед resume. Временные данные — корень swarm-report; готовый deliverable только `swarm-report/research/research-<slug>.md`. Вопросы/ответы пользователю — чат, в state сохраняются только принятые scope/constraints/decisions, не отложенные просьбы.
+После синтеза: результат/рекомендация, существенные alternatives/trade-offs с evidence, convergence/contradictions, ключевые risks, выбранный auto-review mode и verdict. Только применимые dependency facts (source/date/version/CVE/license). Known Unknowns — лишь внешние factual gaps с владельцем/условием закрытия; пропускайте пустые пункты. Вопросы пользователю задавайте в чате; сохраняйте принятые scope/constraints/decisions.
 
-После синтеза и разрешения user-resolvable blockers сохраните:
-
-```markdown
-# Research: <topic>
-Date: <date>
-Experts consulted: <tracks>
-Auto-review mode: business-analyst | tech-sanity
-## Problem / Question Summary
-## Approaches Found
-<2–3 viable options, trade-offs, evidence, compatibility; reasons if only one>
-## Library / Dependency Recommendations
-<only relevant; source/date/version/CVE/license>
-## Risks and Concerns
-<severity>
-## Recommendation
-<evidence-based choice>
-## Known Unknowns
-<only external factual gaps, owner/when; omit if none>
-## Sources
-<URLs/code/doc coordinates>
-```
-
-Comparison table only if helps decision. Unknown feasibility must be marked hypothesis until minimal empirical experiment; absence of evidence не доказывает невозможность. Закройте state done; chat содержит рекомендацию, основные факты/ограничения, ссылку и следующий шаг. Sources cite near associated claims where runtime requires them.
+Comparison table — только если помогает выбору. Unknown feasibility остаётся гипотезой до минимального разрешённого эксперимента; отсутствие evidence не доказывает невозможность. После разрешения user-resolvable blockers обновите status done. Chat: рекомендация, ключевые факты/ограничения, ссылка на раздел и следующий шаг. Sources cite near associated claims. Legacy research/state files доступны для чтения; новые по старым путям не создавать.

@@ -23,7 +23,7 @@
    - какой профиль обнаружил движок (записан в файле состояния в `Profile:` и `Profile source:`);
    - какой roster рецензентов фактически вызван;
    - какая метка вердикта выбрана из алфавита профиля;
-   - записан ли receipt (секция `receipt:` есть только у профиля `test-plan`);
+   - записан ли receipt (test-plan обновляет `## Test plan` общего отчёта; implementation-plan обновляет permanent plan);
    - префикс ошибки, если есть (например, `[multiexpert-review ERROR] UNKNOWN_PROFILE_HINT: ...`).
 4. Сравните наблюдаемые структурные свойства с таблицей ожиданий выше.
 
@@ -35,7 +35,7 @@
 - **Источник профиля:** `frontmatter` (из `type: plan`)
 - **Roster рецензентов:** определяется выбором по tech-match; для этой фикстуры обычно присутствует хотя бы один из `architecture-expert` (слой кеша → архитектура), `build-engineer` (Gradle / зависимость клиента Redis), `devops-expert` (Helm / развёртывание)
 - **Вердикт:** один из `PASS / CONDITIONAL / FAIL`
-- **Receipt:** нет (профиль implementation-plan не содержит `receipt:`)
+- **Receipt:** permanent plan frontmatter, по контракту implementation-plan; нового swarm-report файла нет
 
 ### `test-plan.md` (test-plan)
 
@@ -43,7 +43,7 @@
 - **Источник профиля:** `frontmatter` (из `type: test-plan`)
 - **Roster рецензентов:** `business-analyst` (всегда); плюс `security-expert`, если фикстура упоминает `auth|token|encryption|PII|credential` (эта фикстура не упоминает); плюс `performance-expert`, поскольку фикстура упоминает `latency` и `p99` (совпадает с `SLA|latency|throughput|budget`)
 - **Вердикт:** один из `PASS / WARN / FAIL`
-- **Запись receipt:** при оркестрации движком `receipt.path_template` разрешается в `swarm-report/smoke-test-test-plan-fixture-test-plan.md`, и движок **создаёт или обновляет** этот файл с `review_verdict` и необязательными `review_warnings` / `review_blockers`. При запуске этой фикстуры через настоящий движок ожидайте новый или обновлённый файл по этому пути. При снятии baseline через прямой вызов агента (режим из `baseline-results.md`) receipt не записывается, поскольку движок обходится.
+- **Запись receipt:** при оркестрации движком `receipt.path_template` разрешается в `swarm-report/<task-slug>.md` → `## Test plan`, и main **обновляет только metadata раздела**, сохраняя другие разделы. Metadata содержат `review_verdict` и необязательными `review_warnings` / `review_blockers`. При запуске этой фикстуры через настоящий движок ожидайте metadata в общем файле задачи. При снятии baseline через прямой вызов агента (режим из `baseline-results.md`) receipt не записывается, поскольку движок обходится.
 - **Применённые критерии:** чек-лист из 5 элементов (a)–(e) должен быть оценён явно
 
 ### `spec.md` (spec)
@@ -67,7 +67,7 @@
 - Пред/пост-структурную эквивалентность с `plan-review` до рефакторинга — для этого потребовался бы baseline, снятый до переименования/рефакторинга (см. PR #101), но этого не сделали. В будущих рефакторингах сначала снимайте baseline; этот harness предоставляет набор фикстур для этого.
 - Модальное совпадение при нескольких запусках (3 запуска на фикстуру) — сглаживание стохастичности выходит за рамки этого лёгкого harness.
 - Случаи громких ошибок (`UNKNOWN_PROFILE_HINT`, `FORBIDDEN_PROFILE_FIELD`, `NO_REVIEWERS_AVAILABLE`, `PROFILE_INVENTORY_MISMATCH`) — описаны в `../profiles/README.md`, но здесь не выполняются, поскольку потребовали бы изменения набора активных профилей.
-- Фактическую запись receipt для профиля `test-plan` — сохранённый baseline получен прямым вызовом агента в обход движка, поэтому при снятии baseline receipt-файл не записывается. Настоящий запуск движка для той же фикстуры (с `slug` во frontmatter и профилем с `receipt:`) создаст или обновит `swarm-report/smoke-test-test-plan-fixture-test-plan.md`. Полную проверку содержимого receipt нужно выполнять через настоящий pipeline `generate-test-plan → multiexpert-review`.
+- Фактическую запись receipt для профиля `test-plan` — сохранённый baseline получен прямым вызовом агента в обход движка, поэтому при снятии baseline receipt metadata не записываются. Настоящий запуск движка для той же фикстуры (с `slug` во frontmatter и профилем с `receipt:`) создаст или обновит `swarm-report/<task-slug>.md` → `## Test plan`. Полную проверку содержимого receipt нужно выполнять через настоящий pipeline `generate-test-plan → multiexpert-review`.
 - Поток потребления receipt test-plan (навык acceptance читает `review_verdict`) — вне области работ.
 
 ## Снятый baseline

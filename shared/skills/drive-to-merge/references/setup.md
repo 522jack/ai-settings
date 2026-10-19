@@ -1,6 +1,6 @@
 # drive-to-merge — Phase 1: настройка
 
-Обнаружение платформы, получение метаданных, предусловия и схема файла состояния. Загружается SKILL.md по мере необходимости.
+Обнаружение платформы, получение метаданных, предусловия и схема раздела `Drive to Merge` task report. Загружается SKILL.md по мере необходимости.
 
 ## 1.1 Обнаружение платформы
 
@@ -38,7 +38,7 @@ OWNER=${REPO%/*}; REPO_NAME=${REPO#*/}
 # Repository node id — needed for thread-ownership re-verify before every POST.
 REPO_NODE_ID=$(gh api graphql -f query='query($o:String!,$n:String!){repository(owner:$o,name:$n){id}}' \
   -F o="$OWNER" -F n="$REPO_NAME" --jq '.data.repository.id')
-# COPILOT_NODE_ID is resolved lazily in Phase 3.6 and cached in the state file header.
+# COPILOT_NODE_ID is resolved lazily in Phase 3.6 and cached as drive_to_merge.copilot_node_id in the task report.
 
 # GitLab
 MR_INFO=$(glab mr view --output json)
@@ -53,12 +53,12 @@ PROJECT=$(glab repo view --output json | jq -r '.path_with_namespace | @uri')
 
 ### Определение политики слияния
 
-После получения метаданных репозитория определите политику слияния для этого запуска. Запишите её в файл состояния как `Merge policy:`.
+После получения метаданных репозитория определите политику слияния для этого запуска. Запишите её в раздел `Drive to Merge` task report как `drive_to_merge.merge_policy`.
 
 1. **Явная конфигурация в CLAUDE.md** — проверьте `CLAUDE.md` репозитория (если файл есть) на строку, соответствующую шаблону:
    ```
-   Merge policy: auto
-   Merge policy: team-strict
+   drive_to_merge.merge_policy: auto
+   drive_to_merge.merge_policy: team-strict
    ```
    Use the first match.
 
@@ -84,49 +84,44 @@ PROJECT=$(glab repo view --output json | jq -r '.path_with_namespace | @uri')
 - `gh auth status` / `glab auth status` — токен действителен.
 - Ветка base всё ещё существует на remote.
 
-## 1.4 Файл состояния
+## 1.4 Resume в task report
 
-`swarm-report/<slug>-drive-state.md`. Slug = `<branch-with-prefix-stripped>-pr<PR_NUMBER>` (e.g. `fix/login` on PR 42 → `login-pr42`). The PR number disambiguates parallel branches that would otherwise produce the same slug (e.g. `feature/login` and `fix/login`, or two re-openings of the same branch).
+Наследуйте стабильный task slug и путь `swarm-report/<task-slug>.md`; main обновляет только раздел `Drive to Merge` по `$HOME/dotfiles/ai/shared/rules/task-report.md`. Если задача новая, выберите уникальный slug один раз, при необходимости включив номер PR. Не переименовывайте существующую задачу из-за PR/branch. PR URL/number и branch — поля раздела, не новый отчёт. Legacy drive-state можно прочитать, новые записи — только в task report; прежние файлы не удалять.
 
-Проверьте, что `swarm-report/` игнорируется Git, выполнив `git check-ignore -q swarm-report/`; код выхода 0 означает, что каталог игнорируется, ненулевой — что нет. При ненулевом коде остановитесь с сообщением `swarm-report/ is not ignored by git; add swarm-report/ to .gitignore and rerun`. Не изменяйте `.gitignore` автоматически: это создаёт посторонний diff внутри цикла сопровождения PR и может застать пользователя врасплох.
+### Схема resume (именованный YAML-блок раздела)
 
-### Схема (Markdown, разбирается машиной при возобновлении)
-
-```markdown
-# Drive to Merge — <PR title>
-
-URL: <PR URL>
-Platform: github | gitlab
-Mode: default | auto | dry-run
-Merge policy: auto | team-strict
-Principal: <@actor>            # gh api user --jq .login
-Repository node id: <graphql node id of the repository>
-PR node id: <graphql node id of the pull request>
-Copilot node id: <graphql node id of copilot-pull-request-reviewer or `unavailable`>
-Started: <ISO8601>
-Status: running | waiting-for-user | waiting-native-auto-merge | merged | blocked
-
-## Branch change model
-analyzed_through_sha: <abbreviated sha the model is current as of, or empty before first build>
-
-<compact prose summary of what the branch does: areas/files touched, key behaviors, invariants, and contracts introduced — a few lines, refreshed by delta each round>
-
-## Rounds
-| # | Started | Trigger | CI | New comments | Actions | Outcome |
-|---|---------|---------|----|--------------|---------|---------|
-
-## Commitments (open threads this skill owns)
-| thread_id | category | delegated_to | fix_commit_sha | replied | resolved |
-|-----------|----------|--------------|----------------|---------|----------|
-
-`fix_commit_sha` holds the abbreviated sha of the commit that addressed the thread (empty string if the thread is dismiss-only, no code change).
-
-## Blockers raised
-<empty | list of items the skill surfaced to the user>
+```yaml
+drive_to_merge:
+  url: <PR URL>
+  platform: github | gitlab
+  mode: default | auto | dry-run
+  merge_policy: auto | team-strict
+  principal: <actor>
+  repository_node_id: <GraphQL repository id>
+  pr_node_id: <GraphQL PR id>
+  copilot_node_id: <GraphQL bot id or unavailable>
+  started: <ISO8601>
+  status: running | waiting-for-user | waiting-native-auto-merge | merged | blocked
+  analyzed_through_sha: <sha or empty before first build>
+  round: <current number>
+  unchanged_polls: <consecutive count>
+  last_ci_signature: <identity for repeated failure detection>
+  next_wake_condition: <pending event or timestamp, only while waiting>
+  branch_change_model: <compact areas/behaviors/invariants, refreshed by delta>
+  commitments:
+    - thread_id: <id>
+      category: <decision>
+      delegated_to: <profile if relevant>
+      fix_commit_sha: <sha or empty for dismiss-only>
+      replied: false
+      resolved: false
+  blockers_raised: []
 ```
 
-При каждом возобновлении (новая сессия после сжатия контекста) сначала перечитайте этот файл; не повторяйте анализ, уже отражённый в строке `Commitments`, если reviewer не проявил новую активность. Используйте сохранённую `Branch change model`, а не перестраивайте её по полному diff: перечитайте только delta после `analyzed_through_sha`, но лишь если `analyzed_through_sha` не пуст и `git merge-base --is-ancestor "<analyzed_through_sha>" HEAD` завершается успешно (то есть sha всё ещё является предком после любого rebase). Если sha пуст или проверка предка не пройдена, перестройте модель по полному diff (`git diff "origin/$BASE"...HEAD`) и сбросьте `analyzed_through_sha` на текущий `HEAD`.
+Не сохраняйте полные снимки CI/reviews или растущий журнал rounds. Обновляйте текущие counters/cursor, существенные результаты и блокеры; commitments сохраняют идентификаторы и результаты действий, необходимые для идемпотентности. После terminal status сверните resume-поля, сохранив итог, code identity, проверки, существенные риски и поля, нужные downstream gates.
+
+При resume сначала перечитайте раздел; не повторяйте обработку Commitments без новой reviewer activity. Используйте branch_change_model и delta после analyzed_through_sha только если sha задан и `git merge-base --is-ancestor "<analyzed_through_sha>" HEAD` успешен. Иначе перестройте модель по полному diff `git diff "origin/$BASE"...HEAD` и обновите sha на HEAD.
 
 ### Приоритет режима при возобновлении
 
-`Mode` в файле состояния — авторитетный источник. Новый запуск без флага наследует сохранённый режим; новый запуск с явным флагом **переопределяет** сохранённый режим и переписывает его. Это позволяет пользователю по повторному вызову перевести запуск из `auto` в `default`, но не понижает автономный запуск молча только потому, что был изменён wake-up prompt.
+`mode` в разделе — сохранённый режим; запуск без флага наследует его, явный флаг текущего запуска переопределяет и обновляет его. Текущая авторизация пользователя приоритетнее сохранённых данных. Изменение wake-up prompt само по себе не меняет mode.

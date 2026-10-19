@@ -49,7 +49,9 @@ source_routing:
   conversation: <action>
 
 receipt:                               # OPTIONAL section — absence means no receipt is written
-  path_template: "<path with <slug> placeholder>"
+  path_template: "<permanent path with artifact <slug> or swarm-report/<task-slug>.md>"
+  section: "<report section, required for task report; omitted for permanent file>"
+  metadata_key: "<named YAML block; required for task report>"
   fields_to_update: [<field>, ...]
 ---
 
@@ -80,9 +82,11 @@ receipt:                               # OPTIONAL section — absence means no r
 4. **Структурные сигнатуры** — все регулярные выражения в `detect.structural_signatures` должны совпасть с содержимым артефакта. Выигрывает первый профиль, для которого совпали все сигнатуры.
 5. **Запасной вариант — спросить пользователя** — движок показывает `AskUserQuestion` с вариантами `PROFILE_INVENTORY`. Никогда не выбирайте значение молча.
 
+Для общего task report эти правила detection применяются к указанному разделу/его permanent_path, а не ко всему файлу. `## Test plan` → блок `test_plan` → permanent_path → frontmatter постоянного документа; существование раздела Acceptance/Review не выбирает test-plan профиль. Общая маска `swarm-report/*.md` не является test-plan detector.
+
 ## Фиксация профиля между циклами
 
-Выбранный профиль записывается в файл состояния в цикле 1. В циклах ≥2 движок читает профиль **только** из файла состояния. Любая подсказка профиля в аргументах повторного вызова игнорируется, а в Verdict History добавляется предупреждение: `Cycle <N> ignoring profile hint '<value>' — locked to '<locked>' since cycle 1`. Это не громкая ошибка — движок продолжает работу с зафиксированным профилем.
+Выбранный профиль записывается в artifact record под `## Document review` общего отчёта в цикле 1. В циклах ≥2 движок читает профиль **только** из этой записи. Любая подсказка профиля в аргументах повторного вызова игнорируется, а в Verdict History добавляется предупреждение: `Cycle <N> ignoring profile hint '<value>' — locked to '<locked>' since cycle 1`. Это не громкая ошибка — движок продолжает работу с зафиксированным профилем.
 
 ## Маршрутизация источника — семантика `N/A`
 
@@ -94,8 +98,8 @@ receipt:                               # OPTIONAL section — absence means no r
 
 ## Семантика секции receipt
 
-- **Присутствует** — после синтеза шага 4 движок обновляет файл, соответствующий `receipt.path_template` (с подстановкой `<slug>`), устанавливая каждому полю из `fields_to_update` соответствующее значение вердикта.
-- **Отсутствует** — движок полностью пропускает запись receipt. Используйте это для профилей, чей артефакт не имеет контракта receipt (например, spec, вердикт которого `write-spec` потребляет напрямую). `implementation-plan` объявляет receipt: он записывает вердикт обратно во frontmatter самого плана в `docs/plans/<slug>/plan.md`.
+- **Присутствует** — после синтеза шага 4 main обновляет адрес `receipt.path_template`: в общем task report только именованный блок `receipt.metadata_key` в fenced YAML раздела `receipt.section`, в permanent документе его frontmatter. `<task-slug>` идентифицирует задачу; `<slug>` — отдельный artifact slug. Устанавливаются только `fields_to_update`, прочие поля/разделы сохраняются.
+- **Отсутствует** — дополнительные receipt поля не записываются; consensus/state всё равно сохраняются под `## Document review` общего отчёта. Используйте это для профилей, чей артефакт не имеет контракта receipt (например, spec, вердикт которого `write-spec` потребляет напрямую). `implementation-plan` объявляет receipt: он записывает вердикт обратно во frontmatter самого плана в `docs/plans/<slug>/plan.md`.
 
 ## Семантика ошибок (единая для движка)
 

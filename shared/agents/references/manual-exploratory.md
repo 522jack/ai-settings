@@ -43,7 +43,7 @@ Details: [what you noticed and why it matters to users]
 Heuristic: [which heuristic flagged it]
 ```
 
-После каждого screen добавляйте одну строку в Coverage Map рядом с run summary:
+Возвращайте main краткую Coverage Map: одна строка на screen/flow, сходные проверки группируйте; main сохраняет её в разделе `Acceptance / Exploratory QA` task report:
 
 ```
 | # | Screen / Flow | Heuristics applied | Findings |
@@ -53,6 +53,6 @@ Heuristic: [which heuristic flagged it]
 
 В exploratory mode **не** выдавайте pass/fail verdict или ship/no-ship recommendation — нет spec, с которой можно сравнивать; вы исследуете, а не выносите оценку.
 
-Сохраняйте полный report в `./swarm-report/exploratory-qa-<SESSION_ID>.md` (first run) или `./swarm-report/exploratory-qa-<SESSION_ID>-run<N>.md` (re-exploration after fixes). Re-exploration: загрузите prior report, повторно проверьте каждый ранее зарегистрированный bug (`Fixed` / `Still present` / `Cannot reproduce`), затем продолжите исследование соседних областей на regressions.
+Специалист возвращает краткую receipt в ответе; main обновляет раздел `Acceptance / Exploratory QA` единого `swarm-report/<task-slug>.md` по `shared/rules/task-report.md`. Наследуйте task slug; session/run IDs — поля раздела, не новые имена файлов. Сохраняйте scope, существенные Bugs/Observations, coverage, проверенное code/scope/environment и ограничения, без сырых транскриптов и пустых findings. Re-exploration: перечитайте этот раздел, повторно проверьте каждый bug (`Fixed` / `Still present` / `Cannot reproduce`), обновите его статус без дубля, затем проверьте соседние области на regressions. Legacy reports можно читать, новые по старым путям не создавать.
 
 ---

@@ -5,7 +5,9 @@ description: "Сформировать постоянную спецификац
 
 # Спецификация
 
-Вход: feature goal, предложенный approach, constraints. Сохраняйте пользовательский intent; альтернативы рекомендуйте по evidence, не заменяйте его scope односторонне. Slug kebab-case; постоянный `docs/specs/YYYY-MM-DD-<slug>.md`, state `swarm-report/spec-<slug>-state.md`.
+Отчётность: прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Наследуйте стабильный task slug; main обновляет только раздел `Spec` в единственном `swarm-report/<task-slug>.md`. Специалисты возвращают краткую receipt в ответе, не создают отчётные файлы. Resume state хранится в том же разделе; legacy artifacts допустимы только для чтения. Существующий artifact slug документов может отличаться: сохраните путь и укажите сопоставление с task slug в отчёте.
+
+Вход: feature goal, предложенный approach, constraints. Сохраняйте пользовательский intent; альтернативы рекомендуйте по evidence, не заменяйте его scope односторонне. Наследуйте task slug, kebab-case только при отсутствии; постоянный `docs/specs/YYYY-MM-DD-<slug>.md`, resume state в разделе `Spec` task report.
 
 1. Определите цель/подход/ограничения, существующие source documents. Scope ambiguity с существенно разными объёмами → один вопрос с конкретными вариантами/рекомендацией. Не добавляйте backend/compliance/subsystems лишь из возможной ассоциации; фиксируйте реально необходимую hidden complexity.
 2. Read-only codebase investigation через Explore; additional architecture/business/web/dependency tracks только при реальном пробеле. Для выбранных tracks прочитайте [research-prompts.md](references/research-prompts.md); не mandatory consortium и не три alternatives всегда. В state сохраните Input/Tracks/Findings/решения интервью.

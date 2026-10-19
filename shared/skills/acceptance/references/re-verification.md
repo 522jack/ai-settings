@@ -26,13 +26,13 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Re-v
 При изменении spec/test-plan повторно оценить scope; `business-analyst` и другие affected
 checks выполняются для обновлённых требований/сценариев.
 
-4. Для повторно выполненных проверок сохранить свежий artifact и identity/evidence.
+4. Для повторно выполненных проверок обновить check record в `## Acceptance` общего отчёта и identity/evidence.
    `manual-tester` выполняется только если входит в текущий план: для Android/iOS это требует
    `mobile_manual_requested == true`. Ранее запрошенный mobile run не становится opt-in
    для нового пользовательского запроса. Изменение spec/test-plan или недостающие hashes
    сами по себе не разрешают mobile emulator/simulator/device QA.
-5. Агрегировать текущие и reused результаты в `swarm-report/<slug>-acceptance.md`, сохраняя
-   WARN/FAIL и pointers на evidence; обновить state и history.
+5. Агрегировать текущие и reused результаты в `## Acceptance` файла `swarm-report/<task-slug>.md`, сохраняя
+   WARN/FAIL и pointers на evidence; обновить state и history внутри того же раздела.
 6. Максимум 3 содержательных цикла с реальной мутацией или явно запрошенным экспериментом.
    Unchanged FAIL не создаёт новый цикл. При persistent genuine blocker сохранить evidence
    и эскалировать; unresolved blocker не разрешает ship без соответствующего решения.

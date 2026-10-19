@@ -72,7 +72,7 @@ source_routing:
 
 ## Без receipt
 
-Профиль spec не записывает receipt. Вердикт — результат уровня разговора, который потребляет цикл шага 4 `write-spec`.
+Профиль spec не записывает receipt. Вердикт потребляет цикл шага 4 `write-spec`; main сохраняет краткий consensus и resume state под `## Document review` общего task report.
 
 ## Обоснование (зачем нужен этот профиль)
 

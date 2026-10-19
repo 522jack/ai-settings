@@ -37,4 +37,4 @@ Security triggers по `git diff -M` от merge-base с включением т�
 
 Критичная security finding с confidence 50 помечается `[please verify]`, остаётся BLOCK до проверки/решения. Performance/architecture finding за пределами узкой правки → escalation.
 
-Coverage по умолчанию SKIP (tests not requested), не acknowledged risk. При opt-in агент читает только relevant test plan/diff/tests, пишет `<slug>-coverage-audit.md`; PASS / GAPS_RESOLVED после check --coverage-gate / ESCALATE если надёжный тест создать не удалось. Test generation делегируется engineer.
+Coverage по умолчанию SKIP (tests not requested), не acknowledged risk. При opt-in агент читает только relevant test plan/diff/tests и возвращает receipt; main обновляет подраздел `Review / Coverage` task report; PASS / GAPS_RESOLVED после check --coverage-gate / ESCALATE если надёжный тест создать не удалось. Test generation делегируется engineer.

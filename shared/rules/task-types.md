@@ -9,7 +9,7 @@
 | Тип задачи | Source of truth | Проверка по умолчанию |
 |---|---|---|
 | Feature | Spec / AC list / task | L0–L1 + существующие релевантные tests |
-| Bug fix | `debug.md` или описание воспроизведения | воспроизведение доступным без device способом + L0–L1 + существующие tests |
+| Bug fix | раздел `Debug` общего отчёта или описание воспроизведения | воспроизведение доступным без device способом + L0–L1 + существующие tests |
 | Tech migration | доступный before-state baseline / requirements | L0–L1 + существующие tests |
 | Library version bump | changelog / requirements / существующий baseline | L0–L1 + существующие tests |
 | Refactoring | существующие tests или описанный контракт | L0–L1 + существующие tests |

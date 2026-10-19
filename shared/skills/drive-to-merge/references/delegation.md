@@ -24,7 +24,7 @@
 
 ## 3.3 Строки Ask-in-thread (NEEDS_CLARIFICATION)
 
-Опубликуйте вопрос буквально как ответ в треде. Не разрешайте его. Запишите в `Commitments` файла состояния
+Опубликуйте вопрос буквально как ответ в треде. Не разрешайте его. Запишите в `drive_to_merge.commitments` раздела `Drive to Merge` task report
 `replied: true, resolved: false`.
 
 ## 3.4 Строки dismiss (терминальные вердикты)
@@ -33,7 +33,7 @@
 
 1. Опубликуйте ответ по готовому шаблону + очищенной однострочной вставке.
 2. Разрешите тред.
-3. Запишите в `Commitments` файла состояния `replied: true, resolved: true`.
+3. Запишите в `drive_to_merge.commitments` раздела `Drive to Merge` task report `replied: true, resolved: true`.
 
 ### Доставка ответа — правила безопасности
 
@@ -41,7 +41,7 @@
 - Обработка ограничения частоты: при `403` / `429` проверьте `x-ratelimit-remaining`, `x-ratelimit-reset` и `retry-after`. **Основное ограничение** (`x-ratelimit-remaining: 0`) — запланируйте `ScheduleWakeup` на `x-ratelimit-reset` (эпоха UTC) и завершите раунд. **Вторичное ограничение / обнаружение злоупотребления** (`retry-after: N`) — подождите локально `N + 5` секунд и повторите один раз; при повторном сбое покажите blocker. Никогда не тратьте раунд на плотный цикл повторов.
 - Очистка вставки: нормализация NFKC → удалить BiDi + форматирующие символы → удалить HTML → удалить shell-метасимволы (`` ` ``, `$(`, `${`) → свернуть переводы строк → нейтрализовать `@mention` (удалить `@`) и cross-ref (`#123` → `issue-123`) → ограничить 120 символами. Если после очистки пусто — убрать вставку и использовать шаблон без неё.
 - Ограничьте общую длину тела ответа 280 символами.
-- Проверка владения тредом перед POST: запрос узла GraphQL → `pullRequest.number` совпадает, а `repository.id` совпадает с заголовком `Repository node id` файла состояния. При несовпадении пропустите строку, запишите `integrity_mismatch`, прервите раунд (не продолжайте POST для других строк).
+- Проверка владения тредом перед POST: запрос узла GraphQL → `pullRequest.number` совпадает, а `repository.id` совпадает с полем `drive_to_merge.repository_node_id` раздела `Drive to Merge` task report. При несовпадении пропустите строку, запишите `integrity_mismatch`, прервите раунд (не продолжайте POST для других строк).
 - Проверка гонки перед POST: если после получения данных на фазе 2.3 тред разрешил кто-то другой, пропустите его (запишите `already_resolved`).
 
 ## 3.5 Commit + push
@@ -87,12 +87,12 @@ if [ -n "$COPILOT_NODE_ID" ]; then
   # not a non-zero exit code. Without this check the failure is silent.
   if jq -e '.errors // empty' <<<"$MUTATION_OUT" >/dev/null 2>&1 || [ -z "$MUTATION_OUT" ]; then
     # Record once, stop trying for the rest of this PR's lifetime.
-    # Downgrade state-file header field `Copilot node id:` to the sentinel `unavailable`.
+    # Downgrade task report field `drive_to_merge.copilot_node_id` to the sentinel `unavailable`.
     COPILOT_NODE_ID=""
   fi
 fi
 ```
 
-После определения сохраните `$COPILOT_NODE_ID` в заголовке файла состояния (не запрашивайте его в каждом раунде). Если поиск вернул пустое значение или mutation вернула `errors`, запишите в заголовок sentinel `Copilot node id: unavailable` (единственный предусмотренный схемой способ отметить это; НЕ придумывайте отдельное поле `copilot_unavailable`) и прекратите попытки до конца жизни этого PR.
+После определения сохраните `$COPILOT_NODE_ID` в поле `drive_to_merge.copilot_node_id` раздела task report (не запрашивайте его в каждом раунде). Если поиск вернул пустое значение или mutation вернула `errors`, запишите sentinel `drive_to_merge.copilot_node_id: unavailable` (единственный предусмотренный схемой способ отметить это; НЕ придумывайте отдельное поле `copilot_unavailable`) и прекратите попытки до конца жизни этого PR.
 
 GitLab: `glab mr update $MR_IID --reviewer <user>` для людей; у GitLab нет полноценного аналога bot-review Copilot — пропустите.

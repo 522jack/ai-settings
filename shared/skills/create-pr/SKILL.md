@@ -5,6 +5,8 @@ description: "Создать draft/ready PR или MR текущей ветки,
 
 # Создание PR/MR
 
+Отчётность: прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Наследуйте стабильный task slug; main обновляет только раздел `PR` в единственном `swarm-report/<task-slug>.md`. Специалисты возвращают краткую receipt в ответе, не создают отчётные файлы. Resume state хранится в том же разделе; legacy artifacts допустимы только для чтения.
+
 Выберите mode из текущего запроса/сессии; действие PR authorizes соответствующую публикацию, без повторного общего permission gate. Не распространяйте это разрешение на commits, reviewer notifications, code, tests или merge.
 
 | Mode | Preconditions | Detail to load |

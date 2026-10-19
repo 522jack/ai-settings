@@ -1,6 +1,6 @@
 # Regression mode
 
-Вход `regression-scenario`: root cause, reproduce, expected/actual, exact fixed files/commits (`<slug>-debug.md` или caller hint). Один целевой case; пропустить широкое coverage discovery/prioritization. Unit предпочтителен; integration только при необходимых real collaborators. Тест проверяет observable contract, не форму implementation.
+Вход `regression-scenario`: root cause, reproduce, expected/actual, exact fixed files/commits (раздел `Debug` task report или caller hint; legacy debug file только чтение). Один целевой case; пропустить широкое coverage discovery/prioritization. Unit предпочтителен; integration только при необходимых real collaborators. Тест проверяет observable contract, не форму implementation.
 
 ## RED/GREEN evidence
 
@@ -10,10 +10,10 @@
 4. RED+GREEN → VERIFIED receipt. GREEN на buggy code → INEFFECTIVE: сообщить пропущенный аспект, делегировать изменение дизайна теста, а не спасать ложную assertion. Build/env failure → NOT_ATTEMPTED/FAILED без заявления о RED.
 5. Cleanup только task-owned temporary worktree/files после evidence; не использовать reset --hard/clean в пользовательском дереве. Новые test files сохранять и добавлять в git; ineffective case не представлять завершённой защитой.
 
-После VERIFIED выполните relevant существующий suite (не весь проект, если required rules не требуют); mobile runtime QA только при explicit request. Тест не написан / ineffective / still failing after 3 содержательных исправлений → `swarm-report/<slug>-regression-coverage.md`:
+После VERIFIED выполните relevant существующий suite (не весь проект, если required rules не требуют); mobile runtime QA только при explicit request. Тест не написан / ineffective / still failing after 3 содержательных исправлений → main обновляет подраздел `Tests / Regression diagnosis` task report:
 
 ```markdown
-# Regression Coverage Diagnosis: <slug>
+### Regression diagnosis
 Date: <date>
 Status: INEFFECTIVE | FAILED | NOT_ATTEMPTED
 ## What was tried
@@ -24,6 +24,6 @@ Status: INEFFECTIVE | FAILED | NOT_ATTEMPTED
 <required setup/design change; no unsolicited production edit>
 ```
 
-`swarm-report/<slug>-write-tests.md` содержит filenames, tested state hashes, RED/GREEN commands/results и строку `Regression contract: VERIFIED — RED on <buggy state>, GREEN on <fixed state>` либо реальный non-verified status + diagnosis path. Не заявлять GREEN with fix до реального запуска.
+Раздел `Tests` единого `swarm-report/<task-slug>.md` содержит filenames, tested state hashes, RED/GREEN commands/results и строку `Regression contract: VERIFIED — RED on <buggy state>, GREEN on <fixed state>` либо реальный non-verified status + ссылка на подраздел diagnosis. Не заявлять GREEN with fix до реального запуска.
 
 Commit/push только если прямо разрешены текущей задачей/сессией, только разрешённая feature/fix branch; regression mode сам по себе не даёт этой авторизации. Не обходите hooks, не переписывайте историю. При разрешённом commit subject называет конкретный regression scenario.

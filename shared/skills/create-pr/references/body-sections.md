@@ -14,7 +14,7 @@ Referenced from: `plugins/developer-workflow/skills/create-pr/SKILL.md` (§7.1).
 ## Артефакты
 <!-- Маркированный список существующих путей swarm-report/ и docs/ -->
 - План: docs/plans/<slug>/plan.md
-- План тестирования: swarm-report/<slug>-test-plan.md
+- Отчёт задачи: swarm-report/<task-slug>.md (проверки, review, приёмка)
 - ...
 
 ## Как тестировать

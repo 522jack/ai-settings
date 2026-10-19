@@ -5,9 +5,9 @@ description: "Создать приоритизированный докумен
 
 # План тестирования
 
-Вход: spec/AC/design/implementation и границы цели. Сопоставьте источники; code-only behavior `[inferred from code]`, расхождения — Findings. Slug caller→explicit inline→feature kebab-case.
+Вход: spec/AC/design/implementation и границы цели. Сопоставьте источники; code-only behavior `[inferred from code]`, расхождения — Findings. Task-slug caller→explicit inline→feature kebab-case выбирается один раз для всей задачи и наследуется подзадачами; slug permanent документа может отличаться от task-slug.
 
-Выход всегда `docs/testplans/<slug>-test-plan.md`, frontmatter type:test-plan/slug, new file git add. Только при переданном caller slug создайте `swarm-report/<slug>-test-plan.md` receipt: прочитайте [receipt-format.md](references/receipt-format.md). Самостоятельный запуск без переданного slug не создаёт receipt; имя permanent file всё равно по выведенному slug. Spec.platform копируется в receipt дословно, иначе empty.
+Выход всегда `docs/testplans/<slug>-test-plan.md`, frontmatter type:test-plan/slug, new file git add. Прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md` и [receipt-format.md](references/receipt-format.md): main сохраняет краткий receipt в `## Test plan` общего `swarm-report/<task-slug>.md`, в том числе при самостоятельном запуске. Специалист возвращает текст и не пишет отчёт. Spec.platform копируется в receipt дословно, иначе empty.
 
 При записи прочитайте только применимый вариант [format-templates.md](references/format-templates.md): Standard для UI/mixed, lightweight Given/When/Then для non-UI без Steps/Expected Result columns (отметить Findings). Фазы → один файл, Phase N subsections и receipt phase_coverage. Тесты TC-N последовательны; каждый проверяет отдельный observable outcome, Type + Type rationale обязательны; источники traceable, scope smallest sufficient. Реальная coverage, не квота 15–30 cases.
 

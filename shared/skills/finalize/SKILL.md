@@ -5,9 +5,11 @@ description: "Выполнить полный цикл независимого 
 
 # Финализация
 
+Отчётность: прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Наследуйте стабильный task slug; main обновляет только раздел `Review / Quality` в единственном `swarm-report/<task-slug>.md`. Специалисты возвращают краткую receipt в ответе, не создают отчётные файлы. Resume state хранится в том же разделе; legacy artifacts допустимы только для чтения.
+
 Явный finalize сохраняет полный цикл: однократный deep scan → independent semantic review → scoped simplification → применимые toolkit/domain reviews → fixes/rechecks. Не является автоматическим gate каждого малого изменения: ordinary workflow использует targeted checks и одно независимое semantic review; high-risk (auth/security/data loss/schema/concurrency/public API/CLI/architecture) — finalize + acceptance.
 
-Вход: slug, task/AC, текущая ветка (не переключайте), optional `docs/plans/<slug>/plan.md`/legacy `<slug>-plan.md` или `<slug>-debug.md`. Определите remote default branch, merge-base; материализуйте `swarm-report/<slug>-diff.txt`, включая staged/unstaged/relevant untracked изменения. Зафиксируйте проверяемое состояние code+scope+environment; чужие изменения не присваивайте себе.
+Вход: slug, task/AC, текущая ветка (не переключайте), optional `docs/plans/<slug>/plan.md`/legacy `<slug>-plan.md` или раздел `Debug` task report (legacy `<slug>-debug.md` только чтение). Определите remote default branch, merge-base; получите полный diff, включая staged/unstaged/relevant untracked изменения, и передайте reviewers через runtime context либо временный файл вне `swarm-report/`. Зафиксируйте проверяемое состояние code+scope+environment; чужие изменения не присваивайте себе.
 
 Флаги: `--max-rounds N` (≥1, default 3); `--allow-warn` (совместимость, WARN не блокирует); `--deep-scan-effort`, `--skip-deep-scan` → [deep-scan.md](references/deep-scan.md). `--skip-experts` и `--skip-security-review REASON` — явно запрошенные skips с записью причины; не скрывают BLOCK. `--coverage-audit` только после explicit tests/coverage request.
 
@@ -23,4 +25,4 @@ BLOCK: critical/major confidence ≥75; Non-negotiable violation всегда BL
 
 После failed fix/check допускается одна узкая попытка исправления; не сработала — отмените только собственный patch, исходный finding остаётся BLOCK. Повторите affected review после реальной правки, не все роли по таймеру. PASS при отсутствии BLOCK и зелёных required checks; WARN/NIT перечислить. Persistent genuine BLOCK после default 3 раундов → ESCALATE, с доказательствами попыток. Если ошибка требует нового scope/architecture/access — сообщите сразу, не расширяйте задачу.
 
-При выходе прочитайте [reports.md](references/reports.md), запишите detailed finalize + terse quality receipt. Не коммитьте/пушьте без текущей авторизации, не обходите hooks/CI; не переключайте ветку и не удаляйте пользовательские изменения.
+При выходе прочитайте [reports.md](references/reports.md), обновите разделы `Review` и `Quality` единого task report без дублирования evidence. Не коммитьте/пушьте без текущей авторизации, не обходите hooks/CI; не переключайте ветку и не удаляйте пользовательские изменения.

@@ -65,4 +65,4 @@ For GitLab: `glab ci view` on the pipeline id from `MR_INFO.head_pipeline.id`, o
 ## Защита от цикла сбоев
 
 Если одна и та же проверка не проходит 3 раунда подряд без нового коммита с диагностикой (та же сигнатура ошибки),
-остановитесь и покажите blocker. Запишите его в `Blockers raised` файла состояния и спросите пользователя, что делать.
+остановитесь и покажите blocker. Запишите его в `drive_to_merge.blockers_raised` раздела `Drive to Merge` task report и спросите пользователя, что делать.

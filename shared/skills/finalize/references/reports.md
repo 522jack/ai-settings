@@ -1,22 +1,23 @@
-# Finalize artifacts
+# Finalize в едином task report
 
-Запишите при PASS и ESCALATE:
+Main обновляет `Review` и `Quality` в `swarm-report/<task-slug>.md` по `$HOME/dotfiles/ai/shared/rules/task-report.md`, при PASS и ESCALATE. Специалисты возвращают receipt в ответе.
 
-`swarm-report/<slug>-finalize.md`: date, branch/base, code_hash/scope_hash/environment identity, max_rounds/rounds_run, Exit PASS|ESCALATE, selected/skipped phases + reasons, reused checks with artifact/state, findings severity/confidence/location/failure scenario, fixes, unresolved BLOCKs, remaining WARN/NIT, explicitly acknowledged risks, actual commits (если разрешены).
+`Review`: branch/base, max_rounds/rounds_run, Exit PASS|ESCALATE, выбранные/пропущенные фазы с существенными причинами, reuse со ссылкой на раздел и exact state. Findings — только реальные: severity/confidence/location/failure scenario, исправление или unresolved BLOCK/WARN/NIT. Сохраняйте явно принятые риски отдельно от BLOCK; Non-negotiables не переводите в accepted risk. Сырые diff/logs и повторы результатов не сохраняйте.
 
-`swarm-report/<slug>-quality.md` — downstream receipt:
+`Quality` — компактная downstream receipt:
 
-```markdown
-# Quality receipt: <slug>
-Status: PASS | FAIL
-Date: <ISO8601>
-Code hash: <committed + staged + unstaged + relevant untracked state>
-Scope hash: <task/requirements/review scope>
-Environment: <toolchain/config/runtime identity>
-Detail: swarm-report/<slug>-finalize.md
-Escalate: true  # only ESCALATE
+```yaml
+quality:
+  status: PASS | FAIL
+  date: <ISO8601>
+  code_hash: <committed + staged + unstaged + relevant untracked state>
+  scope_hash: <task/requirements/review scope>
+  environment: <toolchain/config/runtime identity>
+  review: "#review"
+  checks: "#checks"
+  escalate: true  # only ESCALATE
 ```
 
-Exit PASS → Status PASS; ESCALATE → FAIL. Date сохраняется для legacy consumers, но сама дата не доказывает freshness: acceptance может reuse code review лишь при точном state match.
+Exit PASS → Status PASS; ESCALATE → FAIL. Дата не доказывает freshness: acceptance reuse code review лишь при точном state match. `checks` указывает на конкретные check records с командами, результатами и exact code/scope/environment identity; при отсутствии проверок не выдумывайте evidence. Разделы связывайте ссылками, не копируйте findings. Legacy finalize/quality files можно читать, новые по старым путям не создавайте.
 
-Chat: verdict, rounds, основные fixes или unresolved BLOCK, ссылка на receipt, необходимое решение. Не вставляйте полный log. Явно принятое решение пользователя о риске храните отдельно от unresolved BLOCK; Non-negotiables не переводите в accepted risk.
+Chat: verdict, rounds, основные fixes либо unresolved BLOCK, ссылка на task report и необходимое решение. Actual commits отмечайте только если разрешены и выполнены.

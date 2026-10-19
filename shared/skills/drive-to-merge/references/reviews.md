@@ -22,7 +22,7 @@ git diff "<analyzed_through_sha>"...HEAD   # new commits since last analysis
 
 Иначе (sha пуст или rebase переписал историю так, что sha больше не является предком) перестройте модель по полному diff (`git diff "origin/$BASE"...HEAD`) и сбросьте `analyzed_through_sha` на текущий `HEAD`.
 
-Согласуйте результат с кэшированной моделью и обновите `analyzed_through_sha` до нового `HEAD`. Сохраните краткое резюме модели и `analyzed_through_sha` в файле состояния (см. [`setup.md`](setup.md), `Branch change model`), чтобы модель пережила сжатие контекста; при возобновлении используйте кэшированную модель и перечитывайте только delta после сохранённого sha (с тем же защитным условием).
+Согласуйте результат с кэшированной моделью и обновите `analyzed_through_sha` до нового `HEAD`. Сохраните краткое резюме модели и `analyzed_through_sha` в разделе `Drive to Merge` task report (см. [`setup.md`](setup.md), `drive_to_merge.branch_change_model`), чтобы модель пережила сжатие контекста; при возобновлении используйте кэшированную модель и перечитывайте только delta после сохранённого sha (с тем же защитным условием).
 
 ## 2.3.1 Fetch
 
@@ -50,8 +50,8 @@ Diff ветки уже загружен в модель изменений ве�
 ## 2.3.2 Фильтрация перед классификацией
 
 - Пропускайте ответы в уже разрешённых тредах.
-- Пропускайте собственные прежние ответы навыка — определяйте их по условию `(author == principal) AND (comment id OR body signature matches a state file Commitments row with replied: true)`. НЕ пропускайте безусловно каждый комментарий от principal: пользователь тоже может писать с того же аккаунта, и такие комментарии нужно считать входными данными reviewer.
-- Пропускайте комментарии, уже покрытые строкой в `Commitments` файла состояния с `replied: true`.
+- Пропускайте собственные прежние ответы навыка — определяйте их по условию `(author == principal) AND (comment id OR body signature matches a task report drive_to_merge.commitments entry with replied: true)`. НЕ пропускайте безусловно каждый комментарий от principal: пользователь тоже может писать с того же аккаунта, и такие комментарии нужно считать входными данными reviewer.
+- Пропускайте комментарии, уже покрытые строкой в `drive_to_merge.commitments` раздела `Drive to Merge` task report с `replied: true`.
 
 ## 2.3.3 Классификация каждого оставшегося пункта
 

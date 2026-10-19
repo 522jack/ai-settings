@@ -2,16 +2,9 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 
 # Acceptance — агрегация, формат receipt и маршрутизация
 
-Сначала прочитайте frontmatter каждого `swarm-report/<slug>-acceptance-<check>.md` (verdict +
-severity + confidence + domain_relevance + blocked_on). Читайте тело только если
-`verdict != PASS`. Не вставляйте тела артефактов — ссылайтесь на них.
+Сначала прочитайте check metadata из `## Acceptance` общего `swarm-report/<task-slug>.md` (verdict, severity, confidence, domain_relevance, blocked_on). Подробности нужны только для non-PASS; не копируйте raw output.
 
-**Отсутствующий артефакт проверки.** Шаг 2.5 записывает заглушку для пропущенного `code-reviewer`; шаг 3.3
-записывает артефакт даже при сбое build-smoke. Если запланированный артефакт проверки всё же
-отсутствует во время агрегации, считайте проверку `verdict: FAIL` с
-`blocked_on: per-check artifact missing` — не отбрасывайте её молча. `blocked_on` —
-каноническое поле для отображения нерешённых условий согласно схеме проверки; отдельного поля
-`error:` нет.
+Если planned result отсутствует, запишите `FAIL`, `blocked_on: per-check result missing`. Не отбрасывайте проверку; отдельного поля `error` нет. Main — единственный писатель, reviewers возвращают результаты текстом.
 
 ## Агрегация — правила PoLL
 
@@ -44,80 +37,26 @@ FAIL покрытия AC без связанной ошибки P0).
 
 ## Формат receipt
 
-Save to `swarm-report/<slug>-acceptance.md`. Legacy fields preserved; new sections appended.
+Main обновляет только `## Acceptance` в `swarm-report/<task-slug>.md`. Не создавайте acceptance/check/state файлы. Краткий формат:
 
 ```markdown
-# Acceptance: <slug>
+## Acceptance
+- Status: VERIFIED | FAILED | PARTIAL; cycle: N/3; date: <date>.
+- Inputs: spec/AC/repro, permanent test plan; test_plan_source: receipt|mounted|on-the-fly|absent.
+- Context: project_type, platform override, ecosystem, mobile_manual_requested; pointers на upstream sections.
+- Identity: diff_hash, spec_hash, test_plan_hash, scope_hash, environment/command.
+- State: planning|running|aggregating|done; planned/completed checks и компактная verdict history.
 
-**Status:** VERIFIED / FAILED / PARTIAL
-**Date:** <date>
-**Type:** Feature / Bug fix
-**Project type:** <project_type>
-**Project type override:** <spec | user | none>
-**Ecosystem:** <ecosystem>
-**Mobile manual requested:** true / false
-**Spec source:** [что использовано]
-**Test plan:** [разрешённый постоянный путь / создан на лету / none]
-**test_plan_source:** receipt | mounted | on-the-fly | absent
-**Context artifacts:** [пути к upstream-артефактам, использованным как вход — например, research.md, debug.md, write-tests.md, quality.md]
+| Check / trigger | Agent / tool | Verdict | Severity / confidence / relevance | Evidence / blocked_on |
+|---|---|---|---|---|
+| code / changed code | code-reviewer | PASS | null | command/result или существующий pointer |
 
-## Idempotency Hashes
-- `diff_hash`: <digest of committed/staged/unstaged/relevant untracked code state>
-- `spec_hash`: <sha256 of the spec file bytes, or `null` if no file spec>
-- `test_plan_hash`: <sha256 of the permanent test plan, or `null`>
-- `scope_hash`: <requirements/AC/scenario scope identity>
-- `environment`: <toolchain/dependencies/config/runtime identity and check command>
-
-Identity фиксируется согласно [state-and-schema.md](state-and-schema.md). `diff_hash`
-не ограничивается `git diff <base>...HEAD`: HEAD/Date не доказывают состояние working tree.
-Для каждой reused check сохраните pointer на исходный artifact и evidence неизменности
-проверенного code + scope + environment/command. Общий хэш сам по себе не доказывает
-неизменность отдельных unaffected checks. Legacy receipt без достаточного exact-state
-evidence не позволяет reuse. Решения о повторе — в [re-verification.md](re-verification.md).
-
-## Check Plan
-- список выполненных проверок, по одной в строке, с их триггером;
-- например, `business-analyst` (покрытие AC) — вызвано из-за spec.acceptance_criteria_ids;
-- например, `ux-expert` — не вызван (нет design.figma).
-
-## Check Results
-
-| Check | Agent / Tool | Verdict | Severity | Confidence | Artifact |
-|---|---|---|---|---|---|
-| Ручной QA | manual-tester | … / SKIPPED (`mobile runtime QA not requested`) | … | … | swarm-report/<slug>-acceptance-manual.md / — |
-| Ревью кода | code-reviewer | … | … | … | swarm-report/<slug>-acceptance-code.md |
-| Покрытие AC | business-analyst | … | … | … | swarm-report/<slug>-acceptance-ac-coverage.md |
-| Дизайн | ux-expert | … | … | … | swarm-report/<slug>-acceptance-design.md |
-| A11y | ux-expert | … | … | … | swarm-report/<slug>-acceptance-a11y.md |
-| Безопасность | security-expert | … | … | … | swarm-report/<slug>-acceptance-security.md |
-| Производительность | performance-expert | … | … | … | swarm-report/<slug>-acceptance-performance.md |
-| Архитектура | architecture-expert | … | … | … | swarm-report/<slug>-acceptance-architecture.md |
-| Конфигурация сборки | build-engineer | … | … | … | swarm-report/<slug>-acceptance-build-config.md |
-| DevOps | devops-expert | … | … | … | swarm-report/<slug>-acceptance-devops.md |
-| Smoke сборки | bash | … | … | … | swarm-report/<slug>-acceptance-build.md |
-
-## Convergence signals
-Issues, независимо поднятые 2+ проверками. Самый сильный сигнал реальных проблем.
-Для каждой укажите одной строкой file:line или AC id и список проверок, которые её отметили.
-
-## Summary
-[1–3 предложения. Если PARTIAL с blocked_on — сначала укажите blocker. Если есть convergence
-signal — упомяните его в первом предложении.]
-
-## Test Results
-- Total: [n] | Passed: [n] | Failed: [n] | Blocked: [n]
-
-## Bugs Found
-[Перечислите по серьёзности — сначала P0, затем P1, P2, P3. Для каждой укажите ссылку на
-артефакт проверки, который о ней сообщил.]
-
-## Bug Reproduction Check (bug fix only)
-- Шаги воспроизведения из debug.md: [выполнены / неприменимо]
-- Ошибка воспроизводится после исправления: [да / нет]
-
-## Recommendation
-[Ship / Do not ship / Ship with known issues — и почему]
+- Findings: P0–P3 / file:line или AC, краткое последствие и исправление; convergence и contradictions по необходимости.
+- TC: total / passed / failed / blocked; bug fix: repro steps и воспроизводится ли после fix.
+- Recommendation: Ship / Do not ship / Ship with known issues — причина, ограничения и следующий шаг.
 ```
+
+Machine metadata/state размещайте fenced YAML внутри этого раздела по [state-and-schema.md](state-and-schema.md), не вторым frontmatter. Check records для manual/code/build/ac-coverage/design/a11y/security/performance/architecture/build-config/devops независимы. Summary 1–3 предложения; для PARTIAL с blocked_on сначала blocker. Evidence подтверждает точный checked code + scope + environment, включая working tree; HEAD/Date и общий hash недостаточны для reuse. Legacy результаты — только read и только с достаточным evidence. Подробности repeat — [re-verification.md](re-verification.md).
 
 ## Маршрутизация (потребляется вызывающим кодом)
 

@@ -17,7 +17,7 @@
 
 | Когда | Прочитать |
 |---|---|
-| Общение и отчёт | `communication.md` |
+| Общение и отчёт | `communication.md`; при ведении отчёта — `task-report.md` |
 | Делегирование/новый адаптер | `runtime-adapter.md`, `orchestration.md` |
 | Изменение кода/config/поведения | `code-policies.md`, `workflow.md`, `qa-and-testing.md`; `task-types.md` для выбора baseline/проверки |
 | Ошибка, retry, большой вывод или расширение scope | `task-execution.md` |

@@ -2,6 +2,8 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 
 # Acceptance — запросы под-проверок для агентов
 
+Специалисты возвращают компактный текст по схеме проверки; только main сохраняет его под `## Acceptance` общего `swarm-report/<task-slug>.md`. Путь/секция в prompt — адрес результата для main, не разрешение специалисту писать файлы.
+
 ## Запуск `manual-tester` (UI-ветвь)
 
 Для Android/iOS запускать только при `mobile_manual_requested == true`, установленном явной просьбой
@@ -13,7 +15,7 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 2. **Test plan** — полный набор тестовых случаев.
 3. **Подсказки цели** (необязательно) — устройство/URL, если пользователь уже назвал их.
 4. **Область** — какие уровни (по умолчанию: Smoke + Feature).
-5. **Путь вывода** — `swarm-report/<slug>-acceptance-manual.md` со схемой проверки.
+5. **Адрес результата** — `## Acceptance` → check `manual` общего отчёта со схемой проверки.
 
 Если агент возвращает `WARN` с `blocked_on`, покажите этот текст пользователю как главное
 требование следующего шага до повторного запуска acceptance.
@@ -24,7 +26,7 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 1. **Описание задачи** — одно предложение из spec или заголовка PR.
 2. **Указатель плана** — путь к receipt реализации или отчёту исследования, если есть.
 3. **Git diff** — текущий diff.
-4. **Путь вывода** — `swarm-report/<slug>-acceptance-code.md`.
+4. **Адрес результата** — `## Acceptance` → check `code` общего отчёта.
 
 Правила вердикта: `PASS`, если нет семантических ошибок, логических ошибок или проблем безопасности;
 `WARN` для style/minor; `FAIL` для блокеров.
@@ -46,9 +48,9 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 **до** перехода к шагу 3 (не блокируйте сообщение fan-out вопросом).
 
 Если `ecosystem` или команду определить нельзя, пропустите с `verdict: SKIPPED` и
-`blocked_on: build command unknown`. On success write `verdict: PASS`; on failure capture the
-last ~50 lines and write `verdict: FAIL`. Receipt at
-`swarm-report/<slug>-acceptance-build.md`.
+`blocked_on: build command unknown`. On success return `verdict: PASS`; on failure capture the
+last ~50 lines and return `verdict: FAIL`. Результат для main:
+`## Acceptance` → check `build` общего отчёта.
 
 ## Запуск `business-analyst` (условный — покрытие AC)
 
@@ -61,8 +63,8 @@ last ~50 lines and write `verdict: FAIL`. Receipt at
    случая (например, `Source: AC-1` или `Source: AC-2, AC-3`). Это каноническое сопоставление,
    используемое `generate-test-plan`; не придумывайте новое поле `AC-ref:`.
 4. **Вывод manual-tester** (если запускается) — указатель на
-   `swarm-report/<slug>-acceptance-manual.md`.
-5. **Путь вывода** — `swarm-report/<slug>-acceptance-ac-coverage.md`.
+   `## Acceptance` → check `manual` общего отчёта.
+5. **Адрес результата** — `## Acceptance` → check `ac-coverage` общего отчёта.
 
 Правила вердикта: `PASS`, если у каждого `AC-N` есть хотя бы один указатель на свидетельство;
 `WARN` для слабого покрытия (единственное свидетельство для высокорискового AC); `FAIL` для любого
@@ -75,13 +77,13 @@ last ~50 lines and write `verdict: FAIL`. Receipt at
 даже если задано `non_functional.a11y`: у backend/library/CLI нет поверхности для аудита a11y.
 
 Design-review и a11y могут сработать за один вызов. При срабатывании обоих один раз запустите `ux-expert`
-с mode `both`; агент записывает **два** артефакта (по одному на вопрос), чтобы агрегация на шаге 4
+с mode `both`; агент возвращает **две** check records (по одному на вопрос), чтобы агрегация на шаге 4
 рассматривала их как независимые проверки:
 
-- `swarm-report/<slug>-acceptance-design.md` with `check: design`
-- `swarm-report/<slug>-acceptance-a11y.md` with `check: a11y`
+- `## Acceptance` → check `design` общего отчёта with `check: design`
+- `## Acceptance` → check `a11y` общего отчёта with `check: a11y`
 
-Если срабатывает только один режим, записывается только соответствующий артефакт.
+Если срабатывает только один режим, возвращается только соответствующая check record.
 
 Содержимое запроса:
 1. **Mode** — `design-review` / `a11y` / `both`.
@@ -90,7 +92,7 @@ Design-review и a11y могут сработать за один вызов. П
 4. **Цель a11y** — значение `non_functional.a11y` (например, `wcag-aa`).
 5. **Указатель на запущенное приложение** — подсказки цели; агент читает состояние приложения через MCP
    только если среда уже подготовлена, иначе работает по скриншотам/коду.
-6. **Пути вывода** — одно или оба перечисленных выше имени файлов в зависимости от режима.
+6. **Адреса результатов** — одно или оба перечисленных выше check IDs в зависимости от режима.
 
 Правила вердикта: `PASS`, если дизайн соответствует эталону и критерии a11y выполнены; `WARN` для
 небольших отклонений отступов/цветов или мягких сбоев AA; `FAIL` для отсутствующих компонентов,
@@ -104,7 +106,7 @@ Design-review и a11y могут сработать за один вызов. П
 1. **Список рисков** — подмножество пересечения.
 2. **Diff** — полный git diff.
 3. **Spec** — путь к файлу.
-4. **Путь вывода** — `swarm-report/<slug>-acceptance-security.md`.
+4. **Адрес результата** — `## Acceptance` → check `security` общего отчёта.
 
 Правила вердикта: `PASS`, если нет применимых нарушений OWASP / project-security-rule; `WARN` для
 небольших возможностей усиления защиты; `FAIL` для эксплуатируемых проблем, утечек секретов или нарушений
@@ -117,7 +119,7 @@ Design-review и a11y могут сработать за один вызов. П
 Содержимое запроса:
 1. **Цель SLA** — из `non_functional.sla` или неявный baseline `perf-critical`.
 2. **Diff** — полный git diff.
-3. **Путь вывода** — `swarm-report/<slug>-acceptance-performance.md`.
+3. **Адрес результата** — `## Acceptance` → check `performance` общего отчёта.
 
 Правила вердикта: `PASS`, если нет регрессии; `WARN` для пограничных результатов; `FAIL` для нарушений.
 
@@ -131,7 +133,7 @@ Design-review и a11y могут сработать за один вызов. П
 2. **Diff** — полный git diff (только сработавшие файлы и их непосредственные соседи).
 3. **Карта модулей** — список затронутых модулей верхнего уровня, обнаруженных в
    `settings.gradle*` / workspaces `package.json` / участниках workspace `Cargo.toml`.
-4. **Путь вывода** — `swarm-report/<slug>-acceptance-architecture.md` с `check: architecture`.
+4. **Адрес результата** — `## Acceptance` → check `architecture` общего отчёта с `check: architecture`.
 
 Правила вердикта: `PASS`, если публичные контракты сохранены и направление зависимостей модулей
 чистое; `WARN` для стилевых проблем (например, отсутствует аннотация deprecation, есть предотвратимая
@@ -146,7 +148,7 @@ Design-review и a11y могут сработать за один вызов. П
 1. **Изменённые build-файлы** — точный список файлов из diff.
 2. **Diff** — только эти файлы и затронутые манифесты модулей.
 3. **Ecosystem** — определённый на шаге 0 `ecosystem` (определяет toolchain для проверки агентом).
-4. **Путь вывода** — `swarm-report/<slug>-acceptance-build-config.md` с
+4. **Адрес результата** — `## Acceptance` → check `build-config` общего отчёта с
    `check: build-config`.
 
 Примечание: `check: build` уже используется non-UI smoke сборки (§3.3). Экспертное ревью
@@ -167,7 +169,7 @@ Design-review и a11y могут сработать за один вызов. П
 2. **Diff** — только CI/release-файлы.
 3. **Контекст репозитория** — `public` или `private` (влияет на рекомендации по обработке секретов),
    а также связанные манифесты marketplace/deployment, если они есть.
-4. **Путь вывода** — `swarm-report/<slug>-acceptance-devops.md` с `check: devops`.
+4. **Адрес результата** — `## Acceptance` → check `devops` общего отчёта с `check: devops`.
 
 Правила вердикта: `PASS`, если работоспособность pipeline сохранена, секреты обрабатываются корректно,
 а rollout-gates остаются надёжными; `WARN` для небольших неэффективностей или отсутствующих защит

@@ -5,6 +5,8 @@ description: "Довести существующий PR/MR до слияния:
 
 # Доведение PR до слияния
 
+Отчётность: прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Наследуйте стабильный task slug; main обновляет только раздел `Drive to Merge` в единственном `swarm-report/<task-slug>.md`. Специалисты возвращают краткую receipt в ответе, не создают отчётные файлы. Resume state хранится в том же разделе; legacy artifacts допустимы только для чтения.
+
 Scope: existing PR/MR, CI/review fixes, явно разрешённые push/reply/re-request/merge. Не вводите новые features и follow-up issues. Modes default — конкретные действия/merge подтверждаются лишь если их авторизация ещё отсутствует; `--auto`/«без подтверждений» — разрешённые действия автономно; `--dry-run` — один read-only analysis без mutations/messages. User stop сохраняется.
 
 1. [setup.md](references/setup.md) читайте при входе/resume: actual host/CLI/auth/PR metadata, branch/permissions и state. Closed/merged → terminal. Mode/authorization из текущей сессии приоритетнее legacy state.

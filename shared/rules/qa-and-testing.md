@@ -61,7 +61,7 @@ Source of truth определяет «готово»; при high-risk или �
 | Spec | слишком велик для удержания в голове; traceable ACs | `/write-spec` → `docs/specs/<slug>-spec.md` |
 | Test plan | структурированные исполнимые cases | `/generate-test-plan` → `docs/testplans/<slug>-test-plan.md` |
 | Design mockups | визуальные ACs UI/UX | Figma в spec `design.figma` или screenshots |
-| Debug artifact | только bug-fix — repro steps являются контрактом | `swarm-report/<slug>-debug.md` |
+| Debug artifact | только bug-fix — repro steps являются контрактом | раздел `Debug` в `swarm-report/<task-slug>.md` по [task-report.md](task-report.md) |
 | Behavioral baseline | migration / «shouldn't affect behavior» | зафиксирован до изменений (см. [[task-types]] § Before-state baseline) |
 
 **Behavioral baseline:** для «shouldn't affect behavior» / migration использовать уже доступные passing tests, сохранённые API snapshots, требования или предоставленные screenshots. Снимать новый baseline через mobile emulator/simulator/device можно только по явной просьбе пользователя. Если доступного baseline нет, задокументировать intended behavior, отсутствие runtime baseline и риск; это не должно автоматически запускать manual QA.

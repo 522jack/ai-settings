@@ -28,18 +28,20 @@ code review и build smoke без запуска приложения.
 Перед выбором ветви прочитайте следующее одним пакетным набором вызовов Read. Каждый элемент
 может завершиться ошибкой, трактуемой как отсутствие, — это ожидаемо:
 
-- `swarm-report/<slug>-test-plan.md` (receipt)
+- `## Test plan` в `swarm-report/<task-slug>.md` (receipt metadata)
 - `docs/testplans/<slug>-test-plan.md` (permanent)
-- `swarm-report/<slug>-debug.md` (bug-fix reproduction steps)
+- `## Debug` того же отчёта (bug-fix reproduction steps; legacy debug файл только read)
+
+При необходимости legacy receipt/debug можно прочитать без изменения; новые записи только в общем отчёте.
 
 Вместе со встроенными входными данными и источниками spec срабатывает одна из ветвей ниже. Запишите
 выбранную ветвь как `test_plan_source` в receipt.
 
 ### Ветвь 1 — Receipt присутствует (`test_plan_source: receipt`)
 
-**Условие:** существует `swarm-report/<slug>-test-plan.md`.
+**Условие:** есть metadata в `## Test plan` общего отчёта.
 
-Прочитайте YAML frontmatter receipt и загрузите `permanent_path`. Интерпретируйте `review_verdict`
+Прочитайте блок `test_plan` fenced YAML в разделе `## Test plan` и загрузите `permanent_path`. Интерпретируйте `review_verdict`
 согласно каноническому определению в `generate-test-plan/SKILL.md` §Receipt: считайте
 `PASS` / `WARN` / `skipped` as proceed; `FAIL` and `pending` as blockers that escalate
 возвращаемыми вызывающему коду и эскалируйте их, рекомендуя пересмотр через `multiexpert-review` до
@@ -52,8 +54,8 @@ code review и build smoke без запуска приложения.
 **Условие:** ветвь 1 не сработала **и** `docs/testplans/<slug>-test-plan.md` существует
 на диске без соответствующего receipt.
 
-При вызове без upstream receipt acceptance отвечает за mount-receipt. Создайте
-mount-receipt в `swarm-report/<slug>-test-plan.md` по каноническому формату из
+При вызове без upstream receipt acceptance отвечает за mount metadata. Main добавляет
+mount metadata в `## Test plan` общего отчёта по каноническому формату из
 `generate-test-plan/SKILL.md` §Receipt. Примените mount-переопределения: `status: Mounted`,
 `review_verdict: skipped`, `source_spec: existing (pre-orchestration)`. Derive
 `phase_coverage` по заголовкам фаз постоянного файла; опустите поле, если покрытие нельзя надёжно
@@ -62,7 +64,7 @@ mount-receipt в `swarm-report/<slug>-test-plan.md` по каноническо�
 ### Ветвь 3 — доступен встроенный test plan, spec или `debug.md` (`test_plan_source: on-the-fly`)
 
 **Условие:** ветви 1 и 2 не сработали **и** вызов предоставляет встроенный test plan,
-источник spec, `swarm-report/<slug>-debug.md` или любую их комбинацию.
+источник spec, раздел `## Debug` общего отчёта или любую их комбинацию.
 `debug.md` трактуется как источник, подобный spec, для проверки исправления ошибки, если нет receipt или
 permanent test plan exists, so this branch also covers the standalone "debug-only" case.
 
@@ -82,6 +84,6 @@ permanent test plan exists, so this branch also covers the standalone "debug-onl
 ### Ветвь 4 — ничего не доступно (`test_plan_source: absent`)
 
 **Условие:** нет receipt, постоянного файла, встроенного test plan, источника spec и
-`swarm-report/<slug>-debug.md` (путь исправления ошибки).
+раздел `## Debug` общего отчёта (путь исправления ошибки).
 
 Перейдите к §Step 1.5 Source-Missing Gate в SKILL.md. Не выполняйте проверки.
