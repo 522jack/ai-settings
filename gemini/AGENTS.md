@@ -8,7 +8,7 @@ This adapter applies the shared engineering contract to Gemini Agent Mode.
 - Use installed skills when their description matches the task. A user may invoke one explicitly with `@skill-name`.
 - If an instruction refers to a runtime-specific Claude or Codex tool that is unavailable, preserve the intent with the closest Android Studio capability. Do not claim that an unavailable tool or hook was run.
 - Android Studio does not provide this harness's Claude hooks. Run the relevant guard script manually when the shared rules require it and the Agent Mode terminal permission is available.
-- Gemini Agent Mode is the executing agent: it may edit project code after the user approves its changes. Do not apply the shared orchestrator-only ban on direct edits or its subagent requirement.
+- Before a new task, read and apply the execution mode section in `$HOME/dotfiles/ai/shared/AGENTS.md`. In single-agent mode, edit project files within Agent Mode permissions. If the user chooses subagents and delegation is unavailable, report the limitation and wait for their decision.
 
 ## Shared rules
 

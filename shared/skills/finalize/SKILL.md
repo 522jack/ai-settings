@@ -1,28 +1,28 @@
 ---
 name: finalize
-description: "Выполнить полный цикл независимого ревью качества и узких исправлений текущего diff. Применять по запросу finalize/подготовки к ревью или для high-risk workflow; reviewers выбираются по риску. Механические проверки и функциональная acceptance остаются отдельными навыками."
+description: "Проверить текущий diff по контракту и рискам, исправить замечания и повторить затронутые проверки. Применять по запросу finalize или при high-risk workflow."
 ---
 
 # Финализация
 
-Отчётность: прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Наследуйте стабильный task slug; main обновляет только раздел `Review / Quality` в единственном `swarm-report/<task-slug>.md`. Специалисты возвращают краткую receipt в ответе, не создают отчётные файлы. Resume state хранится в том же разделе; legacy artifacts допустимы только для чтения.
+Для разового запуска достаточно результата в чате или запрошенного документа. Если результат нужен другому этапу или для возобновления, обновите раздел по `$HOME/dotfiles/ai/shared/rules/task-report.md`.
 
-Явный finalize сохраняет полный цикл: однократный deep scan → independent semantic review → scoped simplification → применимые toolkit/domain reviews → fixes/rechecks. Не является автоматическим gate каждого малого изменения: ordinary workflow использует targeted checks и одно независимое semantic review; high-risk (auth/security/data loss/schema/concurrency/public API/CLI/architecture) — finalize + acceptance.
+В одиночном режиме main выполняет применимые этапы сам. В режиме с субагентами независимое ревью делает отдельный исполнитель. Пропущенные независимые проверки укажите в результате. Если независимость обязательна и недоступна, завершите с ESCALATE.
 
-Вход: slug, task/AC, текущая ветка (не переключайте), optional `docs/plans/<slug>/plan.md`/legacy `<slug>-plan.md` или раздел `Debug` task report (legacy `<slug>-debug.md` только чтение). Определите remote default branch, merge-base; получите полный diff, включая staged/unstaged/relevant untracked изменения, и передайте reviewers через runtime context либо временный файл вне `swarm-report/`. Зафиксируйте проверяемое состояние code+scope+environment; чужие изменения не присваивайте себе.
+Вход: задача/AC, текущая ветка и доступные plan/repro. Получите полный diff относительно применимой базы, включая staged, unstaged и относящиеся к задаче untracked изменения. Зафиксируйте проверяемое состояние, scope и среду. Сохраняйте пользовательские правки и текущую ветку.
 
 Флаги: `--max-rounds N` (≥1, default 3); `--allow-warn` (совместимость, WARN не блокирует); `--deep-scan-effort`, `--skip-deep-scan` → [deep-scan.md](references/deep-scan.md). `--skip-experts` и `--skip-security-review REASON` — явно запрошенные skips с записью причины; не скрывают BLOCK. `--coverage-audit` только после explicit tests/coverage request.
 
 ## Цикл
 
-0. Прочитайте [deep-scan.md](references/deep-scan.md) при применимом scan; выполните один раз, дедуплицируйте с A.
-1. **A:** независимый `code-reviewer` получает точную задачу, применимые Non-negotiables, context и полный diff. Не пропускайте A молча. Нет доступного reviewer → adapter limitation и escalation.
-2. **B:** проход упрощения runtime (`/simplify` или специалист) только в scope diff, без архитектурного редизайна/косметики. Изменения продуктового кода выполняет специалист; runtime auto-edit не отменяет запрет главной сессии. Не делайте лишний рефакторинг ради прохода. При failed simplification отмените только собственную правку, сохранив пользовательское дерево, запишите B reverted; не повторяйте B в том же раунде.
-3. **C/D:** определите реальные risk triggers; прочитайте только применимые разделы [reviewers.md](references/reviewers.md), запустите выбранных независимых reviewers. Нет trigger — skip, не фиксированные «три всегда».
-4. Исправления BLOCK делегируйте автору/инженеру, только в scope; обязательный adjacent file обновите. New tests только opt-in. После фактической мутации code/scope/env выполните соответствующие проверки; вызов check исполняет required project checks. Read-only переход фазы повторной проверки не требует. Reuse допустим только для точного состояния с конкретным artifact.
+0. При существенном риске примените [deep-scan.md](references/deep-scan.md). В одиночном режиме включите этот анализ в A и выполняйте его самостоятельно.
+1. **A:** проверьте diff по задаче, контракту и обязательным правилам. Самостоятельно в одиночном режиме. В режиме с субагентами передайте этот проход `code-reviewer`.
+2. **B:** оценивайте сложность в ходе A. Отдельный проход нужен при конкретном нерешённом замечании по сложности или явном запросе. Ограничьте правку текущим diff.
+3. **C/D:** примените критерии по реальным рискам из [reviewers.md](references/reviewers.md). В одиночном режиме проверьте их самостоятельно, в режиме с субагентами подключите только нужных reviewers.
+4. Исправьте подтверждённые замечания в выбранном режиме и повторите затронутые проверки после изменения. Новые тесты только по явному запросу. Обязательные проверки проекта сохраняются.
 
 BLOCK: critical/major confidence ≥75; Non-negotiable violation всегда BLOCK независимо от confidence. Minor ≥50 — NIT, без авто исправления. Critical security confidence 50 → verify/BLOCK. Не понижайте finding молча.
 
 После failed fix/check допускается одна узкая попытка исправления; не сработала — отмените только собственный patch, исходный finding остаётся BLOCK. Повторите affected review после реальной правки, не все роли по таймеру. PASS при отсутствии BLOCK и зелёных required checks; WARN/NIT перечислить. Persistent genuine BLOCK после default 3 раундов → ESCALATE, с доказательствами попыток. Если ошибка требует нового scope/architecture/access — сообщите сразу, не расширяйте задачу.
 
-При выходе прочитайте [reports.md](references/reports.md), обновите разделы `Review` и `Quality` единого task report без дублирования evidence. Не коммитьте/пушьте без текущей авторизации, не обходите hooks/CI; не переключайте ветку и не удаляйте пользовательские изменения.
+При передаче следующему этапу сохраните результат по [reports.md](references/reports.md). Иначе сообщите вердикт, исполнителя ревью, исправления и ограничения в чате. Коммит и push требуют авторизации. Обязательные hooks/CI действуют.

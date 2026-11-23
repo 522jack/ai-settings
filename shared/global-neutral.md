@@ -12,6 +12,8 @@ Runtime adapters are installed in their own harness-specific locations.
 
 ## Shared engineering rules
 
+Перед новой самостоятельной задачей прочитать и применить раздел «Режим выполнения задачи» из `$HOME/dotfiles/ai/shared/AGENTS.md`.
+
 @$HOME/dotfiles/ai/shared/rules/communication.md
 @$HOME/dotfiles/ai/shared/rules/code-policies.md
 @$HOME/dotfiles/ai/shared/rules/logging.md

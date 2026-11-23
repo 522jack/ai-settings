@@ -49,7 +49,7 @@ export default function (pi: ExtensionAPI) {
     description: "Run one custom subagent from the user's shared harness in a separate pi process",
     promptSnippet: "Delegate focused search, edit, review, build, or test work to a custom subagent",
     promptGuidelines: [
-      "Use run_subagent for project code edits, heavy codebase search, long-running checks, and specialist review when a matching subagent exists.",
+      "Use run_subagent only after the user has chosen subagent mode for the task.",
       "Choose mode=readOnly for investigation/review and mode=write only when the subagent must modify files.",
       "Keep run_subagent tasks focused and include expected output format, relevant files, constraints, and verification commands.",
       "Do not claim delegation happened unless run_subagent returned successfully.",

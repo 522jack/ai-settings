@@ -147,7 +147,7 @@
       "id": 6,
       "name": "eval-6-rate-limit-handling",
       "prompt": "Drive PR #104 to merge — enter the polling phase where a rate-limit response was just received.\n\nFixture:\n```json\n{\n  \"number\": 104,\n  \"state\": \"OPEN\",\n  \"isDraft\": false,\n  \"mergeable\": \"UNKNOWN\",\n  \"mergeStateStatus\": \"BLOCKED\",\n  \"reviewDecision\": \"REVIEW_REQUIRED\",\n  \"statusCheckRollup\": [{\"name\": \"build\", \"status\": \"IN_PROGRESS\"}],\n  \"reviews\": []\n}\n```\n\nLast API response headers (GitHub):\n```\nHTTP/2 429\nretry-after: 60\nx-ratelimit-limit: 5000\nx-ratelimit-remaining: 0\nx-ratelimit-reset: 1714000000\ndate: $(now - 10s)\n```\n\nRun in --dry-run mode — skill should choose next poll delay and explain the cache-window choice.",
-      "expected_output": "Skill schedules the next ScheduleWakeup at approximately the reset timestamp (≈ retry-after seconds from now), not a tight retry loop. Chosen delaySeconds is outside the cache-window dead zone 280–550s: either ≤270 (stay warm) or ≥600 (amortized cache miss). Skill explicitly rejects a tight retry / loops on 429. If the reset would land inside the dead zone, skill rounds up to ≥600s and explains the choice.",
+      "expected_output": "The next attempt uses the available nonblocking wakeup at or after the server reset. If wakeup is unavailable, the agent persists the next eligible check time and stops the round. It never retries in a tight loop.",
       "principle": "Respect 429 retry-after; pick delaySeconds outside 280–550s cache dead zone",
       "files": [],
       "assertions": [

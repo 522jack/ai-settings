@@ -18,7 +18,7 @@ Referenced from: `plugins/developer-workflow/skills/create-pr/SKILL.md` (§7.1).
 - ...
 
 ## Как тестировать
-<!-- Из приёмки задачи в test-plan.md или plan/tasks.md; список с флажками -->
+<!-- Из test plan, раздела задач plan.md или существующего tasks.md -->
 - [ ] Сценарий 1
 - [ ] Сценарий 2
 

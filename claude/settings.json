@@ -29,6 +29,7 @@
   },
   "enableWorkflows": true,
   "env": {
+    "CAVEMAN_DEFAULT_MODE": "off",
     "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false"
   },
@@ -266,14 +267,6 @@
             "command": "bash \"$HOME/dotfiles/ai/claude/hooks/run-context-mode-heal.sh\"",
             "statusMessage": "Healing context-mode cache...",
             "timeout": 10,
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "\"$HOME/dotfiles/ai/claude/hooks/context-mode-cache-heal.mjs\"",
             "type": "command"
           }
         ]
@@ -760,6 +753,12 @@
   "showClearContextOnPlanAccept": true,
   "skipAutoPermissionPrompt": true,
   "skipDangerousModePermissionPrompt": true,
+  "skillOverrides": {
+    "cavecrew": "user-invocable-only",
+    "caveman": "user-invocable-only",
+    "caveman-commit": "user-invocable-only",
+    "caveman-review": "user-invocable-only"
+  },
   "statusLine": {
     "command": "bash \"$HOME/dotfiles/ai/claude/hooks/caveman-statusline.sh\"",
     "type": "command"

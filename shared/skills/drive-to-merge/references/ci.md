@@ -59,7 +59,7 @@ For GitLab: `glab ci view` on the pipeline id from `MR_INFO.head_pipeline.id`, o
    | e2e   | network timeout            | flake                      | retry once                | — |
    ```
 4. Автоматически повторите инфраструктурный сбой один раз (`gh run rerun "$RUN_ID" --failed`). Настоящие сбои не повторяйте.
-5. Для строк с исправлением кода — делегируйте согласно **протоколу делегирования** (см. `references/delegation.md`, § Phase 3).
+5. Исправляйте код в выбранном режиме по [delegation.md](delegation.md).
 6. После появления исправлений: выполните push и вернитесь к фазе 2.1.
 
 ## Защита от цикла сбоев

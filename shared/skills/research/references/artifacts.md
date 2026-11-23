@@ -1,6 +1,6 @@
 # Research в едином task report
 
-После решения consortium (≥2 независимых нужных направления) main обновляет `Research` в `swarm-report/<task-slug>.md` по `$HOME/dotfiles/ai/shared/rules/task-report.md`. Slug наследуется от задачи; специалисты возвращают receipt в ответе.
+Если исследование передаётся дальше или возобновляется вне текущего контекста, main обновляет `Research` по `$HOME/dotfiles/ai/shared/rules/task-report.md`. Slug наследуется от задачи.
 
 До fan-out: status investigating|awaiting-clarification|done, scope/constraints, выбранные tracks и cursor незавершённой работы. При возврате gatherer обновляйте краткие значимые findings/источники; перед resume перечитывайте раздел. Без сырых ответов, отдельных state-файлов и копирования общего task context.
 

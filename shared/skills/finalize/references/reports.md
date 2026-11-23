@@ -1,6 +1,6 @@
 # Finalize в едином task report
 
-Main обновляет `Review` и `Quality` в `swarm-report/<task-slug>.md` по `$HOME/dotfiles/ai/shared/rules/task-report.md`, при PASS и ESCALATE. Специалисты возвращают receipt в ответе.
+При передаче или возобновлении main обновляет `Review` и `Quality` по `$HOME/dotfiles/ai/shared/rules/task-report.md`. В `Review` явно укажите, какие проверки выполнены самостоятельно и какие независимо.
 
 `Review`: branch/base, max_rounds/rounds_run, Exit PASS|ESCALATE, выбранные/пропущенные фазы с существенными причинами, reuse со ссылкой на раздел и exact state. Findings — только реальные: severity/confidence/location/failure scenario, исправление или unresolved BLOCK/WARN/NIT. Сохраняйте явно принятые риски отдельно от BLOCK; Non-negotiables не переводите в accepted risk. Сырые diff/logs и повторы результатов не сохраняйте.
 

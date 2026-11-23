@@ -3,10 +3,10 @@
 | File | Purpose |
 |---|---|
 | docs/plans/<slug>/plan.md | Постоянный technical approach/decisions/risk/verification |
-| docs/plans/<slug>/tasks.md | Постоянные T-N/dependencies/files/acceptance/checks |
-| docs/plans/<slug>/progress.md | Журнал исполнения/checklist/learnings |
-| swarm-report/<task-slug>.md, раздел Plan | Краткие scope/evidence/review cursor; done после завершения |
+| docs/plans/<slug>/tasks.md | По необходимости для большого плана с раздельным исполнением или по требованию проекта |
+| docs/plans/<slug>/progress.md | Ранее созданный или прямо требуемый проектом файл прогресса |
+| swarm-report/<task-slug>.md, раздел Plan | Состояние для передачи или возобновления, если нужен отчёт |
 
-Plan draft→approved лишь когда review не содержит blockers; review_verdict pending→pass|conditional|escalate. Main обновляет status/cursor в разделе Plan; отдельные state-файлы не создавать и прежние пользовательские artifacts не удалять. Новые permanent files git add; commit исключительно при current authorization.
+Утверждайте план после применимого ревью при отсутствии блокеров. Обновляйте раздел Plan, если ведётся отчёт. Прежние артефакты сохраняйте. Новые постоянные файлы добавьте в git.
 
-Handoff без --interactive: path/review/task count/первый шаг. --interactive требует запрошенного checkpoint. При planning-only scope предложить исполнение; при уже разрешённом implementation продолжать через специалиста. Downstream verification по risk route из SKILL.md, не обязательная check→finalize→acceptance цепочка для малого изменения. create-pr/finalize находят plan по каноническому slug path.
+Сообщите путь, результат ревью, первый шаг и открытые вопросы. `--interactive` добавляет запрошенную точку согласования. При уже разрешённой реализации продолжайте в выбранном режиме.

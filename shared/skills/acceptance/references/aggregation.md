@@ -2,7 +2,7 @@ Referenced from: `plugins/developer-workflow/skills/acceptance/SKILL.md` (§Step
 
 # Acceptance — агрегация, формат receipt и маршрутизация
 
-Сначала прочитайте check metadata из `## Acceptance` общего `swarm-report/<task-slug>.md` (verdict, severity, confidence, domain_relevance, blocked_on). Подробности нужны только для non-PASS; не копируйте raw output.
+Сводите результаты по фактическим проверкам. При возобновлении используйте сохранённые записи из раздела `## Acceptance`. Для несохранённого запуска достаточно текущих результатов. Учитывайте verdict, severity и blocked_on.
 
 Если planned result отсутствует, запишите `FAIL`, `blocked_on: per-check result missing`. Не отбрасывайте проверку; отдельного поля `error` нет. Main — единственный писатель, reviewers возвращают результаты текстом.
 
@@ -15,7 +15,7 @@ Acceptance использует тот же протокол агрегации,
 | Signal | Action |
 |---|---|
 | **Серьёзность `critical`** в любой проверке с `confidence: high` | → Blocker. Aggregated Status = `FAILED`. |
-| **Одинаковая проблема** (тот же file:line или тот же AC id), независимо поднятая 2+ проверками | → Повысить до `critical` независимо от индивидуальной серьёзности. Если одну проблему видят несколько специалистов, она реальна. |
+| **Одинаковая проблема** в нескольких проверках | → Объединить доказательства. Серьёзность определить по последствию. |
 | **Серьёзность `major`** в проверке с `domain_relevance: high` | → Important. Aggregated Status = `PARTIAL`, если ранее не повышен. |
 | **Противоречащие вердикты** (один `PASS`, другой `FAIL` для одного элемента) | → «Неопределённость — требуется решение». Aggregated Status = `PARTIAL`, противоречие перечисляется в receipt. |
 | **Серьёзность `minor`** или **`low` confidence** в одной проверке | → Note, не blocker. Не влияет на Aggregated Status. |
@@ -31,13 +31,14 @@ FAIL покрытия AC без связанной ошибки P0).
 | Вход | Aggregated Status |
 |---|---|
 | Все проверки `PASS` или `SKIPPED`, нет ошибок P0–P3 и blocker PoLL | `VERIFIED` |
-| Любая ошибка P0/P1 **или** blocker PoLL (critical с высокой уверенностью либо эскалация 2+ агентов) | `FAILED` |
+| Любая ошибка P0/P1 или critical с высокой уверенностью | `FAILED` |
+| Отсутствует обязательная проверка или её доказательство | `PARTIAL` с `blocked_on`, либо `FAILED`, если есть подтверждённый блокирующий дефект |
 | Только ошибки P2/P3, **или** important от PoLL, **или** противоречащие вердикты, **или** любой иначе не классифицированный `WARN` | `PARTIAL` |
 | `manual-tester` вернул `WARN` с `blocked_on` | `PARTIAL`, с отображением `blocked_on` в Summary |
 
 ## Формат receipt
 
-Main обновляет только `## Acceptance` в `swarm-report/<task-slug>.md`. Не создавайте acceptance/check/state файлы. Краткий формат:
+Если нужен отчёт, main обновляет `## Acceptance` в `swarm-report/<task-slug>.md`. Краткий формат:
 
 ```markdown
 ## Acceptance

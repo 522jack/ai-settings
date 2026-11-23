@@ -1,6 +1,6 @@
 # Acceptance fan-out selection
 
-Base: independent code-reviewer, если нет exact-state upstream review; build smoke для mobile/non-UI, если exact-state required build result ещё отсутствует; web/desktop UI → manual-tester по существующему исполнимому сценарию. Android/iOS manual-tester добавляется только explicit mobile runtime QA request.
+Проверить diff по контракту, если нет применимого результата ревью. В одиночном режиме провести саморевью. В режиме с субагентами привлечь независимого reviewer по риску или требованию. Для mobile/non-UI использовать build smoke, если нет применимого результата сборки. Web/desktop UI проверить по существующему исполнимому сценарию. Android/iOS runtime QA выполнять только по явному запросу.
 
 | Evidence/trigger | Narrow check |
 |---|---|
@@ -15,4 +15,4 @@ Base: independent code-reviewer, если нет exact-state upstream review; bu
 
 Cache path pass once, content diff on demand; include working tree state. Public contract examples: exports/index/public/open symbols/routes/controllers/proto/GraphQL/OpenAPI/CLI flags. Одно перемещение/упоминание не равно contract change: при ambiguity выяснить узким чтением, не устраивать полный audit автоматически.
 
-Включайте только triggered roles с отдельным сигналом; exact-state уже проверенные роли можно reuse. Risk policy high-risk требует full applicable finalize+acceptance, а не всех специалистов независимо от diff. Одновременно независимые checks запускайте параллельно; prompts из subcheck-prompts.md читайте только для выбранных check sections. Build smoke read-only не заменяет required project checks и не устанавливает tools.
+Выбирайте только проверки по фактическим рискам. В одиночном режиме используйте критерии применимых ролей самостоятельно. В режиме с субагентами независимые проверки можно запускать параллельно. Build smoke не заменяет обязательные команды проекта.

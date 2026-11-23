@@ -1,6 +1,6 @@
 # Acceptance state/check schema
 
-Прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Main хранит state и результаты только под `## Acceptance` в `swarm-report/<task-slug>.md`; специалисты возвращают текст и не пишут отчёт. Task-slug наследуется от задачи, не меняется на check/cycle. Другие разделы и их статусы сохраняются. Новые state/per-check/JSON/log-файлы не создаются; legacy читается только как вход при необходимости.
+Эта схема применяется, если результат нужно сохранить по `$HOME/dotfiles/ai/shared/rules/task-report.md`. Main обновляет `## Acceptance` общего отчёта. Специалисты возвращают результаты в ответе. Сохраняйте другие разделы и наследуйте task-slug.
 
 До запуска сохраните компактный state в том же блоке `acceptance`: status planning|running|aggregating|done, cycle N of 3, started, base, code_hash/diff_hash, scope_hash/spec_hash/test_plan_hash, environment, planned checks с trigger, completed checks с verdict/evidence и краткую verdict history. После возврата каждой проверки обновите её строку; resume перечитывает раздел и пропускает завершённые exact-state checks. При мутации reset только affected checks, остальные — reused с evidence. После done сверните resume cursor и историю до краткого итога, сохраняя необходимые gate metadata и evidence; operational status не подменяет aggregated verdict.
 

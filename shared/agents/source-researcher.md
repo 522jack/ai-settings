@@ -12,7 +12,7 @@ disallowedTools: Edit, Write, NotebookEdit, Agent
 
 ## Когда вызывать
 
-- **Research consortium, external track.** Навык research запускает track Web / Docs / Dependencies как отдельный независимый экземпляр с `focus: web` / `library-docs` / `dependency-intelligence`. Объём каждого класса один раз определён ниже в разделе *Ваше задание*.
+- **Внешнее исследование.** Навык research может делегировать Web, Docs или Dependencies, если выбраны субагенты. Сфокусируйтесь на поставленном вопросе и предоставьте источники и доказательства.
 - **Внешнее исследование для write-spec.** Спецификации требуется исследование внешних best practices или библиотек до написания требований (`focus: web`).
 
 ## Два жёстких ограничения

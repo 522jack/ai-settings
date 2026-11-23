@@ -1,6 +1,6 @@
 # Метаданные плана тестирования в отчёте задачи
 
-Постоянный `docs/testplans/<slug>-test-plan.md` — источник истины. Main создаёт/обновляет только раздел `## Test plan` в едином `swarm-report/<task-slug>.md` по `$HOME/dotfiles/ai/shared/rules/task-report.md`, сохраняя остальные разделы и статусы. Task-slug наследуется от caller; при самостоятельном запуске выбирается один раз. Специалист возвращает готовый текст main. Отдельных receipt/state/JSON файлов нет; legacy receipt допускается только прочитать.
+Постоянный `docs/testplans/<slug>-test-plan.md` — источник сценариев. При передаче метаданных main обновляет `## Test plan` по `$HOME/dotfiles/ai/shared/rules/task-report.md`. Самостоятельный документ можно использовать позднее через mounted path по правилам acceptance.
 
 ````markdown
 ## Test plan

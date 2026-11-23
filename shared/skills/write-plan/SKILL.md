@@ -5,16 +5,16 @@ description: "Сохранить план реализации уже приня
 
 # План реализации
 
-Отчётность: прочитайте `$HOME/dotfiles/ai/shared/rules/task-report.md`. Наследуйте стабильный task slug; main обновляет только раздел `Plan` в единственном `swarm-report/<task-slug>.md`. Специалисты возвращают краткую receipt в ответе, не создают отчётные файлы. Resume state хранится в том же разделе; legacy artifacts допустимы только для чтения. Существующий artifact slug документов может отличаться: сохраните путь и укажите сопоставление с task slug в отчёте.
+Для разового запуска достаточно результата в чате или запрошенного документа. Если результат нужен другому этапу или для возобновления, обновите раздел по `$HOME/dotfiles/ai/shared/rules/task-report.md`.
 
 Вход: принятое изменение, constraints, optional `--from-spec PATH`; не решённый выбор → research, missing complex contract → write-spec. Наследуйте стабильный task slug; только при отсутствии задайте caller/task/branch kebab-case без prefix; найденный spec не меняет slug.
 
 Modes: default сохраняет reviewed plan без human approval pause; `--interactive` добавляет один явно запрошенный checkpoint; `--quick` облегчает bounded investigation/review, не skips mandatory checks. Headless настоящую unresolved design fork передаёт caller, не блокируется question tool.
 
-1. Read-only исследование нужных модулей через Explore; architecture только при границах/layers/API, docs только unfamiliar external API. Не консорциум всегда. Раздел `Plan` task report хранит краткие scope/evidence/progress и resume cursor. Не спрашивайте то, что code/docs отвечают.
-2. Для записи прочитайте [plan-template.md](references/plan-template.md) и [output-layout.md](references/output-layout.md). Постоянные `docs/plans/<slug>/plan.md`, `tasks.md`, `progress.md`; source spec только link+AC IDs, не копия требований. Plan содержит paths/types/rationale/risk/out-of-scope и mandatory Verification & Sources; tasks T-N имеют dependencies/affected files/checkable acceptance+check; progress checklist+learnings.
-3. Verification risk-based: mechanical targeted existing checks; ordinary + independent semantic review; high-risk + full finalize/acceptance после checks. Required project checks/hooks/CI не отключаются. New tests/infra и mobile emulator/simulator/device QA только explicit request; иначе назвать runtime limitation, не считать policy skip blocker.
-4. Прочитайте [review-loop.md](references/review-loop.md): independent reviewer для bounded ordinary plan, panel для high-risk; hostile implementer лишь при значимых remaining execution gaps. Fix unresolved findings в plan/tasks согласованно; только genuine persistent block после max 3 содержательных cycles → escalate/draft с evidence.
+1. Изучите только нужные части проекта в выбранном режиме. Подключайте профиль или документацию при конкретном пробеле.
+2. Сохраните канонический `docs/plans/<slug>/plan.md` по [plan-template.md](references/plan-template.md). Для небольшого плана включите задачи и проверки в тот же файл. Разделение на `tasks.md` используйте для большого плана с отдельными исполнителями или явным требованием. Прогресс храните только при необходимости возобновления по [output-layout.md](references/output-layout.md).
+3. Укажите проверки по `$HOME/dotfiles/ai/shared/rules/workflow.md`. Обязательные команды, opt-in для новых тестов и ручного mobile QA действуют в обоих режимах.
+4. Проверьте план по [review-loop.md](references/review-loop.md). Если требуется независимое ревью, сохраните draft до результата.
 5. PASS либо CONDITIONAL без blocking issues → status approved, review_verdict обновлён, state done. Default не требует confirmation; --interactive checkpoint до approved. User design choice не выдумывать: в interactive chat, headless blocking Open Question+escalate.
 
-Новые постоянные файлы добавьте в git; commit/push только текущая explicit authorization и разрешённая ветка. Handoff: путь, verdict, задачи/verification/риски, первый шаг. Запрос «составь план» сам по себе не разрешает product implementation; если она уже входит в задачу — продолжайте через специалиста. Progress ведёт исполнитель, не запускать downstream skills автоматически без scope/показаний.
+Добавьте новые постоянные файлы в git. Сообщите путь, вердикт, риски и первый шаг. Если реализация авторизована, продолжайте в выбранном режиме.
